@@ -38,6 +38,7 @@ cd treasurenetprotocol
 
 # Install the dependencies
 npm install
+npm install truffle -g
 ```
 
 ## Usage
