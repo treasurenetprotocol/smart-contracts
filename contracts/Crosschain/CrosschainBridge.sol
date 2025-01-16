@@ -38,7 +38,7 @@ contract CrosschainBridge is
         bool isProcessed;     // 是否已处理
         uint64 availableBlock; // 可信区块
     }
-    
+
     // 交易ID到交易信息的映射
     mapping(uint256 => TransactionInfo) private _transactions;
 
@@ -207,9 +207,9 @@ contract CrosschainBridge is
             expirationBlock = uint64(block.number + ETH_EXPIRATION_BLOCKS);
         } else {
             // TN侧
-            expirationBlock = uint64(block.number + TN_EXPIRATION_BLOCKS); 
+            expirationBlock = uint64(block.number + TN_EXPIRATION_BLOCKS);
         }
-     
+
         //TransactionInfoItem
         TransactionInfo memory infoItem = TransactionInfo({
             startBlock: uint64(block.number),
@@ -217,7 +217,7 @@ contract CrosschainBridge is
             status: 1, // receviedA
             isNativeToken: isNative,
             isProcessed: false,
-            availableBlock: uint64(block.number + TRUST_BLOCKS),
+            availableBlock: uint64(block.number + TRUST_BLOCKS)
             });
         // 设置交易信息
         _setTransaction(
@@ -234,7 +234,7 @@ contract CrosschainBridge is
                 // 获取第一个 CROSSCHAIN_SENDER 角色的账户
                 address[] memory senders = _roles.getRoleMemberArray(_roles.CROSSCHAIN_SENDER());
                 require(senders.length > 0, "No CROSSCHAIN_SENDER configured");
-                
+
                 (bool success, ) = senders[0].call{value: feeAmount}("");
                 if (!success) revert TransferFailed();
             }
@@ -251,7 +251,7 @@ contract CrosschainBridge is
                 if (feeAmount > 0) {
                     address[] memory senders = _roles.getRoleMemberArray(_roles.CROSSCHAIN_SENDER());
                     require(senders.length > 0, "No CROSSCHAIN_SENDER configured");
-                    
+
                     IERC20(sourceERC20address).safeTransferFrom(
                         msg.sender,
                         senders[0],
@@ -262,7 +262,7 @@ contract CrosschainBridge is
                 revert TransferFailed();
             }
         }
-        
+
         // 发送事件
         emit CrossToEth(
             newId,
