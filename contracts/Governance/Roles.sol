@@ -12,19 +12,22 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable {
     bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
     bytes32 public constant AUCTION_MANAGER = keccak256("AUCTION_MANAGER");
     bytes32 public constant FEEDER = keccak256("FEEDER");
+    bytes32 public constant CROSSCHAIN_SENDER = keccak256("CROSSCHAIN_SENDER");
 
     address private _mulSig;
 
- /// @dev Initializes the role management contract
+    /// @dev Initializes the role management contract
     /// @param _mulSigContract The address of the multisig contract
     /// @param managers The accounts of administrators (FOUNDATION_MANAGER)
     /// @param auctionManagers The accounts of auction managers (AUCTION_MANAGER)
     /// @param feeders The accounts of data feeders (FEEDER)
+    /// @param crosschainSenders The accounts of crosschain message senders (CROSSCHAIN_SENDER)
     function initialize(
         address _mulSigContract,
         address[] memory managers, // initialize manager
         address[] memory auctionManagers,
-        address[] memory feeders // feeders for oracle data
+        address[] memory feeders, // feeders for oracle data
+        address[] memory crosschainSenders // crosschain message senders
     ) public initializer {
         __Ownable_init();
 
@@ -35,6 +38,7 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable {
         _setRoleAdmin(FOUNDATION_MANAGER, ADMIN);
         _setRoleAdmin(AUCTION_MANAGER,FOUNDATION_MANAGER);
         _setRoleAdmin(FEEDER, ADMIN);
+        _setRoleAdmin(CROSSCHAIN_SENDER, ADMIN);
 
         for (uint256 i = 0; i < managers.length; ++i) {
             _setupRole(FOUNDATION_MANAGER, managers[i]);
@@ -46,6 +50,10 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable {
 
         for (uint256 i = 0; i < feeders.length; ++i) {
             _setupRole(FEEDER, feeders[i]);
+        }
+
+        for (uint256 i = 0; i < crosschainSenders.length; ++i) {
+            _setupRole(CROSSCHAIN_SENDER, crosschainSenders[i]);
         }
     }
 
