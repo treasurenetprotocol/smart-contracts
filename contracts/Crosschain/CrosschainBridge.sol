@@ -175,12 +175,10 @@ contract CrosschainBridge is
             string memory tokenName,
             address sourceERC20address,
             address sourceCrosschainAddress,
-            uint256 sourcechainid, // targetERC20address
-            // targetCrosschainAddress
-            // targetchainid
-            ,
-            ,
-            ,
+            uint256 sourcechainid,
+            address targetERC20address,
+            address targetCrosschainAddress,
+            uint256 targetchainid,
             uint256 fee
         ) = _crosschainTokens.getCrosschainToken(token);
 
