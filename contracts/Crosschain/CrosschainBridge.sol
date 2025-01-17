@@ -238,26 +238,25 @@ contract CrosschainBridge is
             }
         } else {
             // ERC20代币处理
-            try
+            if (sourceERC20address == address(0)) revert InvalidTokenInfo();
+
+            // 转账主要金额
+            IERC20(sourceERC20address).safeTransferFrom(
+                msg.sender,
+                address(this),
+                transferAmount
+            );
+
+            // 如果有手续费，转移到 CROSSCHAIN_SENDER 角色账户
+            if (feeAmount > 0) {
+                address[] memory senders = _roles.getRoleMemberArray(_roles.CROSSCHAIN_SENDER());
+                require(senders.length > 0, "No CROSSCHAIN_SENDER configured");
+
                 IERC20(sourceERC20address).safeTransferFrom(
                     msg.sender,
-                    address(this),
-                    transferAmount
-                )
-            {
-                // 转账成功，如果有手续费，转移到 CROSSCHAIN_SENDER 角色账户
-                if (feeAmount > 0) {
-                    address[] memory senders = _roles.getRoleMemberArray(_roles.CROSSCHAIN_SENDER());
-                    require(senders.length > 0, "No CROSSCHAIN_SENDER configured");
-
-                    IERC20(sourceERC20address).safeTransferFrom(
-                        msg.sender,
-                        senders[0],
-                        feeAmount
-                    );
-                }
-            } catch {
-                revert TransferFailed();
+                    senders[0],
+                    feeAmount
+                );
             }
         }
 
@@ -396,11 +395,7 @@ contract CrosschainBridge is
                 revert("Insufficient balance");
 
             // 转移金额给接收者
-            try
-                IERC20(targetERC20address).safeTransfer(account, amount)
-            {} catch {
-                revert TransferFailed();
-            }
+            IERC20(targetERC20address).safeTransfer(account, amount);
         }
 
         // 更新交易状态为已完成

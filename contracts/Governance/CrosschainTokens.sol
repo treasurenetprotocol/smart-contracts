@@ -12,18 +12,6 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
     // Multi-signature contract address
     address private _mulSig;
 
-    // Cross-chain token information structure
-    struct CrosschainTokenInfo {
-        string token;
-        address sourceERC20address;
-        address sourceCrosschainAddress;
-        uint256 sourcechainid;
-        address targetERC20address;
-        address targetCrosschainAddress;
-        uint256 targetchainid;
-        uint256 fee;
-    }
-
     // token => CrosschainTokenInfo mapping
     mapping(string => CrosschainTokenInfo) private _crosschainTokens;
 
