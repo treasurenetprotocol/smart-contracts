@@ -27,17 +27,10 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
     // token => CrosschainTokenInfo mapping
     mapping(string => CrosschainTokenInfo) private _crosschainTokens;
 
-    // Cross-chain token setting event
-    event CrosschainToken(
-        string token,
-        address sourceERC20address,
-        address sourceCrosschainAddress,
-        uint256 sourcechainid,
-        address targetERC20address,
-        address targetCrosschainAddress,
-        uint256 targetchainid,
-        uint256 fee
-    );
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
     /// @dev Contract initialization
     /// @param mulSigContract Multi-signature contract address
@@ -95,18 +88,6 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
             targetchainid: targetchainid,
             fee: fee
         });
-
-        // Emit event
-        emit CrosschainToken(
-            token,
-            sourceERC20address,
-            sourceCrosschainAddress,
-            sourcechainid,
-            targetERC20address,
-            targetCrosschainAddress,
-            targetchainid,
-            fee
-        );
     }
 
     /// @dev Get cross-chain token information

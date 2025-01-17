@@ -4,15 +4,16 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "./IRoles.sol";
 
 /// @title Role management contract
 /// @author bjwswang
-contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable {
+contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IRoles {
     bytes32 public constant ADMIN = keccak256("ADMIN");
     bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
     bytes32 public constant AUCTION_MANAGER = keccak256("AUCTION_MANAGER");
     bytes32 public constant FEEDER = keccak256("FEEDER");
-    bytes32 public constant CROSSCHAIN_SENDER = keccak256("CROSSCHAIN_SENDER");
+    bytes32 private constant _CROSSCHAIN_SENDER = keccak256("CROSSCHAIN_SENDER");
 
     address private _mulSig;
 
@@ -38,7 +39,7 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable {
         _setRoleAdmin(FOUNDATION_MANAGER, ADMIN);
         _setRoleAdmin(AUCTION_MANAGER,FOUNDATION_MANAGER);
         _setRoleAdmin(FEEDER, ADMIN);
-        _setRoleAdmin(CROSSCHAIN_SENDER, ADMIN);
+        _setRoleAdmin(_CROSSCHAIN_SENDER, ADMIN);
 
         for (uint256 i = 0; i < managers.length; ++i) {
             _setupRole(FOUNDATION_MANAGER, managers[i]);
@@ -53,7 +54,7 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable {
         }
 
         for (uint256 i = 0; i < crosschainSenders.length; ++i) {
-            _setupRole(CROSSCHAIN_SENDER, crosschainSenders[i]);
+            _setupRole(_CROSSCHAIN_SENDER, crosschainSenders[i]);
         }
     }
 
@@ -84,5 +85,18 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable {
         returns (bytes calldata)
     {
         return msg.data;
+    }
+
+    function CROSSCHAIN_SENDER() public pure returns (bytes32) {
+        return _CROSSCHAIN_SENDER;
+    }
+
+    function getRoleMemberArray(bytes32 role) external view returns (address[] memory) {
+        uint256 count = getRoleMemberCount(role);
+        address[] memory members = new address[](count);
+        for (uint256 i = 0; i < count; i++) {
+            members[i] = getRoleMember(role, i);
+        }
+        return members;
     }
 }
