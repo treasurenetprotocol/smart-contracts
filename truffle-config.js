@@ -20,7 +20,7 @@ module.exports = {
                 networkCheckTimeout: 1000000000,
                 timeoutBlocks: 200000
             }),
-            network_id: "6666"
+            network_id: 6666
         },
         ethereum: {
             provider: () => new HDWalletProvider({
