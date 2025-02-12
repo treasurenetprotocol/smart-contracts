@@ -25,12 +25,12 @@ module.exports = {
         ethereum: {
             provider: () => new HDWalletProvider({
                 privateKeys: [process.env.EPRIVATE_KEY],
-                providerOrUrl: process.env.EPROVIDER_URL,
+                providerOrUrl: "http://127.0.0.1:8545",
                 pollingInterval: 30000,
                 networkCheckTimeout: 1000000000,
                 timeoutBlocks: 200000
             }),
-            network_id: process.env.ENETWORK_ID
+            network_id: 6566
         }
     },
 
