@@ -37,11 +37,11 @@ contract CrosschainTokens is Initializable, OwnableUpgradeable, AccessControlUpg
         _;
     }
 
-    function _msgSender() internal view virtual override(Context, ContextUpgradeable) returns (address) {
+    function _msgSender() internal view virtual override(ContextUpgradeable) returns (address) {
         return msg.sender;
     }
 
-    function _msgData() internal view virtual override(Context, ContextUpgradeable) returns (bytes calldata) {
+    function _msgData() internal view virtual override(ContextUpgradeable) returns (bytes calldata) {
         return msg.data;
     }
 
