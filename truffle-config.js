@@ -43,13 +43,13 @@ module.exports = {
         solc: {
             version: "0.8.10",
             // docker: true,
-            // settings: {
-            //     optimizer: {
-            //         enabled: true,
-            //         runs: 200
-            //     }
-            //     //  evmVersion: "byzantium"
-            // }
+            settings: {
+                optimizer: {
+                    enabled: true,
+                    runs: 200
+                }
+                //  evmVersion: "byzantium"
+            }
         }
     }
 };
