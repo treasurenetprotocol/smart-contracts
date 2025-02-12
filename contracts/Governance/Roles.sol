@@ -25,10 +25,10 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
     /// @param crosschainSenders The accounts of crosschain message senders (CROSSCHAIN_SENDER)
     function initialize(
         address _mulSigContract,
-        address[] memory managers, // initialize manager
-        address[] memory auctionManagers,
-        address[] memory feeders, // feeders for oracle data
-        address[] memory crosschainSenders // crosschain message senders
+        address[] memory managers,         // FOUNDATION_MANAGER
+        address[] memory auctionManagers,  // AUCTION_MANAGER
+        address[] memory feeders,          // FEEDER
+        address[] memory crosschainSenders // CROSSCHAIN_SENDER
     ) public initializer {
         __Ownable_init();
 
@@ -68,21 +68,21 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
     }
 
     function _msgSender()
-        internal
-        view
-        virtual
-        override(Context, ContextUpgradeable)
-        returns (address)
+    internal
+    view
+    virtual
+    override(Context, ContextUpgradeable)
+    returns (address)
     {
         return msg.sender;
     }
 
     function _msgData()
-        internal
-        view
-        virtual
-        override(Context, ContextUpgradeable)
-        returns (bytes calldata)
+    internal
+    view
+    virtual
+    override(Context, ContextUpgradeable)
+    returns (bytes calldata)
     {
         return msg.data;
     }
