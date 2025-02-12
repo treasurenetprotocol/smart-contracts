@@ -1,6 +1,8 @@
 require('dotenv').config();
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-
+const privateKeys = [
+    "72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2"
+];
 module.exports = {
     networks: {
         ganache: {
@@ -11,13 +13,14 @@ module.exports = {
         },
         treasurenet: {
             provider: () => new HDWalletProvider({
-                privateKeys: [process.env.PRIVATE_KEY],
-                providerOrUrl: process.env.PROVIDER_URL,
+                privateKeys: privateKeys,
+                /*providerOrUrl: "http://124.70.23.119:8555",*/
+                providerOrUrl: "http://127.0.0.1:8555",
                 pollingInterval: 30000,
                 networkCheckTimeout: 1000000000,
                 timeoutBlocks: 200000
             }),
-            network_id: process.env.NETWORK_ID
+            network_id: "6666"
         },
         ethereum: {
             provider: () => new HDWalletProvider({
