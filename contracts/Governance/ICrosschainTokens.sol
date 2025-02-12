@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.0;
 
 /// @title Cross-chain Token Management Interface
 /// @author qiangwei
@@ -7,7 +7,7 @@ interface ICrosschainTokens {
     /// @dev Cross-chain token information structure
     struct CrosschainTokenInfo {
         string token;
-        address sourceERC20address; 
+        address sourceERC20address;
         address sourceCrosschainAddress;
         uint256 sourcechainid;
         address targetERC20address;
@@ -96,4 +96,4 @@ interface ICrosschainTokens {
         uint256,
         uint256
     );
-} 
+}
