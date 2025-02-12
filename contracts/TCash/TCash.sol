@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -46,7 +46,7 @@ contract TCash is Initializable, OwnableUpgradeable, IERC20Upgradeable {
 
         _balances[msg.sender] -= amount;
         _balances[to] += amount;
-        
+
         emit Transfer(msg.sender, to, amount);
         return true;
     }
@@ -81,7 +81,7 @@ contract TCash is Initializable, OwnableUpgradeable, IERC20Upgradeable {
     function mint(uint256 amount) external returns (bool) {
         _totalSupply += amount;
         _balances[msg.sender] += amount;
-        
+
         emit Mint(msg.sender, amount);
         emit Transfer(address(0), msg.sender, amount);
         return true;
@@ -90,10 +90,10 @@ contract TCash is Initializable, OwnableUpgradeable, IERC20Upgradeable {
     // Burn tokens
     function burn(uint256 amount) external returns (bool) {
         require(_balances[msg.sender] >= amount, "Insufficient balance");
-        
+
         _totalSupply -= amount;
         _balances[msg.sender] -= amount;
-        
+
         emit Burn(msg.sender, amount);
         emit Transfer(msg.sender, address(0), amount);
         return true;
@@ -103,7 +103,7 @@ contract TCash is Initializable, OwnableUpgradeable, IERC20Upgradeable {
     function addBalance(address account, uint256 amount) external returns (bool) {
         _balances[account] += amount;
         _totalSupply += amount;
-        
+
         emit Transfer(address(0), account, amount);
         return true;
     }
@@ -112,11 +112,11 @@ contract TCash is Initializable, OwnableUpgradeable, IERC20Upgradeable {
     function reduceBalance(address account, uint256 amount) external returns (bool) {
         require(amount > 0, "Amount must be greater than zero");
         require(_balances[account] >= amount, "Insufficient balance");
-        
+
         _balances[account] -= amount;
         _totalSupply -= amount;
-        
+
         emit Transfer(account, address(0), amount);
         return true;
     }
-} 
+}
