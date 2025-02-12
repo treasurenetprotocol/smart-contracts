@@ -10,4 +10,5 @@ import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol
 interface IRoles is IAccessControlUpgradeable {
     // 如果需要添加额外函数，可以在此处定义
     function CROSSCHAIN_SENDER() external pure returns (bytes32);
+    function getRoleMemberCount(bytes32 role) external view returns (uint256);
 }
