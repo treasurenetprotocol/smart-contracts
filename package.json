@@ -13,6 +13,7 @@
     "compile": "truffle compile --all",
     "migrate": "truffle migrate --network ganache",
     "migrate:treasurenet": "truffle migrate --compile-all --network treasurenet",
+    "migrate:ethereum": "truffle migrate --compile-all --network ethereum",
     "lint": "eslint -c './.eslintrc.js' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
     "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol"
