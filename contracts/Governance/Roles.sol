@@ -91,12 +91,20 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlUpgradeable, I
         return _CROSSCHAIN_SENDER;
     }
 
-//    function getRoleMemberArray(bytes32 role) external view returns (address[] memory) {
-//        uint256 count = getRoleMemberCount(role);
-//        address[] memory members = new address[](count);
-//        for (uint256 i = 0; i < count; i++) {
-//            members[i] = getRoleMember(role, i);
-//        }
-//        return members;
-//    }
+    function getRoleMemberArray(bytes32 role) external view override returns (address[] memory) {
+        uint256 count = getRoleMemberCount(role);
+        address[] memory members = new address[](count);
+        for (uint256 i = 0; i < count; i++) {
+            members[i] = getRoleMember(role, i);
+        }
+        return members;
+    }
+
+    function getRoleMember(bytes32 role, uint256 index) public view override returns (address) {
+        return _getRoleMember(role, index);
+    }
+
+    function getRoleMemberCount(bytes32 role) public view override returns (uint256) {
+        return _getRoleMemberCount(role);
+    }
 }
