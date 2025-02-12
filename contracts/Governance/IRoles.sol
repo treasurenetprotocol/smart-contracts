@@ -5,6 +5,6 @@ interface IRoles {
     // Role definitions
     function CROSSCHAIN_SENDER() external pure returns (bytes32);
 
-    // Role management functions
-    function getRoleMemberArray(bytes32 role) external view returns (address[] memory);
+    // // Role management functions
+    // function getRoleMemberArray(bytes32 role) external view returns (address[] memory);
 }

@@ -2,13 +2,18 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IRoles.sol";
 
 /// @title Role management contract
 /// @author bjwswang
-contract Roles is Initializable, OwnableUpgradeable, AccessControlUpgradeable, IRoles {
+contract Roles is 
+    Initializable, 
+    OwnableUpgradeable, 
+    AccessControlEnumerableUpgradeable, 
+    IRoles 
+{
     bytes32 public constant ADMIN = keccak256("ADMIN");
     bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
     bytes32 public constant AUCTION_MANAGER = keccak256("AUCTION_MANAGER");
@@ -31,6 +36,7 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlUpgradeable, I
         address[] memory crosschainSenders // CROSSCHAIN_SENDER
     ) public initializer {
         __Ownable_init();
+        __AccessControlEnumerable_init();
 
         _mulSig = _mulSigContract;
         _setupRole(ADMIN, _mulSigContract);
@@ -91,20 +97,20 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlUpgradeable, I
         return _CROSSCHAIN_SENDER;
     }
 
-    function getRoleMemberArray(bytes32 role) external view override returns (address[] memory) {
-        uint256 count = getRoleMemberCount(role);
-        address[] memory members = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            members[i] = getRoleMember(role, i);
-        }
-        return members;
-    }
+    // function getRoleMemberArray(bytes32 role) external view override returns (address[] memory) {
+    //     uint256 count = getRoleMemberCount(role);
+    //     address[] memory members = new address[](count);
+    //     for (uint256 i = 0; i < count; i++) {
+    //         members[i] = getRoleMember(role, i);
+    //     }
+    //     return members;
+    // }
 
-    function getRoleMember(bytes32 role, uint256 index) public view override returns (address) {
-        return _getRoleMember(role, index);
-    }
+    // function getRoleMember(bytes32 role, uint256 index) public view override returns (address) {
+    //     return _getRoleMember(role, index);
+    // }
 
-    function getRoleMemberCount(bytes32 role) public view override returns (uint256) {
-        return _getRoleMemberCount(role);
-    }
+    // function getRoleMemberCount(bytes32 role) public view override returns (uint256) {
+    //     return _getRoleMemberCount(role);
+    // }
 }
