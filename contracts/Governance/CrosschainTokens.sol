@@ -4,13 +4,12 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
 import "./ICrosschainTokens.sol";
 import "./MulSig.sol";
 
 /// @title Cross-chain Token Management Contract
 /// @author qiangwei
-contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessControlUpgradeable, ICrosschainTokens {
+contract CrosschainTokens is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ICrosschainTokens {
     // Double mapping: chainId => token => info
     mapping(uint256 => mapping(string => CrosschainTokenInfo)) private _crosschainTokens;
     mapping(string => uint256) private _lastUpdateTime;

@@ -4,11 +4,10 @@ pragma solidity ^0.8.0;
 import "./IParameterInfo.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
 
 /// @title Platform configuration information management contract
 /// @author bjwswang
-contract ParameterInfo is Context, Initializable, OwnableUpgradeable, IParameterInfo {
+contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     // OIL/GAS required
     PriceDiscountConfig private _priceDiscountConfig;
     mapping(string => uint256) private _platformConfig;
@@ -47,7 +46,6 @@ contract ParameterInfo is Context, Initializable, OwnableUpgradeable, IParameter
     internal
     view
     virtual
-    override(Context, ContextUpgradeable)
     returns (address)
     {
         return msg.sender;
@@ -57,7 +55,6 @@ contract ParameterInfo is Context, Initializable, OwnableUpgradeable, IParameter
     internal
     view
     virtual
-    override(Context, ContextUpgradeable)
     returns (bytes calldata)
     {
         return msg.data;
