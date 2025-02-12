@@ -2,18 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IRoles.sol";
 
 /// @title Role management contract
 /// @author bjwswang
-contract Roles is 
-    Initializable, 
-    OwnableUpgradeable, 
-    AccessControlEnumerableUpgradeable, 
-    IRoles 
-{
+contract Roles is Initializable, OwnableUpgradeable, AccessControlUpgradeable, IRoles {
     bytes32 public constant ADMIN = keccak256("ADMIN");
     bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
     bytes32 public constant AUCTION_MANAGER = keccak256("AUCTION_MANAGER");
@@ -36,7 +31,6 @@ contract Roles is
         address[] memory crosschainSenders // CROSSCHAIN_SENDER
     ) public initializer {
         __Ownable_init();
-        __AccessControlEnumerable_init();
 
         _mulSig = _mulSigContract;
         _setupRole(ADMIN, _mulSigContract);
