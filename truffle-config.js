@@ -18,6 +18,16 @@ module.exports = {
                 timeoutBlocks: 200000
             }),
             network_id: process.env.NETWORK_ID
+        },
+        ethereum: {
+            provider: () => new HDWalletProvider({
+                privateKeys: [process.env.EPRIVATE_KEY],
+                providerOrUrl: process.env.EPROVIDER_URL,
+                pollingInterval: 30000,
+                networkCheckTimeout: 1000000000,
+                timeoutBlocks: 200000
+            }),
+            network_id: process.env.ENETWORK_ID
         }
     },
 

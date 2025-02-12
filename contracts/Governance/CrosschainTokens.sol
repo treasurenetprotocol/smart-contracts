@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -11,9 +11,7 @@ import "./MulSig.sol";
 /// @title Cross-chain Token Management Contract
 /// @author qiangwei
 contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessControlUpgradeable, ICrosschainTokens {
-    bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
-    
-    // 双重映射: chainId => token => info
+    // Double mapping: chainId => token => info
     mapping(uint256 => mapping(string => CrosschainTokenInfo)) private _crosschainTokens;
     mapping(string => uint256) private _lastUpdateTime;
     uint256 public constant UPDATE_INTERVAL = 1 days;
@@ -26,25 +24,13 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
     }
 
     /// @dev Contract initialization
-    /// @param signers 多签者地址数组
-    /// @param mulSigAddress MulSig合约地址
+    /// @param mulSigAddress MulSig contract address
     function initialize(
-        address[] memory signers,
         address mulSigAddress
     ) public initializer {
         __Ownable_init();
         __AccessControl_init();
         _mulSig = MulSig(mulSigAddress);
-        
-        // 设置多个签名者
-        for(uint i = 0; i < signers.length; i++) {
-            _grantRole(SIGNER_ROLE, signers[i]);
-        }
-    }
-
-    modifier onlySigners() {
-        require(hasRole(SIGNER_ROLE, _msgSender()), "Caller is not a signer");
-        _;
     }
 
     modifier onlyMulSig() {
@@ -69,7 +55,7 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
     /// @param targetCrosschainAddress Target cross-chain contract address
     /// @param targetchainid Target chain ID
     /// @param fee Transaction fee (0.01% - 100%)
-    /// @param chainId Current chain ID for storage
+    /// @param chainId Added chainId parameter
     function setCrosschainToken(
         string memory token,
         address sourceERC20address,
@@ -79,11 +65,11 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         address targetCrosschainAddress,
         uint256 targetchainid,
         uint256 fee,
-        uint256 chainId    // 新增 chainId 参数
+        uint256 chainId    // Added chainId parameter
     ) external onlyMulSig {
         require(bytes(token).length > 0, "Token name cannot be empty");
-        
-        // 使用传入的 chainId 来存储
+
+        // Use the provided chainId for storage
         _crosschainTokens[chainId][token] = CrosschainTokenInfo({
             token: token,
             sourceERC20address: sourceERC20address,
@@ -94,8 +80,7 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
             targetchainid: targetchainid,
             fee: fee
         });
-        
-        // 触发接口中定义的事件
+
         emit ICrosschainTokens.CrosschainToken(
             token,
             sourceERC20address,
@@ -129,7 +114,7 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         uint256,
         uint256
     ) {
-        // 从当前链 ID 获取代币信息
+        // Get token information from current chain ID
         CrosschainTokenInfo memory info = _crosschainTokens[block.chainid][token];
         return (
             info.token,
@@ -143,14 +128,14 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         );
     }
 
-    // 添加设置 MulSig 地址的函数
+    // Add function to set MulSig address
     function setMulSig(address mulSigAddress) external onlyOwner {
         require(mulSigAddress != address(0), "Invalid MulSig address");
-        require(address(_mulSig) == address(0), "MulSig already set"); // 只允许设置一次
+        require(address(_mulSig) == address(0), "MulSig already set"); // Can only be set once
         _mulSig = MulSig(mulSigAddress);
     }
 
-    // 新增：获取特定链上的代币信息
+    // Added: Get token information from specific chain
     function getCrosschainTokenByChainId(
         string memory token,
         uint256 chainId
@@ -176,4 +161,4 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
             info.fee
         );
     }
-} 
+}

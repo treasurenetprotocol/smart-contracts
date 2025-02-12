@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "../Governance/ICrosschainTokens.sol";
 import "../Governance/IRoles.sol";
 
-// 将接口移到合约外部
+// Move interfaces outside the contract
 interface IERC20Mintable is IERC20Upgradeable {
     function mint(uint256 amount) external returns (bool);
 }
@@ -30,33 +30,33 @@ contract CrosschainBridge is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // Constants
-    uint256 public constant TN_EXPIRATION_BLOCKS = 100; // TN链过期区块数
-    uint256 public constant ETH_EXPIRATION_BLOCKS = 50; // ETH链过期区块数
-    uint256 public constant TRUST_BLOCKS = 5; // 可信区块数
+    uint256 public constant TN_EXPIRATION_BLOCKS = 100; // TN chain expiration blocks
+    uint256 public constant ETH_EXPIRATION_BLOCKS = 50; // ETH chain expiration blocks
+    uint256 public constant TRUST_BLOCKS = 5; // Trust blocks
 
     // State variables
     uint256 private _currentId;
-    ICrosschainTokens private _crosschainTokens; // CrosschainTokens合约接口
+    ICrosschainTokens private _crosschainTokens; // CrosschainTokens contract interface
     IRoles private _roles;
 
-    // 交易信息结构体
+    // Transaction information struct
     struct TransactionInfo {
-        uint64 startBlock; // 开始区块
-        uint64 expirationBlock; // 过期区块
-        uint64 availableBlock; // 可信区块
-        // uint8 status; // 交易状态
-        bool isProcessed; // 是否已处理
-        uint256 amount; // 交易金额
-        uint256 fee; // 手续费
+        uint64 startBlock; // Start block
+        uint64 expirationBlock; // Expiration block
+        uint64 availableBlock; // Trust block
+        // uint8 status; // Transaction status
+        bool isProcessed; // Whether processed
+        uint256 amount; // Transaction amount
+        uint256 fee; // Transaction fee
     }
 
-    // 交易ID到交易信息的映射
+    // Mapping from transaction ID to transaction info
     mapping(uint256 => TransactionInfo) private _transactions;
 
-    // 已完成交易的清理时间（区块数）
-    uint256 public constant CLEANUP_BLOCKS = 50000; // 约1周
+    // Cleanup time for completed transactions (in blocks)
+    uint256 public constant CLEANUP_BLOCKS = 50000; // About 1 week
 
-    // 记录最后一个已清理的交易ID
+    // Record the last cleaned transaction ID
     uint256 private _lastCleanedId;
 
     // Storage gap for future upgrades
@@ -114,7 +114,7 @@ contract CrosschainBridge is
     bytes32 private constant TRANSACTION_POSITION_PREFIX =
         keccak256("crosschain.bridge.transaction.v1.");
 
-    // 在合约级别定义一个结构体来存储跨链信息
+    // Define a struct at contract level to store cross-chain information
     struct CrosschainInfo {
         string token;
         address sourceERC20address;
@@ -126,7 +126,7 @@ contract CrosschainBridge is
         bool isTargetNative;
     }
 
-    // 在合约中添加一个新的结构体来存储跨链交易信息
+    // Add a new struct to store cross-chain transaction information
     struct CrossToEthInfo {
         string token;
         uint256 transferAmount;
@@ -139,8 +139,8 @@ contract CrosschainBridge is
         uint256 expirationBlock;
     }
 
-    // 添加ID位移常量
-    uint256 private constant CHAIN_ID_SHIFT = 32; // 为链ID预留32位
+    // Add ID shift constant
+    uint256 private constant CHAIN_ID_SHIFT = 32; // Reserve 32 bits for chain ID
 
     function _getCurrentId() private view returns (uint256) {
         return _currentId;
@@ -191,7 +191,7 @@ contract CrosschainBridge is
         _crosschainTokens = ICrosschainTokens(crosschainTokensContract);
         _roles = IRoles(rolesContract);
 
-        // 如果是首次初始化，设置所有ID为0
+        // If it's the first initialization, set all IDs to 0
         if (_getCurrentId() == 0) {
             _setCurrentId(0);
             _setLastCleanedId(0);
@@ -209,38 +209,38 @@ contract CrosschainBridge is
     ) external payable nonReentrant {
         if (amount == 0) revert InvalidAmount();
 
-        // 修改ID生成逻辑
+        // Modify ID generation logic
         uint256 currentId = _getCurrentId();
         uint256 newId = (chainId << CHAIN_ID_SHIFT) | (currentId + 1);
         _setCurrentId(currentId + 1);
 
-        // 获取并处理跨链信息
+        // Get and process cross-chain information
         CrossToEthInfo memory info = _prepareCrossToEthInfo(token, amount, chainId);
 
-        // 处理用户资产锁定
+        // Handle user asset locking
         if (info.sourceERC20address == address(0)) {
-            // 如果是原生代币
+            // If it's native token
             if (msg.value != amount) revert("Invalid amount sent");
         } else {
-            // 如果是ERC20代币，使用USTN接口
+            // If it's ERC20 token, use USTN interface
             IUSTN sourceToken = IUSTN(info.sourceERC20address);
-            // 检查余额
+            // Check balance
             uint256 balance = sourceToken.balanceOf(msg.sender);
             uint256 totalAmount = info.transferAmount + info.feeAmount;
             if (balance < totalAmount) revert("Insufficient balance");
 
-            // 从用户账户扣除代币
+            // Deduct tokens from user account
             if (!sourceToken.reduceBalance(msg.sender, totalAmount)) {
                 revert("Failed to reduce balance");
             }
 
-            // 增加到bridge账户
+            // Add to bridge account
             if (!sourceToken.addBalance(address(this), totalAmount)) {
                 revert("Failed to add balance to bridge");
             }
         }
 
-        // 记录交易信息
+        // Record transaction information
         _recordTransaction(newId, info);
 
         emit CrossToEth(
@@ -299,7 +299,7 @@ contract CrosschainBridge is
                 !info.isProcessed &&
                 block.number > info.expirationBlock + CLEANUP_BLOCKS
             ) {
-                // 将交易标记为已处理
+                // Mark transaction as processed
                 info.isProcessed = true;
                 _setTransaction(id, info);
             }
@@ -321,21 +321,21 @@ contract CrosschainBridge is
         address account,
         uint256 chainId
     ) external nonReentrant {
-        // 检查调用者是否具有 CROSSCHAIN_SENDER 角色
+        // Check if caller has CROSSCHAIN_SENDER role
         require(
             _roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender),
             "Caller is not a CROSSCHAIN_SENDER"
         );
 
-        // 检查金额
+        // Check amount
         if (amount == 0) revert InvalidAmount();
         // if (!this.isConfirmed(id)) revert("Transaction not confirmed");
         // if (this.isExpired(id)) revert("Transaction expired");
 
-        // 获取并验证跨链信息
+        // Get and validate cross-chain information
         CrosschainInfo memory info = _getCrosschainInfo(token, chainId, amount);
 
-        // 处理资产转移
+        // Handle asset transfer
         _handleAssetTransfer(info, account);
 
         emit CrossFromEth(id, account, token, amount);
@@ -344,7 +344,7 @@ contract CrosschainBridge is
     /// @notice Confirm cross-chain transfer from Ethereum
     /// @param id Transaction ID
     function confirmFromEth(uint256 id) external nonReentrant {
-        // 检查调用者是否具有 CROSSCHAIN_SENDER 角色
+        // Check if caller has CROSSCHAIN_SENDER role
         require(
             _roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender),
             "Caller is not a CROSSCHAIN_SENDER"
@@ -356,7 +356,7 @@ contract CrosschainBridge is
         require(!info.isProcessed, "Transaction already processed");
         require(block.number <= info.expirationBlock, "Transaction expired");
 
-        // 更新交易状态为已确认
+        // Update transaction status to confirmed
         // info.status = 9; // completed
         _setTransaction(id, info);
 
@@ -369,17 +369,17 @@ contract CrosschainBridge is
         return _getCurrentId();
     }
 
-    // // 如果需要在合约升级时保持数据，可以添加数据迁移函数
+    // // If data needs to be preserved across contract upgrades, add data migration function
     // function migrateTransactionData(uint256 startId, uint256 endId) external onlyOwner {
     //     for(uint256 id = startId; id <= endId; id++) {
     //         TransactionInfo storage info = _transactions[id];
-    //         // 在这里进行数据迁移逻辑
-    //         // 比如从旧的存储格式迁移到新的存储格式
+    //         // Perform data migration logic here
+    //         // For example, migrate from old storage format to new storage format
     //     }
     // }
 
-    /// @notice 获取完整的交易记录信息
-    /// @param id 交易ID
+    /// @notice Get full transaction record information
+    /// @param id Transaction ID
     function getRecord(
         uint256 id
     )
@@ -409,7 +409,7 @@ contract CrosschainBridge is
         );
     }
 
-    // 新增辅助函数：获取并验证跨链信息
+    // Added helper function: Get and validate cross-chain information
     function _getCrosschainInfo(
         string memory token,
         uint256 chainId,
@@ -426,7 +426,7 @@ contract CrosschainBridge is
 
         ) = _crosschainTokens.getCrosschainTokenByChainId(token, chainId);
 
-        // 验证代币信息
+        // Validate token information
         if (bytes(tokenName).length == 0) revert TokenNotSupported();
 
         return
@@ -442,27 +442,27 @@ contract CrosschainBridge is
             });
     }
 
-    // 新增辅助函数：处理资产转移
+    // Added helper function: Handle asset transfer
     function _handleAssetTransfer(
         CrosschainInfo memory info,
         address account
     ) private {
-        // // 处理来源链资产
+        // // Handle source chain asset
         // if (!info.isSourceNative) {
         //     IERC20Upgradeable sourceToken = IERC20Upgradeable(info.sourceERC20address);
 
-        //     // 检查授权和余额
+        //     // Check allowance and balance
         //     uint256 allowance = sourceToken.allowance(account, address(this));
         //     if (allowance < info.amount) revert("Insufficient allowance");
 
         //     uint256 balance = sourceToken.balanceOf(account);
         //     if (balance < info.amount) revert("Insufficient balance");
 
-        //     // 转移代币
+        //     // Transfer tokens
         //     sourceToken.safeTransferFrom(account, address(this), info.amount);
         // }
 
-        // 处理目标链资产
+        // Handle target chain asset
         if (info.isTargetNative) {
             if (address(this).balance < info.amount)
                 revert("Insufficient balance");
@@ -479,16 +479,16 @@ contract CrosschainBridge is
         }
     }
 
-    // 修改辅助函数：处理目标代币转移
+    // Modified helper function: Handle target token transfer
     function _handleTargetTokenTransfer(
         IERC20Upgradeable targetToken,
         address account,
         uint256 amount
     ) private {
-        // 检查bridge合约余额
+        // Check bridge contract balance
         uint256 bridgeBalance = targetToken.balanceOf(address(this));
         if (bridgeBalance < amount) {
-            // bridge余额不足,尝试mint代币
+            // bridge balance insufficient, try mint tokens
             try IERC20Mintable(address(targetToken)).mint(amount) {
                 uint256 newBalance = targetToken.balanceOf(address(this));
                 if (newBalance < amount) revert InsufficientBalanceAfterMint();
@@ -499,7 +499,7 @@ contract CrosschainBridge is
             }
         }
 
-        // 使用USTN合约的特殊接口而不是普通transfer
+        // Use USTN contract's special interface instead of regular transfer
         try IUSTN(address(targetToken)).reduceBalance(address(this), amount) {
             try IUSTN(address(targetToken)).addBalance(account, amount) {
                 return;
@@ -513,58 +513,7 @@ contract CrosschainBridge is
         }
     }
 
-    // 新增辅助函数：准备跨链信息
-    function _prepareCrossToEthInfo(
-        string memory token,
-        uint256 amount,
-        uint256 chainId
-    ) private view returns (CrossToEthInfo memory) {
-        // 获取代币信息
-        (
-            string memory tokenName,
-            address sourceERC20address, // sourceCrosschainAddress
-            ,
-            uint256 sourcechainid,
-            address targetERC20address, // targetCrosschainAddress
-            ,
-            uint256 targetchainid,
-            uint256 fee
-        ) = _crosschainTokens.getCrosschainTokenByChainId(token, chainId);
-
-        // 验证代币配置
-        if (bytes(tokenName).length == 0)
-            revert("Token is not configured in the system");
-        if (fee == 0 || fee >= 10000) revert("Fee must be between 0 and 10000");
-
-        // 计算实际转账金额和手续费
-        uint256 transferAmount = (amount * 10000) / (10000 + fee);
-        uint256 feeAmount = (amount * fee) / (10000 + fee);
-
-        // 验证计算结果
-        if (transferAmount == 0) revert("Transfer amount too small");
-        if (feeAmount + transferAmount != amount)
-            revert("Amount calculation error");
-
-        return
-            CrossToEthInfo({
-                token: token,
-                transferAmount: transferAmount,
-                feeAmount: feeAmount,
-                sourceERC20address: sourceERC20address,
-                targetERC20address: targetERC20address,
-                sourcechainid: sourcechainid,
-                targetchainid: targetchainid,
-                availableBlock: block.number + TRUST_BLOCKS,
-                expirationBlock: block.number +
-                    (
-                        sourcechainid == 1
-                            ? ETH_EXPIRATION_BLOCKS
-                            : TN_EXPIRATION_BLOCKS
-                    )
-            });
-    }
-
-    // 新增辅助函数：记录交易信息
+    // Added helper function: Record transaction information
     function _recordTransaction(
         uint256 id,
         CrossToEthInfo memory info
@@ -588,7 +537,7 @@ contract CrosschainBridge is
         uint256 chainId,
         uint256 amount
     ) external nonReentrant {
-        // 检查调用者是否具有 CROSSCHAIN_SENDER 角色
+        // Check if caller has CROSSCHAIN_SENDER role
         // require(
         //     _roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender),
         //     "Caller is not a CROSSCHAIN_SENDER"
@@ -600,7 +549,7 @@ contract CrosschainBridge is
         // require(!info.isProcessed, "Transaction already processed");
         // // require(block.number <= info.expirationBlock, "Transaction expired");
 
-        // 获取代币信息
+        // Get token information
         (
             ,
             address sourceERC20address,
@@ -611,27 +560,27 @@ contract CrosschainBridge is
             ,
         ) = _crosschainTokens.getCrosschainTokenByChainId(token, chainId);
 
-        // 返还用户资产
+        // Return user assets
         if (sourceERC20address == address(0)) {
-            // 如果是原生代币
+            // If it's native token
             (bool success, ) = payable(account).call{value: amount}("");
             if (!success) revert TransferFailed();
         } else {
-            // 如果是ERC20代币，使用USTN接口
+            // If it's ERC20 token, use USTN interface
             IUSTN sourceToken = IUSTN(sourceERC20address);
 
-            //  // 从用户账户扣除代币
+            //  // Deduct tokens from user account
             // if (!sourceToken.reduceBalance(msg.sender, amount)) {
             //     revert("Failed to reduce balance");
             // }
 
-            // 增加到bridge账户
+            // Add to bridge account
             if (!sourceToken.addBalance(account, amount)) {
                 revert("Failed to add balance to bridge");
             }
         }
 
-        // // 更新交易状态
+        // // Update transaction status
         // // info.status = 11; // rollback
         // info.isProcessed = true;
         // _setTransaction(id, info);
@@ -639,13 +588,13 @@ contract CrosschainBridge is
         emit CrossRollback(id, account, token, amount);
     }
 
-    // 添加辅助函数用于解析ID
+    // Added helper function to parse ID
     function _parseId(uint256 id) private pure returns (uint256 chainId, uint256 sequenceId) {
         chainId = id >> CHAIN_ID_SHIFT;
         sequenceId = id & ((1 << CHAIN_ID_SHIFT) - 1);
     }
 
-    // 添加公共函数用于获取ID信息
+    // Added public function to get ID information
     function parseId(uint256 id) external pure returns (uint256 chainId, uint256 sequenceId) {
         return _parseId(id);
     }
