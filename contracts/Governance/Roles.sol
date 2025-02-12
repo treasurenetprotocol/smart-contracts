@@ -103,4 +103,14 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerableUpgr
     function CROSSCHAIN_SENDER() public pure returns (bytes32) {
         return _CROSSCHAIN_SENDER;
     }
+
+      // 重写 getRoleMemberCount，指定覆盖父类 AccessControlEnumerableUpgradeable 和接口 IRoles
+    function getRoleMemberCount(bytes32 role) public view override(AccessControlEnumerableUpgradeable, IRoles) returns (uint256) {
+        return super.getRoleMemberCount(role);
+    }
+
+    function getRoleMember(bytes32 role, uint256 index) public view override(AccessControlEnumerableUpgradeable, IRoles) returns (address) {
+        return super.getRoleMember(role, index);
+    }
+
 }
