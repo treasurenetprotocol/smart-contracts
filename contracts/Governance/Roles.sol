@@ -58,6 +58,24 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
         }
     }
 
+    function _msgSender() internal view virtual override(ContextUpgradeable, AccessControl) returns (address) {
+        return ContextUpgradeable._msgSender();
+    }
+
+    function _msgData() internal view virtual override(ContextUpgradeable, AccessControl) returns (bytes calldata) {
+        return ContextUpgradeable._msgData();
+    }
+
+    function _contextSuffixLength()
+        internal
+        view
+        virtual
+        override(ContextUpgradeable, AccessControl)
+        returns (uint256)
+    {
+        return ContextUpgradeable._contextSuffixLength();
+    }
+
     modifier onlyMulSig() {
         require(_msgSender() == _mulSig, "Roles: caller is not the multisig contract");
         _;
