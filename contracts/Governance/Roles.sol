@@ -58,45 +58,12 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
         }
     }
 
-    /*function _contextSuffixLength() internal view virtual override(Context,ContextUpgradeable) returns (uint256) {
-        return ContextUpgradeable._contextSuffixLength();
-    }*/
-
     modifier onlyMulSig() {
-        require(_msgSender() == _mulSig, "");
+        require(_msgSender() == _mulSig, "Roles: caller is not the multisig contract");
         _;
-    }
-
-    function _msgSender()
-    internal
-    view
-    virtual
-    override(ContextUpgradeable)
-    returns (address)
-    {
-        return msg.sender;
-    }
-
-    function _msgData()
-    internal
-    view
-    virtual
-    override(ContextUpgradeable)
-    returns (bytes calldata)
-    {
-        return msg.data;
     }
 
     function CROSSCHAIN_SENDER() public pure returns (bytes32) {
         return _CROSSCHAIN_SENDER;
-    }
-
-    function getRoleMemberArray(bytes32 role) external view returns (address[] memory) {
-        uint256 count = getRoleMemberCount(role);
-        address[] memory members = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            members[i] = getRoleMember(role, i);
-        }
-        return members;
     }
 }
