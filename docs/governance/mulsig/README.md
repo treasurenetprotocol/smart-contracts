@@ -2,7 +2,7 @@
 
 ## Functions
 
-### initialize(address \_daoContract,address \_governanceContract,address \_roleContract,address \_parameterInfoContract,uint256 \_confirmation)
+### initialize(address \_daoContract,address \_governanceContract,address \_roleContract,address \_parameterInfoContract,address \_crosschainTokensContract,uint256 \_confirmation)
 
 Initializes the MulSig contract.
 
@@ -96,6 +96,34 @@ Delete a proposal.
 
 - `_proposalId`: Proposal ID
 
+### proposeToSetCrosschainToken(string memory token, address sourceERC20address, address sourceCrosschainAddress, uint256 sourcechainid, address targetERC20address, address targetCrosschainAddress, uint256 targetchainid, uint256 fee, uint256 chainId) -> bool
+
+Proposes to set a new crosschain token configuration.
+
+- `token`: Name of the crosschain token.
+- `sourceERC20address`: Address of the source chain ERC20 token contract.
+- `sourceCrosschainAddress`: Crosschain address on the source chain.
+- `sourcechainid`: Source chain identifier.
+- `targetERC20address`: Address of the target chain ERC20 token contract.
+- `targetCrosschainAddress`: Crosschain address on the target chain.
+- `targetchainid`: Target chain identifier.
+- `fee`: Fee amount associated with the crosschain token.
+- `chainId`: Identifier for the chain on which the token is set.
+- `Returns`: `bool` indicating whether the proposal was successfully initiated.
+### getSignatureCount(uint256 _proposalId) -> uint8
+
+Returns the number of signatures that have been collected for a specific proposal.
+
+- `_proposalId`: The unique identifier of the proposal.
+- `Returns`: `uint8` count of signatures.
+### hasAlreadySigned(uint256 _proposalId, address _signer) -> bool
+
+Checks if the specified address has already signed the given proposal.
+
+- `_proposalId`: The unique identifier of the proposal.
+- `_signer`: The address to check.
+- `Returns`: `bool` — `true` if the address has already signed, `false` otherwise.
+
 ## Structs
 
 ### proposal
@@ -186,3 +214,11 @@ Emitted when a Foundation Manager signs a proposal.
 Emitted when a proposal is executed.
 
 - `proposalId`: Proposal ID
+
+### SetCrosschainTokenProposed(uint256 proposalId, address proposer, string token)
+
+Emitted when a proposal to set a crosschain token configuration is initiated.
+
+- `proposalId`: Proposal ID.
+- `proposer`: Address of the proposer.
+- `token`: Name of the crosschain token.

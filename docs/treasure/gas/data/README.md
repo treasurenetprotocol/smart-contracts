@@ -1,6 +1,15 @@
 # GasData
 
 ## Functions
+### initialize(string memory _treasureKind, address _oracleContract, address _rolesContract, address _parameterInfoContract, address _producerContract, address _tatContract) -> void  
+Initializes the contract with required parameters.  
+- `_treasureKind`: The type of treasure this contract handles.  
+- `_oracleContract`: Address of the oracle contract.  
+- `_rolesContract`: Address of the roles contract.  
+- `_parameterInfoContract`: Address of the parameter info contract.  
+- `_producerContract`: Address of the producer contract.  
+- `_tatContract`: Address of the TAT contract.
+
 
 ### setProductionData(bytes32 _uniqueId,ProduceData _produceData)  -> _uniqueId
 Sets the production data for a given uniqueId.

@@ -170,6 +170,7 @@ Withdraws the voting tokens after the proposal is finalized.
 - `Queued`: Proposal is queued
 - `Expired`: Proposal is expired
 - `Executed`: Proposal is executed
+- `ManualExecuted`:Proposal is queued
 
 ## Events
 

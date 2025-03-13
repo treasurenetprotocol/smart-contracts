@@ -15,8 +15,9 @@ Mints new TAT tokens.
 
 Burns TAT tokens.
 
-- `_treasureKind`: Type of the treasure
-- `tokens`: Amount of tokens to burn
+- `_treasureKind`: Type of the treasure.
+- `to`: Address from which the tokens will be burned.
+- `amount`: Amount of tokens to burn.
 
 ### paused() -> bool
 
