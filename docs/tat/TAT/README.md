@@ -1,6 +1,13 @@
 ## TAT
 
 ## Functions
+### initialize(string memory _name, string memory _symbol, address _governanceContract)
+
+Initializes the TAT token contract.
+
+- `_name`: The name of the TAT token.
+- `_symbol`: The symbol of the TAT token.
+- `_governanceContract`: Address of the TreasureNet governance contract.
 
 ### \_beforeTokenTransfer(address from,address to,uint256 amount)
 

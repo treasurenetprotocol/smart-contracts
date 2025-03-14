@@ -11,6 +11,7 @@ import "./IGovernance.sol";
 import "./IParameterInfo.sol";
 import "./IRoles.sol";
 import "../Treasure/interfaces/IProducer.sol";
+import "./ICrosschainTokens.sol";
 
 /// @title Multisig contract
 /// @author bjwswang
@@ -27,6 +28,7 @@ contract MulSig is Initializable, OwnableUpgradeable {
     IGovernance private _governance;
     IParameterInfo private _parameterInfo;
     IRoles private _roles;
+    ICrosschainTokens private _crosschainTokens;
 
     // Proposals:
     // - Manage manager
@@ -34,13 +36,14 @@ contract MulSig is Initializable, OwnableUpgradeable {
     // - Manage platform config
     // - Manage discount config
     // - Manage mineral types
+    // - Manage crosschain token
     struct proposal {
         address proposer;
         string name;
         address _add;
         uint256 value;
         IParameterInfo.PriceDiscountConfig data;
-        uint256 _type; // 1: adminPermission 2: addResource 3: dataConfig 4: discountConfig 5: registerDApp
+        uint256 _type; // 1: adminPermission 2: addResource 3: dataConfig 4: discountConfig 5: registerDApp 6: setCrosschainToken
         uint8 signatureCount;
         uint256 excuteTime;
         address producer;
@@ -49,28 +52,43 @@ contract MulSig is Initializable, OwnableUpgradeable {
 
         string treasureKind;
         address payee;
+        string token;
+        address sourceERC20;
+        address sourceCrosschain;
+        uint256 sourceChainId;
+        address targetERC20;
+        address targetCrosschain;
+        uint256 targetChainId;
+        uint256 fee;
+        uint256 chainId;
     }
+
+    uint256 constant PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN = 6;
 
     /// @dev Used for the initialization of the Mulsig contract
     /// @param _daoContract DAO contract address
     /// @param _governanceContract Governance contract address
     /// @param _roleContract Role management contract address
     /// @param _parameterInfoContract Parameter management contract address
+    /// @param _crosschainTokensContract CrosschainTokens contract address
+    /// @param _confirmation Confirmation duration in seconds
     function initialize(
         address _daoContract,
         address _governanceContract,
         address _roleContract,
         address _parameterInfoContract,
+        address _crosschainTokensContract,
         uint256 _confirmation
     ) public initializer {
         __Ownable_init();
 
-        confirmDuration = _confirmation * 1 minutes;
+        confirmDuration = _confirmation * 1 seconds;
 
         _dao = IDAO(_daoContract);
         _governance = IGovernance(_governanceContract);
         _parameterInfo = IParameterInfo(_parameterInfoContract);
         _roles = IRoles(_roleContract);
+        _crosschainTokens = ICrosschainTokens(_crosschainTokensContract);
     }
 
     modifier onlyDAO() {
@@ -204,7 +222,7 @@ contract MulSig is Initializable, OwnableUpgradeable {
     ///         uint256 API;
     ///         uint256 sulphur;
     ///         uint256[4] discount;
-    ///       }         
+    ///       }
     /// @param b1 API data
     /// @param b2 sulphur acidity data
     /// @param b3 discount[0]
@@ -235,6 +253,39 @@ contract MulSig is Initializable, OwnableUpgradeable {
 
         emit SetDiscountConfig(proposalID, msg.sender, kk.data);
 
+        return true;
+    }
+
+    event SetCrosschainTokenProposed(uint256 proposalId, address proposer, string token);
+
+    function proposeToSetCrosschainToken(
+        string memory token,
+        address sourceERC20address,
+        address sourceCrosschainAddress,
+        uint256 sourcechainid,
+        address targetERC20address,
+        address targetCrosschainAddress,
+        uint256 targetchainid,
+        uint256 fee,
+        uint256 chainId
+    ) public onlyFoundationManager returns (bool) {
+        uint256 proposalID = proposalIDx++;
+        proposal storage kk = proposals[proposalID];
+        kk.proposer = msg.sender;
+        kk.token = token;
+        kk.sourceERC20 = sourceERC20address;
+        kk.sourceCrosschain = sourceCrosschainAddress;
+        kk.sourceChainId = sourcechainid;
+        kk.targetERC20 = targetERC20address;
+        kk.targetCrosschain = targetCrosschainAddress;
+        kk.targetChainId = targetchainid;
+        kk.fee = fee;
+        kk.chainId = chainId;
+        kk._type = PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN;
+        kk.signatureCount = 0;
+        pendingProposals.push(proposalID);
+
+        emit SetCrosschainTokenProposed(proposalID, msg.sender, token);
         return true;
     }
 
@@ -272,54 +323,70 @@ contract MulSig is Initializable, OwnableUpgradeable {
 /// @dev Executed by the FoundationManager for a specific proposal (with completed voting)
 /// @param _proposalId The ID of the corresponding proposal
 /// @return bool Whether the request was successful
-function executeProposal(uint256 _proposalId) public onlyFoundationManager returns (bool) {
-    proposal storage pro = proposals[_proposalId];
-    // Ensure the execution time has been reached
-    require(pro.excuteTime <= block.timestamp, "executeTime not meet");
+    function executeProposal(uint256 _proposalId) public onlyFoundationManager returns (bool) {
+        proposal storage pro = proposals[_proposalId];
+        // Ensure the execution time has been reached
+        require(pro.excuteTime <= block.timestamp, "executeTime not meet");
 
-    if (pro._type == 1) {
-        // Role management: grant or revoke Foundation Manager role
-        if (keccak256(bytes(pro.name)) == keccak256(bytes("FMD"))) {
-            _roles.revokeRole(FOUNDATION_MANAGER, pro._add);
-        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FMA"))) {
-            _roles.grantRole(FOUNDATION_MANAGER, pro._add);
+        if (pro._type == 1) {
+            // Role management: grant or revoke Foundation Manager role
+            if (keccak256(bytes(pro.name)) == keccak256(bytes("FMD"))) {
+                _roles.revokeRole(FOUNDATION_MANAGER, pro._add);
+            } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FMA"))) {
+                _roles.grantRole(FOUNDATION_MANAGER, pro._add);
+            }
+            // Role management: grant or revoke Feeder role
+            if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
+                _roles.revokeRole(FEEDER, pro._add);
+            } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
+                _roles.grantRole(FEEDER, pro._add);
+            }
+        } else if (pro._type == 2) {
+            // Treasury management: add a new treasure
+            _governance.addTreasure(pro.name, pro.producer, pro.productionData);
+        } else if (pro._type == 3) {
+            // Update platform configuration parameters
+            _parameterInfo.setPlatformConfig(pro.name, pro.value);
+        } else if (pro._type == 4) {
+            // Update price discount configuration
+            _parameterInfo.setPriceDiscountConfig(
+                pro.data.API,
+                pro.data.sulphur,
+                pro.data.discount[0],
+                pro.data.discount[1],
+                pro.data.discount[2],
+                pro.data.discount[3]
+            );
+        } else if (pro._type == 5) {
+            // Register DApp connection for a producer
+            (address producerAddr,) = _governance.getTreasureByKind(pro.treasureKind);
+            require(producerAddr != address(0), "treasure not found with proposal's treasure kind");
+            IProducer _producer = IProducer(producerAddr);
+            _producer.registerDAppConnect(pro.name, pro.payee);
+        } else if (pro._type == PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN) {
+            // 检查 _crosschainTokens 是否已初始化
+            require(address(_crosschainTokens) != address(0), "CrosschainTokens not initialized");
+
+            // 调用 CrosschainTokens 合约的 setCrosschainToken 函数
+            _crosschainTokens.setCrosschainToken(
+                pro.token,
+                pro.sourceERC20,
+                pro.sourceCrosschain,
+                pro.sourceChainId,
+                pro.targetERC20,
+                pro.targetCrosschain,
+                pro.targetChainId,
+                pro.fee,
+                pro.chainId
+            );
         }
-        // Role management: grant or revoke Feeder role
-        if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
-            _roles.revokeRole(FEEDER, pro._add);
-        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
-            _roles.grantRole(FEEDER, pro._add);
-        }
-    } else if (pro._type == 2) {
-        // Treasury management: add a new treasure
-        _governance.addTreasure(pro.name, pro.producer, pro.productionData);
-    } else if (pro._type == 3) {
-        // Update platform configuration parameters
-        _parameterInfo.setPlatformConfig(pro.name, pro.value);
-    } else if (pro._type == 4) {
-        // Update price discount configuration
-        _parameterInfo.setPriceDiscountConfig(
-            pro.data.API,
-            pro.data.sulphur,
-            pro.data.discount[0],
-            pro.data.discount[1],
-            pro.data.discount[2],
-            pro.data.discount[3]
-        );
-    } else if (pro._type == 5) {
-        // Register DApp connection for a producer
-        (address producerAddr,) = _governance.getTreasureByKind(pro.treasureKind);
-        require(producerAddr != address(0), "treasure not found with proposal's treasure kind");
-        IProducer _producer = IProducer(producerAddr);
-        _producer.registerDAppConnect(pro.name, pro.payee);
+        // Remove the executed proposal from storage
+        deleteProposals(_proposalId);
+
+        emit ProposalExecuted(_proposalId);
+
+        return true;
     }
-    // Remove the executed proposal from storage
-    deleteProposals(_proposalId);
-
-    emit ProposalExecuted(_proposalId);
-
-    return true;
-}
 
     struct ProposalResponse {
         string name;
@@ -384,5 +451,15 @@ function executeProposal(uint256 _proposalId) public onlyFoundationManager retur
             pendingProposals.pop();
             delete proposals[_proposalId];
         }
+    }
+
+    /// @dev Get the number of signatures for a proposal
+    function getSignatureCount(uint256 _proposalId) public view returns (uint8) {
+        return proposals[_proposalId].signatureCount;
+    }
+
+    /// @dev Check if an address has already signed a proposal
+    function hasAlreadySigned(uint256 _proposalId, address _signer) public view returns (bool) {
+        return proposals[_proposalId].signatures[_signer] == 1;
     }
 }

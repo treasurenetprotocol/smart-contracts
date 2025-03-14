@@ -69,4 +69,3 @@ Gets the discount information based on API and sulphur values.
 - `_sulphur`: Sulphur value
 
 - `uint256`: Discount parameter
-

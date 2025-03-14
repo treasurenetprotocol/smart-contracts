@@ -16,6 +16,10 @@ const Governance = artifacts.require("Governance");
 const Oracle = artifacts.require("Oracle");
 const TAT = artifacts.require("TAT");
 
+const CrosschainTokens = artifacts.require('CrosschainTokens');
+const CrosschainBridge = artifacts.require('CrosschainBridge');
+const TCash = artifacts.require('TCash');
+
 const {deployProxy} = require('@openzeppelin/truffle-upgrades');
 
 module.exports = async function (deployer, network, accounts) {
@@ -25,6 +29,7 @@ module.exports = async function (deployer, network, accounts) {
         }
         else {
             const dao = await deployProxy(DAO, ["DAO", 2, 10], {deployer});
+
             const oilProducer = await deployProxy(OilProducer, {initializer: false}, {deployer});
             const oilData = await deployProxy(OilData, {initializer: false}, {deployer});
             const gasProducer = await deployProxy(GasProducer, {initializer: false}, {deployer});
@@ -37,6 +42,11 @@ module.exports = async function (deployer, network, accounts) {
             const mulSig = await deployProxy(MulSig, {initializer: false}, {deployer});
             const roles = await deployProxy(Roles, {initializer: false}, {deployer});
             const parameterInfo = await deployProxy(ParameterInfo, [mulSig.address], {deployer});
+
+            // 部署 TCash
+            const tcash = await deployProxy(TCash, [], {deployer});
+            console.log('TCash:', tcash.address);
+
             const gov = await deployProxy(Governance, [
                 dao.address,
                 mulSig.address,
@@ -47,10 +57,36 @@ module.exports = async function (deployer, network, accounts) {
                 [oilData.address, gasData.address, ethData.address, btcData.address],
             ], {deployer});
             const oracle = await deployProxy(Oracle, [roles.address], {deployer});
+
+            // 1. 先部署 CrosschainTokens，但暂时不初始化
+            const crosschainTokens = await deployProxy(CrosschainTokens,
+                ["0x0000000000000000000000000000000000000000"], // 先用零地址
+                {
+                    deployer,
+                    initializer: 'initialize'
+                }
+            );
+            console.log('CrosschainTokens:', crosschainTokens.address);
+
             const mulSigInstance = await MulSig.deployed();
-            await mulSigInstance.initialize(dao.address, gov.address, roles.address, parameterInfo.address, 2);
+            await mulSigInstance.initialize(dao.address, gov.address, roles.address, parameterInfo.address,crosschainTokens.address, 2);
+
+            // 3. 更新 CrosschainTokens 中的 MulSig 地址
+            const crosschainTokensInstance = await CrosschainTokens.at(crosschainTokens.address);
+            await crosschainTokensInstance.setMulSig(mulSig.address);
+
+            // 部署 CrosschainBridge
+            const crosschainBridge = await deployProxy(CrosschainBridge,
+                [crosschainTokens.address, roles.address],
+                {
+                    deployer,
+                    initializer: 'initialize'
+                }
+            );
+            console.log('CrosschainBridge:', crosschainBridge.address);
+
             const rolesInstance = await Roles.deployed();
-            await rolesInstance.initialize(mulSig.address, [deployer.options.from], [deployer.options.from], [oracle.address, deployer.options.from])
+            await rolesInstance.initialize(mulSig.address, [deployer.options.from], [deployer.options.from], [oracle.address, deployer.options.from],[crosschainBridge.address, "0xD9a1fED8642846CaB06ff168341d2556Cbad0e4a"])
 
             const tat = await deployProxy(TAT, ["TAT Token", "TAT", gov.address], {deployer});
 

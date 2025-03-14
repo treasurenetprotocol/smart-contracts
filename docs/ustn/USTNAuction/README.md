@@ -1,6 +1,11 @@
 ## USTNAuction
 
 ## Functions
+### initialize(address _rolesContract, address _ustn, address _ustnf) -> void  
+Initializes the USTNAuction contract with the required parameters.  
+- `_rolesContract`: The address of the roles management contract.  
+- `_ustn`: The address of the USTN token contract.  
+- `_ustnf`: The address of the USTN Finance contract.
 
 ### queryAuctionManager() -> address
 
