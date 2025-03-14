@@ -3,17 +3,18 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "./ICrosschainTokens.sol";
+import "./MulSig.sol";
 
 /// @title Cross-chain Token Management Contract
 /// @author qiangwei
-contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrosschainTokens {
-    // Multi-signature contract address
-    address private _mulSig;
+contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessControlUpgradeable, ICrosschainTokens {
+    // Double mapping: chainId => token => info
+    mapping(uint256 => mapping(string => CrosschainTokenInfo)) private _crosschainTokens;
 
-    // token => CrosschainTokenInfo mapping
-    mapping(string => CrosschainTokenInfo) private _crosschainTokens;
+    MulSig private _mulSig;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -21,14 +22,17 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
     }
 
     /// @dev Contract initialization
-    /// @param mulSigContract Multi-signature contract address
-    function initialize(address mulSigContract) public initializer {
+    /// @param mulSigAddress MulSig contract address
+    function initialize(
+        address mulSigAddress
+    ) public initializer {
         __Ownable_init();
-        _mulSig = mulSigContract;
+        __AccessControl_init();
+        _mulSig = MulSig(mulSigAddress);
     }
 
     modifier onlyMulSig() {
-        require(_msgSender() == _mulSig, "only MulSig can call");
+        require(msg.sender == address(_mulSig), "Caller is not MulSig");
         _;
     }
 
@@ -49,6 +53,7 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
     /// @param targetCrosschainAddress Target cross-chain contract address
     /// @param targetchainid Target chain ID
     /// @param fee Transaction fee (0.01% - 100%)
+    /// @param chainId Current chain ID for storage
     function setCrosschainToken(
         string memory token,
         address sourceERC20address,
@@ -57,16 +62,12 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
         address targetERC20address,
         address targetCrosschainAddress,
         uint256 targetchainid,
-        uint256 fee
+        uint256 fee,
+        uint256 chainId
     ) external onlyMulSig {
-        // Check token length
-        require(bytes(token).length <= 10, "token length must <= 10");
-        
-        // Check fee range (0.01% - 100%)
-        require(fee >= 1 && fee <= 10000, "fee must between 0.01% and 100%");
+        require(bytes(token).length > 0, "Token name cannot be empty");
 
-        // Store cross-chain token information
-        _crosschainTokens[token] = CrosschainTokenInfo({
+        _crosschainTokens[chainId][token] = CrosschainTokenInfo({
             token: token,
             sourceERC20address: sourceERC20address,
             sourceCrosschainAddress: sourceCrosschainAddress,
@@ -76,11 +77,31 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
             targetchainid: targetchainid,
             fee: fee
         });
+
+
+        emit ICrosschainTokens.CrosschainToken(
+            token,
+            sourceERC20address,
+            sourceCrosschainAddress,
+            sourcechainid,
+            targetERC20address,
+            targetCrosschainAddress,
+            targetchainid,
+            fee,
+            chainId
+        );
     }
 
     /// @dev Get cross-chain token information
     /// @param token Token name
-    /// @return CrosschainTokenInfo Cross-chain token information
+    /// @return token Token name
+    /// @return sourceERC20address Source ERC20 address
+    /// @return sourceCrosschainAddress Source crosschain address
+    /// @return sourcechainid Source chain ID
+    /// @return targetERC20address Target ERC20 address
+    /// @return targetCrosschainAddress Target crosschain address
+    /// @return targetchainid Target chain ID
+    /// @return fee Fee amount
     function getCrosschainToken(string memory token) public view returns (
         string memory,
         address,
@@ -91,7 +112,41 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, ICrossc
         uint256,
         uint256
     ) {
-        CrosschainTokenInfo memory info = _crosschainTokens[token];
+        CrosschainTokenInfo memory info = _crosschainTokens[block.chainid][token];
+        return (
+            info.token,
+            info.sourceERC20address,
+            info.sourceCrosschainAddress,
+            info.sourcechainid,
+            info.targetERC20address,
+            info.targetCrosschainAddress,
+            info.targetchainid,
+            info.fee
+        );
+    }
+
+
+    function setMulSig(address mulSigAddress) external onlyOwner {
+        require(mulSigAddress != address(0), "Invalid MulSig address");
+        require(address(_mulSig) == address(0), "MulSig already set");
+        _mulSig = MulSig(mulSigAddress);
+    }
+
+
+    function getCrosschainTokenByChainId(
+        string memory token,
+        uint256 chainId
+    ) public view returns (
+        string memory,
+        address,
+        address,
+        uint256,
+        address,
+        address,
+        uint256,
+        uint256
+    ) {
+        CrosschainTokenInfo memory info = _crosschainTokens[chainId][token];
         return (
             info.token,
             info.sourceERC20address,
