@@ -56,7 +56,7 @@ jobs:
           if [ ! -f "foundry.toml" ]; then
             cat > foundry.toml << EOL
           [profile.default]
-          src = 'contracts'
+          src = 'contracts/TAT'
           test = 'test/foundry'
           out = 'out'
           libs = ['lib', 'node_modules']
@@ -75,7 +75,7 @@ jobs:
           mkdir -p test/foundry
 
       - name: Install Forge libraries
-        run: forge install foundry-rs/forge-std --no-commit
+        run: forge install foundry-rs/forge-std
 
       - name: Build and run Foundry tests
         run: |
