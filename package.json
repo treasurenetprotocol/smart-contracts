@@ -15,7 +15,12 @@
     "migrate:treasurenet": "truffle migrate --compile-all --network treasurenet",
     "lint": "eslint -c './.eslintrc.js' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
-    "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol"
+    "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol",
+    "setup:foundry": "./setup-foundry.sh",
+    "test:foundry": "forge test -vvv",
+    "test:foundry:gas": "forge test -vvv --gas-report",
+    "test:foundry:coverage": "forge coverage",
+    "test:all": "npm run test && npm run test:foundry"
   },
   "keywords": [],
   "author": "",

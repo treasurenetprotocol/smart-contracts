@@ -5,3 +5,13 @@ build/*
 .idea
 package-lock.json
 .env
+
+# Foundry specific
+out/
+cache/
+.gas-snapshot
+lib/
+forge-cache/
+broadcast/
+lcov.info
+coverage/

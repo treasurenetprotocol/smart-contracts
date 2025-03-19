@@ -10,15 +10,74 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  truffle-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-      - run: |
-          npm install
-          npm run ganache
-          npm run test 
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Ganache and Truffle tests
+        run: |
+          npm run ganache &
+          sleep 5
+          npm run test
+          
+  foundry-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create foundry.toml if it doesn't exist
+        run: |
+          if [ ! -f "foundry.toml" ]; then
+            cat > foundry.toml << EOL
+          [profile.default]
+          src = 'contracts'
+          test = 'test/foundry'
+          out = 'out'
+          libs = ['lib', 'node_modules']
+          solc = '0.8.10'
+          optimizer = true
+          optimizer_runs = 200
+          remappings = [
+              '@openzeppelin/=node_modules/@openzeppelin/',
+          ]
+          
+          [profile.ci]
+          verbosity = 4
+          fuzz_runs = 1000
+          EOL
+          fi
+          mkdir -p test/foundry
+
+      - name: Install Forge libraries
+        run: forge install foundry-rs/forge-std --no-commit
+
+      - name: Build and run Foundry tests
+        run: |
+          forge build --sizes
+          forge test -vvv --gas-report
