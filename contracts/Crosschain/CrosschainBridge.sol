@@ -24,9 +24,9 @@ interface IERC20TOKEN is IERC20Mintable {
 /// @author qiangwei
 /// @notice This contract handles cross-chain token transfers
 contract CrosschainBridge is
-Initializable,
-OwnableUpgradeable,
-ReentrancyGuardUpgradeable
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -112,11 +112,11 @@ ReentrancyGuardUpgradeable
 
     // Storage slot for persistence across upgrades
     bytes32 private constant CURRENT_ID_POSITION =
-    keccak256("crosschain.bridge.current.id.v1");
+        keccak256("crosschain.bridge.current.id.v1");
     bytes32 private constant LAST_CLEANED_ID_POSITION =
-    keccak256("crosschain.bridge.last.cleaned.id.v1");
+        keccak256("crosschain.bridge.last.cleaned.id.v1");
     bytes32 private constant TRANSACTION_POSITION_PREFIX =
-    keccak256("crosschain.bridge.transaction.v1.");
+        keccak256("crosschain.bridge.transaction.v1.");
 
     // Define a struct at contract level to store crosschain information
     struct CrosschainInfo {
@@ -305,7 +305,7 @@ ReentrancyGuardUpgradeable
             if (
                 // info.status == 9 && // completed
                 !info.isProcessed &&
-            block.number > info.expirationBlock + CLEANUP_BLOCKS
+                block.number > info.expirationBlock + CLEANUP_BLOCKS
             ) {
                 // Mark transaction as processed
                 info.isProcessed = true;
@@ -391,18 +391,18 @@ ReentrancyGuardUpgradeable
     function getRecord(
         uint256 id
     )
-    external
-    view
-    returns (
-        string memory token,
-        uint256 amount,
-        uint256 fee,
-        uint256 startBlock,
-        uint256 expirationBlock,
-        uint256 availableBlock,
-    // uint256 status,
-        bool isProcessed
-    )
+        external
+        view
+        returns (
+            string memory token,
+            uint256 amount,
+            uint256 fee,
+            uint256 startBlock,
+            uint256 expirationBlock,
+            uint256 availableBlock,
+            // uint256 status,
+            bool isProcessed
+        )
     {
         TransactionInfo memory info = _getTransaction(id);
         return (
@@ -412,7 +412,7 @@ ReentrancyGuardUpgradeable
             info.startBlock,
             info.expirationBlock,
             info.availableBlock,
-        // info.status,
+            // info.status,
             info.isProcessed
         );
     }
@@ -439,15 +439,15 @@ ReentrancyGuardUpgradeable
 
         return
             CrosschainInfo({
-            token: token,
-            sourceERC20address: sourceERC20address,
-            targetERC20address: targetERC20address,
-            sourcechainid: sourcechainid,
-            targetchainid: targetchainid,
-            amount: amount,
-            isSourceNative: sourceERC20address == address(0),
-            isTargetNative: targetERC20address == address(0)
-        });
+                token: token,
+                sourceERC20address: sourceERC20address,
+                targetERC20address: targetERC20address,
+                sourcechainid: sourcechainid,
+                targetchainid: targetchainid,
+                amount: amount,
+                isSourceNative: sourceERC20address == address(0),
+                isTargetNative: targetERC20address == address(0)
+            });
     }
 
     // New helper function: Handle asset transfer
@@ -522,21 +522,21 @@ ReentrancyGuardUpgradeable
 
         return
             CrossToEthInfo({
-            token: token,
-            transferAmount: transferAmount,
-            feeAmount: feeAmount,
-            sourceERC20address: sourceERC20address,
-            targetERC20address: targetERC20address,
-            sourcechainid: sourcechainid,
-            targetchainid: targetchainid,
-            availableBlock: block.number + TRUST_BLOCKS,
-            expirationBlock: block.number +
-        (
-            sourcechainid == 1
-                ? ETH_EXPIRATION_BLOCKS
-                : TN_EXPIRATION_BLOCKS
-        )
-        });
+                token: token,
+                transferAmount: transferAmount,
+                feeAmount: feeAmount,
+                sourceERC20address: sourceERC20address,
+                targetERC20address: targetERC20address,
+                sourcechainid: sourcechainid,
+                targetchainid: targetchainid,
+                availableBlock: block.number + TRUST_BLOCKS,
+                expirationBlock: block.number +
+                    (
+                        sourcechainid == 1
+                            ? ETH_EXPIRATION_BLOCKS
+                            : TN_EXPIRATION_BLOCKS
+                    )
+            });
     }
 
     // New helper function: Record transaction information
@@ -615,7 +615,7 @@ ReentrancyGuardUpgradeable
     ) external onlyOwner {
         require(to != address(0), "Invalid address");
         require(amount > 0, "Invalid amount");
-
+        
         if (token == address(0)) {
             // withdraw native token
             require(address(this).balance >= amount, "Insufficient balance");
@@ -635,7 +635,7 @@ ReentrancyGuardUpgradeable
                 revert WithdrawFailed();
             }
         }
-
+        
         emit FeeWithdrawn(token, amount, to);
     }
 }

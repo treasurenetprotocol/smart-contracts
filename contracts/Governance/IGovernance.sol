@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 interface IGovernance {
     /// @dev Used to add new Treasure assets (this method can only be called from the Multisig contract)

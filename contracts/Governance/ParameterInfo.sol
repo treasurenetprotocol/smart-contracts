@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "./IParameterInfo.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
 /// @title Platform configuration information management contract
 /// @author bjwswang
-contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
+contract ParameterInfo is Context, Initializable, OwnableUpgradeable, IParameterInfo {
     // OIL/GAS required
     PriceDiscountConfig private _priceDiscountConfig;
     mapping(string => uint256) private _platformConfig;
@@ -32,6 +32,14 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         _platformConfig["reserveRatio"] = 1000;
         _platformConfig["loanInterestRate"] = 5;
         _platformConfig["loanPledgeRate"] = 15000;
+        
+        // TCash相关参数初始化
+        _platformConfig["TCASHDIR"] = 5;         // TCash贷款日利率 (0.05%)
+        _platformConfig["TCASHMCT"] = 1200000;   // TCash预警线 (120%)
+        _platformConfig["TCASHLT"] = 1100000;    // TCash清算线 (110%)
+        _platformConfig["TCASHRC"] = 365;        // TCash还款周期 (365次)
+        _platformConfig["TCASHMLT"] = 3000;      // TCASH铸造锁定线 (30%)
+        _platformConfig["TCASHMRST"] = 11000;    // TCASH铸造恢复线 (110%)
 
         _priceDiscountConfig.API = 3110;
         _priceDiscountConfig.sulphur = 500;
@@ -47,7 +55,7 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     internal
     view
     virtual
-    override(ContextUpgradeable)
+    override(Context, ContextUpgradeable)
     returns (address)
     {
         return msg.sender;
@@ -57,7 +65,7 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     internal
     view
     virtual
-    override(ContextUpgradeable)
+    override(Context, ContextUpgradeable)
     returns (bytes calldata)
     {
         return msg.data;
@@ -70,6 +78,12 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     ///    - loanInterestRate
     ///    - loanPledgeRate
     ///    - liquidationRatio
+    ///    - TCASHDIR (TCash贷款日利率)
+    ///    - TCASHMCT (TCash预警线)
+    ///    - TCASHLT (TCash清算线)
+    ///    - TCASHRC (TCash还款周期)
+    ///    - TCASHMLT (TCASH铸造锁定线)
+    ///    - TCASHMRST (TCASH铸造恢复线)
     /// @param amount Parameter value
     /// @return bool Whether the setting was successful
     function setPlatformConfig(string memory key, uint256 amount)
@@ -92,6 +106,26 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         } else if (keccak256(bytes(key)) == keccak256(bytes("liquidationRatio"))) {
             require(9000 <= amount && amount <= 9900, "overflow");
             liquidationRatio = amount;
+        } 
+        // TCash相关参数设置
+        else if (keccak256(bytes(key)) == keccak256(bytes("TCASHDIR"))) {
+            require(0 < amount && amount <= 1000, "Invalid interest rate");
+            _platformConfig[key] = amount;
+        } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHMCT"))) {
+            require(1000000 < amount && amount <= 2000000, "Invalid margin call threshold");
+            _platformConfig[key] = amount;
+        } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHLT"))) {
+            require(1000000 < amount && amount <= _platformConfig["TCASHMCT"], "Invalid liquidation threshold");
+            _platformConfig[key] = amount;
+        } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHRC"))) {
+            require(0 < amount && amount <= 1000, "Invalid repayment cycle");
+            _platformConfig[key] = amount;
+        } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHMLT"))) {
+            require(0 < amount && amount <= 10000, "Invalid mint lock threshold");
+            _platformConfig[key] = amount;
+        } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHMRST"))) {
+            require(10000 < amount && amount <= 20000, "Invalid mint reset threshold");
+            _platformConfig[key] = amount;
         } else {
             revert("not support");
         }
@@ -121,6 +155,31 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     }
     function getUSTNLoanInterestRate() public view returns (uint256){
         return _platformConfig["loanInterestRate"];
+    }
+    
+    // TCash相关参数便捷查询接口
+    function getTCashDailyInterestRate() public view returns (uint256) {
+        return _platformConfig["TCASHDIR"];
+    }
+    
+    function getTCashMarginCallThreshold() public view returns (uint256) {
+        return _platformConfig["TCASHMCT"];
+    }
+    
+    function getTCashLiquidationThreshold() public view returns (uint256) {
+        return _platformConfig["TCASHLT"];
+    }
+    
+    function getTCashRepaymentCycle() public view returns (uint256) {
+        return _platformConfig["TCASHRC"];
+    }
+
+    function getTCashMintLockThreshold() public view returns (uint256) {
+        return _platformConfig["TCASHMLT"];
+    }
+    
+    function getTCashMintResetThreshold() public view returns (uint256) {
+        return _platformConfig["TCASHMRST"];
     }
 
     /// @dev Set asset discount configuration information

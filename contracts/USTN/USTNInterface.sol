@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 interface USTNInterface{
     // Allows a bidder to place a bid and deduct the corresponding cost from their balance

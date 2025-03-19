@@ -7,7 +7,7 @@ interface ICrosschainTokens {
     /// @dev Cross-chain token information structure
     struct CrosschainTokenInfo {
         string token;
-        address sourceERC20address;
+        address sourceERC20address; 
         address sourceCrosschainAddress;
         uint256 sourcechainid;
         address targetERC20address;

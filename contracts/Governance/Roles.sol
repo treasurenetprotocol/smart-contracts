@@ -91,12 +91,12 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
         return _CROSSCHAIN_SENDER;
     }
 
-    function getRoleMemberArray(bytes32 role) external view returns (address[] memory) {
-        uint256 count = getRoleMemberCount(role);
-        address[] memory members = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            members[i] = getRoleMember(role, i);
-        }
-        return members;
-    }
+   function getRoleMemberArray(bytes32 role) external view returns (address[] memory) {
+       uint256 count = getRoleMemberCount(role);
+       address[] memory members = new address[](count);
+       for (uint256 i = 0; i < count; i++) {
+           members[i] = getRoleMember(role, i);
+       }
+       return members;
+   }
 }
