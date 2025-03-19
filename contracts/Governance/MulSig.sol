@@ -222,7 +222,7 @@ contract MulSig is Initializable, OwnableUpgradeable {
     ///         uint256 API;
     ///         uint256 sulphur;
     ///         uint256[4] discount;
-    ///       }
+    ///       }         
     /// @param b1 API data
     /// @param b2 sulphur acidity data
     /// @param b3 discount[0]
@@ -323,70 +323,70 @@ contract MulSig is Initializable, OwnableUpgradeable {
 /// @dev Executed by the FoundationManager for a specific proposal (with completed voting)
 /// @param _proposalId The ID of the corresponding proposal
 /// @return bool Whether the request was successful
-    function executeProposal(uint256 _proposalId) public onlyFoundationManager returns (bool) {
-        proposal storage pro = proposals[_proposalId];
-        // Ensure the execution time has been reached
-        require(pro.excuteTime <= block.timestamp, "executeTime not meet");
+function executeProposal(uint256 _proposalId) public onlyFoundationManager returns (bool) {
+    proposal storage pro = proposals[_proposalId];
+    // Ensure the execution time has been reached
+    require(pro.excuteTime <= block.timestamp, "executeTime not meet");
 
-        if (pro._type == 1) {
-            // Role management: grant or revoke Foundation Manager role
-            if (keccak256(bytes(pro.name)) == keccak256(bytes("FMD"))) {
-                _roles.revokeRole(FOUNDATION_MANAGER, pro._add);
-            } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FMA"))) {
-                _roles.grantRole(FOUNDATION_MANAGER, pro._add);
-            }
-            // Role management: grant or revoke Feeder role
-            if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
-                _roles.revokeRole(FEEDER, pro._add);
-            } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
-                _roles.grantRole(FEEDER, pro._add);
-            }
-        } else if (pro._type == 2) {
-            // Treasury management: add a new treasure
-            _governance.addTreasure(pro.name, pro.producer, pro.productionData);
-        } else if (pro._type == 3) {
-            // Update platform configuration parameters
-            _parameterInfo.setPlatformConfig(pro.name, pro.value);
-        } else if (pro._type == 4) {
-            // Update price discount configuration
-            _parameterInfo.setPriceDiscountConfig(
-                pro.data.API,
-                pro.data.sulphur,
-                pro.data.discount[0],
-                pro.data.discount[1],
-                pro.data.discount[2],
-                pro.data.discount[3]
-            );
-        } else if (pro._type == 5) {
-            // Register DApp connection for a producer
-            (address producerAddr,) = _governance.getTreasureByKind(pro.treasureKind);
-            require(producerAddr != address(0), "treasure not found with proposal's treasure kind");
-            IProducer _producer = IProducer(producerAddr);
-            _producer.registerDAppConnect(pro.name, pro.payee);
-        } else if (pro._type == PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN) {
-            // 检查 _crosschainTokens 是否已初始化
-            require(address(_crosschainTokens) != address(0), "CrosschainTokens not initialized");
-
-            // 调用 CrosschainTokens 合约的 setCrosschainToken 函数
-            _crosschainTokens.setCrosschainToken(
-                pro.token,
-                pro.sourceERC20,
-                pro.sourceCrosschain,
-                pro.sourceChainId,
-                pro.targetERC20,
-                pro.targetCrosschain,
-                pro.targetChainId,
-                pro.fee,
-                pro.chainId
-            );
+    if (pro._type == 1) {
+        // Role management: grant or revoke Foundation Manager role
+        if (keccak256(bytes(pro.name)) == keccak256(bytes("FMD"))) {
+            _roles.revokeRole(FOUNDATION_MANAGER, pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FMA"))) {
+            _roles.grantRole(FOUNDATION_MANAGER, pro._add);
         }
-        // Remove the executed proposal from storage
-        deleteProposals(_proposalId);
-
-        emit ProposalExecuted(_proposalId);
-
-        return true;
+        // Role management: grant or revoke Feeder role
+        if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
+            _roles.revokeRole(FEEDER, pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
+            _roles.grantRole(FEEDER, pro._add);
+        }
+    } else if (pro._type == 2) {
+        // Treasury management: add a new treasure
+        _governance.addTreasure(pro.name, pro.producer, pro.productionData);
+    } else if (pro._type == 3) {
+        // Update platform configuration parameters
+        _parameterInfo.setPlatformConfig(pro.name, pro.value);
+    } else if (pro._type == 4) {
+        // Update price discount configuration
+        _parameterInfo.setPriceDiscountConfig(
+            pro.data.API,
+            pro.data.sulphur,
+            pro.data.discount[0],
+            pro.data.discount[1],
+            pro.data.discount[2],
+            pro.data.discount[3]
+        );
+    } else if (pro._type == 5) {
+        // Register DApp connection for a producer
+        (address producerAddr,) = _governance.getTreasureByKind(pro.treasureKind);
+        require(producerAddr != address(0), "treasure not found with proposal's treasure kind");
+        IProducer _producer = IProducer(producerAddr);
+        _producer.registerDAppConnect(pro.name, pro.payee);
+    } else if (pro._type == PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN) {
+        // 检查 _crosschainTokens 是否已初始化
+        require(address(_crosschainTokens) != address(0), "CrosschainTokens not initialized");
+        
+        // 调用 CrosschainTokens 合约的 setCrosschainToken 函数
+        _crosschainTokens.setCrosschainToken(
+            pro.token,
+            pro.sourceERC20,
+            pro.sourceCrosschain,
+            pro.sourceChainId,
+            pro.targetERC20,
+            pro.targetCrosschain,
+            pro.targetChainId,
+            pro.fee,
+            pro.chainId
+        );
     }
+    // Remove the executed proposal from storage
+    deleteProposals(_proposalId);
+
+    emit ProposalExecuted(_proposalId);
+
+    return true;
+}
 
     struct ProposalResponse {
         string name;

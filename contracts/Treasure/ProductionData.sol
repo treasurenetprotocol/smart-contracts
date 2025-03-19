@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "../TAT/ITAT.sol";
 import "../Governance/IRoles.sol";

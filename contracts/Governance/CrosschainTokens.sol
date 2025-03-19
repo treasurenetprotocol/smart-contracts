@@ -63,10 +63,10 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         address targetCrosschainAddress,
         uint256 targetchainid,
         uint256 fee,
-        uint256 chainId
+        uint256 chainId    
     ) external onlyMulSig {
         require(bytes(token).length > 0, "Token name cannot be empty");
-
+        
         _crosschainTokens[chainId][token] = CrosschainTokenInfo({
             token: token,
             sourceERC20address: sourceERC20address,
@@ -77,7 +77,7 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
             targetchainid: targetchainid,
             fee: fee
         });
-
+        
 
         emit ICrosschainTokens.CrosschainToken(
             token,
@@ -125,14 +125,14 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         );
     }
 
-
+ 
     function setMulSig(address mulSigAddress) external onlyOwner {
         require(mulSigAddress != address(0), "Invalid MulSig address");
         require(address(_mulSig) == address(0), "MulSig already set");
         _mulSig = MulSig(mulSigAddress);
     }
 
-
+   
     function getCrosschainTokenByChainId(
         string memory token,
         uint256 chainId

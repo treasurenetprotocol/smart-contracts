@@ -6,7 +6,7 @@ import "../Oracle/IOracle.sol";
 import "../Governance/IRoles.sol";
 import "../Governance/IParameterInfo.sol";
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 interface USTNAInterface {
     struct auctions {
@@ -328,5 +328,22 @@ contract USTNFinance is Initializable, OwnableUpgradeable {
 
     function GetInitializeData() public pure returns (bytes memory){
         return abi.encodeWithSignature("initialize()");
+    }
+
+    // 在 USTNFinance 合约中添加函数来调用 USTN 合约
+    function callAddTotalSupply(uint256 amount) external {
+        USTNget.addTotalSupply(amount);
+    }
+
+    function callReduceTotalSupply(uint256 amount) external {
+        USTNget.reduceTotalSupply(amount);
+    }
+
+    function callAddBalance(address user, uint256 amount) external {
+        USTNget.addBalance(user, amount);
+    }
+
+    function callReduceBalance(address user, uint256 amount) external {
+        USTNget.reduceBalance(user, amount);
     }
 }

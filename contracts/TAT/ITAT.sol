@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "./IStake.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
@@ -25,6 +25,26 @@ interface ITAT is IERC20Upgradeable,IStake {
         address to,
         uint256 amount
     ) external;
+
+    /**
+     * @dev 设置用户TAT铸造记录
+     * @param account 用户地址
+     * @param amount 铸造代币数量
+     * @param month 年月(格式YYYYMM)
+     */
+    function setTATRecord(
+        address account,
+        uint256 amount,
+        uint256 month
+    ) external;
+    
+    /**
+     * @dev 获取用户TAT铸造记录
+     * @param account 用户地址
+     * @return months 记录的年月数组
+     * @return amounts 对应的铸造金额数组
+     */
+    function getTATRecord(address account) external view returns (uint256[] memory months, uint256[] memory amounts);
 
     // Check if the token contract is paused
     function paused() external returns (bool);

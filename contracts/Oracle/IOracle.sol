@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 interface IOracle {
     /// @notice Creates a request to the Oracle contract
@@ -37,4 +37,37 @@ interface IOracle {
     /// @param _currencyKind The identifier of the currency
     /// @return uint256 The value of the currency
     function getCurrencyValue(bytes32 _currencyKind) external view returns(uint256);
+    
+    /// @notice 获取TCASH铸造状态
+    /// @dev 返回当前TCASH是否允许铸造
+    /// @return bool 当前TCASH铸造状态(true:允许, false:禁止)
+    function getTCashMintStatus() external view returns(bool);
+    
+    /// @notice 设置TCASH铸造状态
+    /// @dev 仅限Feeder角色调用，用于设置TCASH铸造状态
+    /// @param _status TCASH铸造状态(true:允许, false:禁止)
+    function setTCashMintStatus(bool _status) external;
+    
+    /// @notice 获取TCASH铸造锁定价格
+    /// @dev 返回当前TCASH铸造锁定价格，0表示未锁定
+    /// @return uint256 TCASH铸造锁定价格
+    function getTCashMintLockPrice() external view returns(uint256);
+    
+    /// @notice 设置TCASH铸造锁定价格
+    /// @dev 仅限Feeder角色调用，用于设置TCASH铸造锁定价格
+    /// @param _price TCASH铸造锁定价格(0:未锁定)
+    function setTCashMintLockPrice(uint256 _price) external;
+    
+    /// @notice 检查并更新TCASH铸造状态
+    /// @dev 由Feeder调用，检查价格波动并更新TCASH铸造状态
+    /// @param _currentPrice 当前TCASH价格
+    /// @param _previousPrice 先前记录的TCASH价格(一小时前)
+    /// @param _lockThreshold 锁定阈值(如3000表示30%)
+    /// @param _resetThreshold 恢复阈值(如11000表示110%)
+    function checkAndUpdateTCashMintStatus(
+        uint256 _currentPrice, 
+        uint256 _previousPrice, 
+        uint256 _lockThreshold, 
+        uint256 _resetThreshold
+    ) external;
 }

@@ -4,7 +4,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./USTNInterface.sol";
 import "../Governance/IRoles.sol";
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 interface USTNFInterface{
     function auctionOver(address bider, uint tokens, uint a, uint b)external returns(bool);
