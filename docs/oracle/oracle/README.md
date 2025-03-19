@@ -2,6 +2,13 @@
 
 ## Functions
 
+### initialize(address _roleContract)
+
+Initializes the Oracle contract.
+
+- `_roleContract`: Address of the role management contract.
+
+
 ### createOracleRequest(address \_callbackAddress,bytes4 \_callbackFunctionId,uint256 \_nonce) -> bytes32
 
 Creates a new Oracle request.
