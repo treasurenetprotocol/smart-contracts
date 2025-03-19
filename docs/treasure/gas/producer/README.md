@@ -2,6 +2,15 @@
 
 ## Functions
 
+### initialize(address _mulSigContract, address _roleContract, string memory _treasureKind, address _productionDataContract, string[] memory _dappNames, address[] memory _payees) -> void  
+Initializes the GasProducer contract with the required parameters.  
+- `_mulSigContract`: Address of the multi-signature contract.  
+- `_roleContract`: Address of the roles contract.  
+- `_treasureKind`: The type of treasure this producer handles.  
+- `_productionDataContract`: Address of the production data contract.  
+- `_dappNames`: Array of names of dapps.  
+- `_payees`: Array of payee addresses.
+
 ### addProducer(bytes32 _uniqueId, ProducerCore _producer)
 
 Adds a new producer to the blockchain

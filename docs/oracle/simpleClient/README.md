@@ -1,7 +1,12 @@
 # SimpleClient
 
 ## Functions
+### initialize(address _oracleContract, address _rolesContract)
 
+Initializes the SimpleClient contract with the specified Oracle and Roles contract addresses.
+
+- `_oracleContract`: Address of the Oracle contract.
+- `_rolesContract`: Address of the Roles contract.
 ### oracle() -> address
 
 Returns the address of the Oracle contract.

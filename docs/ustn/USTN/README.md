@@ -1,6 +1,12 @@
 ## USTN
 
 ## Functions
+### initialize(address _rolesContract, address _oracleContract, address _ustnAuctionContract, address _ustnFinanceContract) -> void  
+Initializes the USTN contract with the required parameters.  
+- `_rolesContract`: The address of the roles contract.  
+- `_oracleContract`: The address of the Oracle contract.  
+- `_ustnAuctionContract`: The address of the USTNAuction contract.  
+- `_ustnFinanceContract`: The address of the USTN Finance contract.
 
 ### totalSupply() -> uint256
 
