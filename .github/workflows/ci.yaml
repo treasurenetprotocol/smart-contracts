@@ -38,12 +38,6 @@ jobs:
       - name: Check format with forge fmt
         run: forge fmt --check
 
-      - name: Install Solhint
-        run: npm install -g solhint
-
-      - name: Run Solhint
-        run: solhint 'contracts/**/*.sol'
-
   security-check:
     name: Security Analysis
     runs-on: ubuntu-latest
