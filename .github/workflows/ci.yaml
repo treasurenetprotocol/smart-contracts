@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 jobs:
-  foundry-test:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -34,7 +34,7 @@ jobs:
 
       # Cache Foundry artifacts between runs
       - name: Cache Foundry build artifacts
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             out/
