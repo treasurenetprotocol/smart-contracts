@@ -57,6 +57,11 @@ jobs:
 
       - name: Install Forge libraries
         run: forge install foundry-rs/forge-std
+      
+      - name: Run TruffleHog Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
 
       - name: Setup Python
         uses: actions/setup-python@v4
