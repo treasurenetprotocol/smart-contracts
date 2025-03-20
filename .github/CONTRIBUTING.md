@@ -19,8 +19,26 @@ Thank you for your interest in contributing to the TreasureNet smart contracts! 
    ```
    npm run setup:foundry
    ```
+4. Set up Git hooks (for automatic linting):
+   ```
+   npm run prepare
+   ```
 
 ## Development Workflow
+
+### Code Quality
+The repository uses Git hooks to ensure code quality:
+- **Pre-commit hook**: Automatically formats Solidity files using `forge fmt`
+
+You can manually run the formatter with:
+```
+npm run lint:fix  # Format all Solidity files
+```
+
+Or check for formatting issues without fixing them:
+```
+npm run lint  # Check formatting without modifying files
+```
 
 ### Branching Strategy
 - `main`: The production branch, containing the deployed code
