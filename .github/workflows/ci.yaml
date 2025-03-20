@@ -12,18 +12,20 @@ permissions:
   id-token: write
 
 jobs:
-  coverage:
-    name: Coverage Report
-    uses: treasurenetprotocol/reusable-workflows/.github/workflows/reusable-forge-code-coverage.yml@main
-    with:
-      exclude_paths: ""
-  test:
+  setup:
+    name: Setup Dependencies
     runs-on: ubuntu-latest
+    outputs:
+      deps_cache_key: ${{ steps.cache_key.outputs.key }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Generate cache key
+        id: cache_key
+        run: echo "key=${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json', '**/foundry.toml') }}" >> $GITHUB_OUTPUT
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -36,23 +38,56 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install NPM dependencies
         run: npm install
 
-      # Cache Foundry artifacts between runs
-      - name: Cache Foundry build artifacts
+      - name: Install Forge libraries
+        run: forge install foundry-rs/forge-std --no-commit
+
+      # Cache Foundry artifacts for all jobs
+      - name: Cache Foundry artifacts
         uses: actions/cache@v4
         with:
           path: |
             out/
             cache/
             lib/
-          key: ${{ runner.os }}-foundry-${{ hashFiles('foundry.toml') }}-${{ hashFiles('contracts/TAT/**/*.sol') }}
+            node_modules/
+          key: ${{ steps.cache_key.outputs.key }}
 
-      - name: Install Forge libraries
-        run: forge install foundry-rs/forge-std
+  lint:
+    needs: [setup]
+    uses: ./.github/workflows/lint.yml
+    with:
+      deps_cache_key: ${{ needs.setup.outputs.deps_cache_key }}
 
-      - name: Build and run Foundry tests
-        run: |
-          forge build --sizes
-          forge test -vvv --gas-report
+  build:
+    needs: [setup]
+    uses: ./.github/workflows/build.yml
+    with:
+      deps_cache_key: ${{ needs.setup.outputs.deps_cache_key }}
+
+  security-check:
+    needs: [build]
+    uses: ./.github/workflows/security.yml
+    with:
+      deps_cache_key: ${{ needs.setup.outputs.deps_cache_key }}
+
+  test:
+    needs: [build]
+    uses: ./.github/workflows/test.yml
+    with:
+      deps_cache_key: ${{ needs.setup.outputs.deps_cache_key }}
+
+  coverage:
+    needs: [build]
+    uses: ./.github/workflows/coverage.yml
+    with:
+      deps_cache_key: ${{ needs.setup.outputs.deps_cache_key }}
+
+  deployment-dry-run:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    needs: [test, coverage, security-check]
+    uses: ./.github/workflows/deployment.yml
+    with:
+      deps_cache_key: ${{ needs.setup.outputs.deps_cache_key }}

@@ -95,7 +95,7 @@ abstract contract Producer is Initializable, IProducer, Share {
 
     // TODO: implement below functions
 
-    function _beforeAddProducer(bytes32 _uniqueId, ProducerCore memory _producer)
+    function _beforeAddProducer(bytes32 _uniqueId, ProducerCore memory /* _producer */)
     internal
     virtual
     {

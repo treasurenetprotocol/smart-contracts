@@ -1,0 +1,82 @@
+name: Generate Coverage
+
+on:
+  workflow_call:
+    inputs:
+      deps_cache_key:
+        required: true
+        type: string
+
+jobs:
+  coverage:
+    name: Generate Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            out/
+            cache/
+            lib/
+            node_modules/
+          key: ${{ inputs.deps_cache_key }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: artifacts/
+
+      - name: Copy build artifacts
+        run: cp -r artifacts/out ./out
+
+      - name: Install LCOV
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Cache LCOV data
+        uses: actions/cache@v4
+        with:
+          path: |
+            coverage/
+            lcov.info
+          key: ${{ runner.os }}-lcov-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-lcov-
+
+      - name: Generate coverage report
+        run: |
+          # Generate coverage with source-based approach
+          forge coverage --report lcov --report-file lcov.info
+          
+          # Check if we have valid records
+          if ! lcov --summary lcov.info > /dev/null 2>&1; then
+            echo "No valid records found in lcov.info, trying alternative approach"
+            # Try alternative approach
+            FOUNDRY_PROFILE=coverage forge coverage --report lcov
+          fi
+          
+          # Create directory for the report
+          mkdir -p coverage
+          
+          # Generate HTML report with lcov, ignoring any errors
+          lcov --ignore-errors empty --summary lcov.info || true
+          genhtml --ignore-errors source lcov.info -o coverage || true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage 

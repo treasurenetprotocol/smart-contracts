@@ -1,0 +1,64 @@
+name: Build Contracts
+
+on:
+  workflow_call:
+    inputs:
+      deps_cache_key:
+        required: true
+        type: string
+    outputs:
+      artifacts_name:
+        description: "Name of the uploaded artifacts"
+        value: "build-artifacts"
+
+jobs:
+  build:
+    name: Build Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            out/
+            cache/
+            lib/
+            node_modules/
+          key: ${{ inputs.deps_cache_key }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Build contracts
+        run: forge build --sizes
+
+      - name: Create build artifacts
+        run: |
+          mkdir -p artifacts
+          cp -r out artifacts/
+
+      - name: Check contract sizes
+        run: |
+          echo "Checking contract sizes against EIP-170 limit (24KiB)..."
+          forge build --sizes | grep "Contract Size:" | awk '{print $3 " " $4}' | while read size contract; do
+            if [ $size -gt 24576 ]; then
+              echo "⚠️ Contract exceeds EIP-170 size limit: $contract ($size bytes)"
+              # Don't fail the build, just warn
+            fi
+          done
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: artifacts/
+          retention-days: 1 

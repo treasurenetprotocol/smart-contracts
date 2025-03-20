@@ -1,0 +1,52 @@
+name: Lint & Format Check
+
+on:
+  workflow_call:
+    inputs:
+      deps_cache_key:
+        required: true
+        type: string
+
+jobs:
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            out/
+            cache/
+            lib/
+            node_modules/
+          key: ${{ inputs.deps_cache_key }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Cache Solhint
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-solhint-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-solhint-
+
+      - name: Check format with forge fmt
+        run: forge fmt --check
+
+      - name: Install Solhint
+        run: npm install -g solhint
+
+      - name: Run Solhint
+        run: solhint 'contracts/**/*.sol' 

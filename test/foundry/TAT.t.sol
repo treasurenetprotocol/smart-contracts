@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.29;
 
 import "forge-std/Test.sol";
@@ -45,7 +45,7 @@ contract MockGovernance is IGovernanceMock {
         emit AddTreasure(_treasureType, _producer, _productionData);
     }
     
-    function fmThreshold() external override returns (uint256) {
+    function fmThreshold() external view override returns (uint256) {
         return threshold;
     }
     
@@ -291,7 +291,7 @@ contract TATTest is Test {
         vm.deal(user2, 10 ether);
     }
     
-    function testInitialState() public {
+    function testInitialState() public view {
         assertEq(tat.name(), "TreasureNet Asset Token");
         assertEq(tat.symbol(), "TAT");
         assertEq(tat.totalSupply(), 0);
