@@ -12,7 +12,10 @@ permissions:
 jobs:
   secrects-scanning:
     name: Secrets Scanning
-    uses: treasurenetprotocol/resuable-workflows/.github/workflows/reusable-secrets-scanning.yml@main
+    uses: treasurenetprotocol/resuable-workflows/.github/workflows/reusable-forge-code-coverage.yml@main
+    with:
+      exclude_paths: "contracts/**"
+
   test:
     runs-on: ubuntu-latest
     steps:
