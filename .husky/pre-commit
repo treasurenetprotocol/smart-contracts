@@ -1,5 +1,36 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run lint-staged to format Solidity files
-npx lint-staged
+# Locate forge executable - check common locations
+if [ -f "$HOME/.foundry/bin/forge" ]; then
+  FORGE="$HOME/.foundry/bin/forge"
+elif [ -f "$HOME/.cargo/bin/forge" ]; then
+  FORGE="$HOME/.cargo/bin/forge"
+else
+  # Try to find forge in PATH
+  FORGE=$(command -v forge || echo "")
+fi
+
+# Verify forge is available
+if [ -z "$FORGE" ] || [ ! -x "$FORGE" ]; then
+  echo "Error: forge not found. Please install Foundry or make sure it's in your PATH"
+  echo "You can install Foundry by running:"
+  echo "  curl -L https://foundry.paradigm.xyz | bash"
+  echo "  foundryup"
+  exit 1
+fi
+
+echo "Using forge at: $FORGE"
+
+# Modified lint-staged to use the specific forge path
+git diff --cached --name-only --diff-filter=ACM | grep -E '\.sol$' | xargs -I{} $FORGE fmt {} || {
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "Error: forge fmt failed with status $status"
+    echo "Try running forge fmt manually to debug the issue"
+    exit $status
+  fi
+}
+
+# Stage the formatted files
+git diff --cached --name-only --diff-filter=ACM | grep -E '\.sol$' | xargs -I{} git add {}

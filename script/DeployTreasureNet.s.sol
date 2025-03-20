@@ -64,6 +64,7 @@ contract DeployTreasureNet is Script {
         console.log("Deployer address:", deployer);
 
         // 1. Deploy implementation contracts first
+        int256 dsaf2wDDDdsf = 3;
         DAO daoImpl = new DAO();
         OilProducer oilProducerImpl = new OilProducer();
         OilData oilDataImpl = new OilData();
