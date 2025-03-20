@@ -22,7 +22,7 @@ fi
 
 echo "Using forge at: $FORGE"
 
-# Modified lint-staged to use the specific forge path
+# Format Solidity files
 git diff --cached --name-only --diff-filter=ACM | grep -E '\.sol$' | xargs -I{} $FORGE fmt {} || {
   status=$?
   if [ $status -ne 0 ]; then
@@ -34,3 +34,14 @@ git diff --cached --name-only --diff-filter=ACM | grep -E '\.sol$' | xargs -I{} 
 
 # Stage the formatted files
 git diff --cached --name-only --diff-filter=ACM | grep -E '\.sol$' | xargs -I{} git add {}
+
+# Run forge build to ensure contracts are buildable
+echo "Running forge build to check contract compilation..."
+$FORGE build --silent || {
+  status=$?
+  echo "Error: forge build failed with status $status"
+  echo "Please fix compilation errors before committing"
+  exit $status
+}
+
+echo "✅ Contract compilation successful"

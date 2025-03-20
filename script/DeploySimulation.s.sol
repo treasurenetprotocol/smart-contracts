@@ -24,39 +24,48 @@ import "../contracts/Oracle/Oracle.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeploySimulation is Script {
-    // Core contracts that we know exist
-    TAT tat;
-    OilProducer oilProducer;
-    OilData oilData;
-    GasProducer gasProducer;
-    GasData gasData;
-    EthProducer ethProducer;
-    EthData ethData;
-    BtcProducer btcProducer;
-    BtcData btcData;
-    MulSig mulSig;
-    Roles roles;
-    ParameterInfo parameterInfo;
-    Governance governance;
-    Oracle oracle;
+    // Core contract addresses
+    address public tatAddress;
+    address public oilProducerAddress;
+    address public oilDataAddress;
+    address public gasProducerAddress;
+    address public gasDataAddress;
+    address public ethProducerAddress;
+    address public ethDataAddress;
+    address public btcProducerAddress;
+    address public btcDataAddress;
+    address public mulSigAddress;
+    address public rolesAddress;
+    address public parameterInfoAddress;
+    address public governanceAddress;
+    address public oracleAddress;
 
     function deployProxy(address implementation, bytes memory data) internal returns (address) {
         return address(new ERC1967Proxy(implementation, data));
     }
 
-    function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(deployerPrivateKey);
-
-        vm.startBroadcast(deployerPrivateKey);
-
-        console.log("Deploying Simulation - Core Contracts Only");
-        console.log("Deployer address:", deployer);
-
-        // Deploy implementation contracts first
+    // Split deployment into smaller steps to avoid stack too deep error
+    function deployGovernanceContracts(address deployer) internal {
+        // Deploy implementation contracts
         MulSig mulSigImpl = new MulSig();
         Roles rolesImpl = new Roles();
         ParameterInfo parameterInfoImpl = new ParameterInfo();
+
+        // Deploy proxies
+        mulSigAddress = deployProxy(address(mulSigImpl), "");
+        console.log("MulSig deployed at:", mulSigAddress);
+
+        rolesAddress = deployProxy(address(rolesImpl), "");
+        console.log("Roles deployed at:", rolesAddress);
+
+        parameterInfoAddress = deployProxy(
+            address(parameterInfoImpl), abi.encodeWithSelector(ParameterInfo.initialize.selector, mulSigAddress)
+        );
+        console.log("ParameterInfo deployed at:", parameterInfoAddress);
+    }
+
+    function deployProducerContracts() internal {
+        // Deploy implementation contracts
         OilProducer oilProducerImpl = new OilProducer();
         OilData oilDataImpl = new OilData();
         GasProducer gasProducerImpl = new GasProducer();
@@ -65,147 +74,152 @@ contract DeploySimulation is Script {
         EthData ethDataImpl = new EthData();
         BtcProducer btcProducerImpl = new BtcProducer();
         BtcData btcDataImpl = new BtcData();
+
+        // Deploy proxies
+        oilProducerAddress = deployProxy(address(oilProducerImpl), "");
+        console.log("OilProducer deployed at:", oilProducerAddress);
+
+        oilDataAddress = deployProxy(address(oilDataImpl), "");
+        console.log("OilData deployed at:", oilDataAddress);
+
+        gasProducerAddress = deployProxy(address(gasProducerImpl), "");
+        console.log("GasProducer deployed at:", gasProducerAddress);
+
+        gasDataAddress = deployProxy(address(gasDataImpl), "");
+        console.log("GasData deployed at:", gasDataAddress);
+
+        ethProducerAddress = deployProxy(address(ethProducerImpl), "");
+        console.log("EthProducer deployed at:", ethProducerAddress);
+
+        ethDataAddress = deployProxy(address(ethDataImpl), "");
+        console.log("EthData deployed at:", ethDataAddress);
+
+        btcProducerAddress = deployProxy(address(btcProducerImpl), "");
+        console.log("BtcProducer deployed at:", btcProducerAddress);
+
+        btcDataAddress = deployProxy(address(btcDataImpl), "");
+        console.log("BtcData deployed at:", btcDataAddress);
+    }
+
+    function deployRemainingContracts() internal {
+        // Deploy implementation contracts
         Governance governanceImpl = new Governance();
         Oracle oracleImpl = new Oracle();
         TAT tatImpl = new TAT();
 
-        // Deploy core contracts with proxy
-        mulSig = MulSig(
-            deployProxy(
-                address(mulSigImpl),
-                "" // Initialize later
+        // Deploy Governance
+        governanceAddress = deployProxy(
+            address(governanceImpl),
+            abi.encodeWithSelector(
+                Governance.initialize.selector,
+                address(0), // DAO placeholder
+                mulSigAddress,
+                rolesAddress,
+                parameterInfoAddress,
+                ["OIL", "GAS", "ETH", "BTC"],
+                [oilProducerAddress, gasProducerAddress, ethProducerAddress, btcProducerAddress],
+                [oilDataAddress, gasDataAddress, ethDataAddress, btcDataAddress]
             )
         );
-        console.log("MulSig deployed at:", address(mulSig));
-
-        roles = Roles(
-            deployProxy(
-                address(rolesImpl),
-                "" // Initialize later
-            )
-        );
-        console.log("Roles deployed at:", address(roles));
-
-        parameterInfo = ParameterInfo(
-            deployProxy(
-                address(parameterInfoImpl), abi.encodeWithSelector(ParameterInfo.initialize.selector, address(mulSig))
-            )
-        );
-        console.log("ParameterInfo deployed at:", address(parameterInfo));
-
-        // Deploy producer contracts
-        oilProducer = OilProducer(
-            deployProxy(
-                address(oilProducerImpl),
-                "" // Empty data means no initialization
-            )
-        );
-        console.log("OilProducer deployed at:", address(oilProducer));
-
-        oilData = OilData(deployProxy(address(oilDataImpl), ""));
-        console.log("OilData deployed at:", address(oilData));
-
-        gasProducer = GasProducer(deployProxy(address(gasProducerImpl), ""));
-        console.log("GasProducer deployed at:", address(gasProducer));
-
-        gasData = GasData(deployProxy(address(gasDataImpl), ""));
-        console.log("GasData deployed at:", address(gasData));
-
-        ethProducer = EthProducer(deployProxy(address(ethProducerImpl), ""));
-        console.log("EthProducer deployed at:", address(ethProducer));
-
-        ethData = EthData(deployProxy(address(ethDataImpl), ""));
-        console.log("EthData deployed at:", address(ethData));
-
-        btcProducer = BtcProducer(deployProxy(address(btcProducerImpl), ""));
-        console.log("BtcProducer deployed at:", address(btcProducer));
-
-        btcData = BtcData(deployProxy(address(btcDataImpl), ""));
-        console.log("BtcData deployed at:", address(btcData));
-
-        // Deploy Governance (assume DAO isn't necessary for simulation)
-        governance = Governance(
-            deployProxy(
-                address(governanceImpl),
-                abi.encodeWithSelector(
-                    Governance.initialize.selector,
-                    address(0), // DAO placeholder
-                    address(mulSig),
-                    address(roles),
-                    address(parameterInfo),
-                    ["OIL", "GAS", "ETH", "BTC"],
-                    [address(oilProducer), address(gasProducer), address(ethProducer), address(btcProducer)],
-                    [address(oilData), address(gasData), address(ethData), address(btcData)]
-                )
-            )
-        );
-        console.log("Governance deployed at:", address(governance));
+        console.log("Governance deployed at:", governanceAddress);
 
         // Deploy Oracle
-        oracle =
-            Oracle(deployProxy(address(oracleImpl), abi.encodeWithSelector(Oracle.initialize.selector, address(roles))));
-        console.log("Oracle deployed at:", address(oracle));
+        oracleAddress =
+            deployProxy(address(oracleImpl), abi.encodeWithSelector(Oracle.initialize.selector, rolesAddress));
+        console.log("Oracle deployed at:", oracleAddress);
 
-        // Initialize MulSig with minimum parameters
-        mulSig.initialize(
+        // Deploy TAT token
+        tatAddress = deployProxy(
+            address(tatImpl), abi.encodeWithSelector(TAT.initialize.selector, "TAT Token", "TAT", governanceAddress)
+        );
+        console.log("TAT deployed at:", tatAddress);
+    }
+
+    function initializeContracts(address deployer) internal {
+        // Initialize MulSig
+        MulSig(payable(mulSigAddress)).initialize(
             address(0), // DAO placeholder
-            address(governance),
-            address(roles),
-            address(parameterInfo),
+            governanceAddress,
+            rolesAddress,
+            parameterInfoAddress,
             address(0), // CrosschainTokens placeholder
             2
         );
 
-        // Initialize Roles with minimum parameters
-        roles.initialize(
-            address(mulSig),
-            [deployer],
-            [deployer],
-            [address(oracle), deployer],
-            [address(0), address(0)] // CrosschainBridge placeholder
+        // Create arrays for Roles initialization
+        address[] memory managers = new address[](1);
+        managers[0] = deployer;
+
+        address[] memory admins = new address[](1);
+        admins[0] = deployer;
+
+        address[] memory oracles = new address[](2);
+        oracles[0] = oracleAddress;
+        oracles[1] = deployer;
+
+        address[] memory bridges = new address[](2);
+        bridges[0] = address(0);
+        bridges[1] = address(0);
+
+        // Initialize Roles
+        Roles(rolesAddress).initialize(mulSigAddress, managers, admins, oracles, bridges);
+    }
+
+    function initializeProducers() internal {
+        // Create empty arrays for Producer initialization
+        string[] memory emptyDappNames = new string[](0);
+        address[] memory emptyPayees = new address[](0);
+
+        // Initialize producer contracts
+        OilProducer(oilProducerAddress).initialize(
+            mulSigAddress, rolesAddress, "OIL", oilDataAddress, emptyDappNames, emptyPayees
         );
 
-        // Deploy TAT token
-        tat = TAT(
-            deployProxy(
-                address(tatImpl),
-                abi.encodeWithSelector(TAT.initialize.selector, "TAT Token", "TAT", address(governance))
-            )
-        );
-        console.log("TAT deployed at:", address(tat));
-
-        // Initialize producer contracts with minimum parameters
-        oilProducer.initialize(
-            address(mulSig), address(roles), "OIL", address(oilData), new address[](0), new string[](0)
+        OilData(payable(oilDataAddress)).initialize(
+            "OIL", oracleAddress, rolesAddress, parameterInfoAddress, oilProducerAddress, tatAddress
         );
 
-        oilData.initialize(
-            "OIL", address(oracle), address(roles), address(parameterInfo), address(oilProducer), address(tat)
+        GasProducer(gasProducerAddress).initialize(
+            mulSigAddress, rolesAddress, "GAS", gasDataAddress, emptyDappNames, emptyPayees
         );
 
-        gasProducer.initialize(
-            address(mulSig), address(roles), "GAS", address(gasData), new address[](0), new string[](0)
+        GasData(payable(gasDataAddress)).initialize(
+            "GAS", oracleAddress, rolesAddress, parameterInfoAddress, gasProducerAddress, tatAddress
         );
 
-        gasData.initialize(
-            "GAS", address(oracle), address(roles), address(parameterInfo), address(gasProducer), address(tat)
+        EthProducer(ethProducerAddress).initialize(
+            mulSigAddress, rolesAddress, "ETH", ethDataAddress, emptyDappNames, emptyPayees
         );
 
-        ethProducer.initialize(
-            address(mulSig), address(roles), "ETH", address(ethData), new address[](0), new string[](0)
+        EthData(payable(ethDataAddress)).initialize(
+            "ETH", oracleAddress, rolesAddress, parameterInfoAddress, ethProducerAddress, tatAddress
         );
 
-        ethData.initialize(
-            "ETH", address(oracle), address(roles), address(parameterInfo), address(ethProducer), address(tat)
+        BtcProducer(btcProducerAddress).initialize(
+            mulSigAddress, rolesAddress, "BTC", btcDataAddress, emptyDappNames, emptyPayees
         );
 
-        btcProducer.initialize(
-            address(mulSig), address(roles), "BTC", address(btcData), new address[](0), new string[](0)
+        BtcData(payable(btcDataAddress)).initialize(
+            "BTC", oracleAddress, rolesAddress, parameterInfoAddress, btcProducerAddress, tatAddress
         );
+    }
 
-        btcData.initialize(
-            "BTC", address(oracle), address(roles), address(parameterInfo), address(btcProducer), address(tat)
-        );
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
+
+        vm.startBroadcast(deployerPrivateKey);
+        console.log("Deploying Simulation - Core Contracts Only");
+        console.log("Deployer address:", deployer);
+
+        // Deploy contracts in stages to avoid stack too deep errors
+        deployGovernanceContracts(deployer);
+        deployProducerContracts();
+        deployRemainingContracts();
+
+        // Initialize contracts
+        initializeContracts(deployer);
+        initializeProducers();
 
         console.log("Deployment simulation completed successfully!");
         vm.stopBroadcast();

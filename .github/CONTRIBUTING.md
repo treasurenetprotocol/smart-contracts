@@ -124,4 +124,13 @@ PRs will be evaluated based on:
 If you discover a security vulnerability, please do NOT open an issue. Email [security@treasurenet.io](mailto:security@treasurenet.io) instead.
 
 ## License
-By contributing, you agree that your contributions will be licensed under the project's license (GPL-3.0). 
+By contributing, you agree that your contributions will be licensed under the project's license (GPL-3.0).
+
+## Pre-commit Hooks
+
+This repository uses pre-commit hooks to ensure code quality and consistency:
+
+1. **Solidity Formatting**: All Solidity files are automatically formatted using `forge fmt` before each commit.
+2. **Build Verification**: The pre-commit hook runs `forge build` to ensure all contracts compile successfully before allowing commits.
+
+If the build fails, the commit will be rejected, and you'll need to fix the compilation errors before trying again. 

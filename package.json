@@ -7,9 +7,6 @@
     "doc": "docs"
   },
   "scripts": {
-    "ganache": "./ganache/ganache.sh",
-    "test": "truffle test --network ganache",
-    "test:debug": "truffle test --network ganache --debug",
     "compile": "truffle compile --all",
     "migrate": "truffle migrate --network ganache",
     "migrate:treasurenet": "truffle migrate --compile-all --network treasurenet",
@@ -18,11 +15,13 @@
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
     "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol",
     "setup:foundry": "./setup-foundry.sh",
-    "test:foundry": "forge test -vvv",
-    "test:foundry:gas": "forge test -vvv --gas-report",
-    "test:foundry:coverage": "forge coverage",
-    "test:all": "npm run test && npm run test:foundry",
-    "prepare": "husky",
+    "test": "forge test -vvv",
+    "test:gas": "forge test -vvv --gas-report",
+    "test:coverage": "forge coverage",
+    "prepare": "husky install",
+    "lint:sol": "forge fmt",
+    "build": "forge build",
+    "precommit": "forge fmt && forge build --silent",
     "lint:fix": "forge fmt",
     "lint-staged": "lint-staged"
   },
@@ -55,8 +54,6 @@
     "web3": "^4.14.0"
   },
   "lint-staged": {
-    "*.sol": [
-      "forge fmt"
-    ]
+    "*.sol": "forge fmt"
   }
 }
