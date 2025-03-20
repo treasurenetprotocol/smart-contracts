@@ -3,58 +3,59 @@
 # Colors for terminal output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}Setting up Foundry for TreasureNet Smart Contracts...${NC}"
+
+# Check if curl is installed
+if ! command -v curl &> /dev/null; then
+    echo -e "${RED}Error: curl is not installed. Please install curl and try again.${NC}"
+    exit 1
+fi
 
 # Check if Foundry is installed
 if ! command -v forge &> /dev/null; then
     echo -e "${BLUE}Installing Foundry...${NC}"
     curl -L https://foundry.paradigm.xyz | bash
     
-    # Source the environment files
-    if [ -f "$HOME/.zshenv" ]; then
-        source "$HOME/.zshenv"
-    elif [ -f "$HOME/.bashrc" ]; then
-        source "$HOME/.bashrc"
-    fi
-    
-    # Add foundry to PATH for this session
-    export PATH="$PATH:$HOME/.foundry/bin"
-    
-    # Run foundryup to install Foundry
-    if command -v foundryup &> /dev/null; then
-        foundryup
-    else
-        echo -e "${BLUE}Please run 'source ~/.zshenv' or 'source ~/.bashrc' in a new terminal, then run 'foundryup' manually.${NC}"
-        echo -e "${BLUE}After that, run 'npm run setup:foundry' again.${NC}"
-        exit 1
-    fi
+    echo -e "${YELLOW}Foundry has been installed, but you need to setup your environment.${NC}"
+    echo -e "${YELLOW}Please run one of these commands in a new terminal:${NC}"
+    echo -e "${YELLOW}  - If using zsh: source ~/.zshenv${NC}"
+    echo -e "${YELLOW}  - If using bash: source ~/.bashrc${NC}"
+    echo -e "${YELLOW}Then run 'foundryup' and finally re-run this script.${NC}"
+    exit 0
 else
     echo -e "${GREEN}Foundry already installed!${NC}"
     echo -e "${BLUE}Updating Foundry...${NC}"
     foundryup
 fi
 
-# Initialize Foundry in the project if not already initialized
-if [ ! -d "./lib" ] || [ ! -f "./foundry.toml" ]; then
-    echo -e "${BLUE}Initializing Foundry in the project...${NC}"
-    forge init --force --no-commit --no-git
-    
-    # Clean up default files that we don't need
-    echo -e "${BLUE}Cleaning up template files...${NC}"
-    rm -rf ./src
-    rm -rf ./test/Counter.t.sol
-    rm -rf ./script
-    
-    # Create custom foundry.toml configuration
+# Create necessary directories without initializing a new Foundry project
+if [ ! -d "./test/foundry" ]; then
+    echo -e "${BLUE}Creating Foundry test directory...${NC}"
+    mkdir -p test/foundry
+fi
+
+# Install forge-std if not already installed
+if [ ! -d "./lib/forge-std" ]; then
+    echo -e "${BLUE}Installing forge-std library...${NC}"
+    forge install foundry-rs/forge-std --no-commit
+else
+    echo -e "${GREEN}forge-std library already installed!${NC}"
+fi
+
+# Check if foundry.toml exists, if not create it
+if [ ! -f "./foundry.toml" ]; then
+    echo -e "${BLUE}Creating foundry.toml configuration...${NC}"
     cat > foundry.toml << EOL
 [profile.default]
 src = 'contracts'
 test = 'test/foundry'
 out = 'out'
 libs = ['lib', 'node_modules']
-solc = '0.8.10'
+solc = '0.8.29'
 optimizer = true
 optimizer_runs = 200
 remappings = [
@@ -69,25 +70,9 @@ fuzz_runs = 1000
 treasurenet = { key = "\${ETHERSCAN_API_KEY}" }
 EOL
 else
-    # Only install forge-std if initialization wasn't just done
-    # Check if forge-std is already installed
-    if [ ! -d "./lib/forge-std" ]; then
-        echo -e "${BLUE}Installing forge-std library...${NC}"
-        forge install foundry-rs/forge-std --no-commit
-    else
-        echo -e "${GREEN}forge-std library already installed!${NC}"
-    fi
+    echo -e "${GREEN}foundry.toml already exists!${NC}"
 fi
 
-# Clean up any template files that might have been created
-echo -e "${BLUE}Cleaning up any remaining template files...${NC}"
-rm -rf ./src 2>/dev/null
-rm -rf ./test/Counter.t.sol 2>/dev/null
-rm -rf ./script 2>/dev/null
-
-# Create the foundry test directory if it doesn't exist
-mkdir -p test/foundry
-
 echo -e "${GREEN}Foundry setup complete!${NC}"
-echo -e "${BLUE}You may need to restart your terminal to use Foundry commands.${NC}"
+echo -e "${BLUE}You may need to restart your terminal or source your shell configuration to use Foundry commands.${NC}"
 echo -e "${BLUE}Run tests with: forge test${NC}" 
