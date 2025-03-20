@@ -194,6 +194,18 @@ jobs:
       - name: Install Forge libraries
         run: forge install foundry-rs/forge-std
 
+      # Fix script imports by ensuring contracts can be found from script directory
+      - name: Prepare directory structure for scripts
+        run: |
+          echo "Creating necessary symlinks for script imports..."
+          # Create src directory if not exists (some CI environments expect this)
+          mkdir -p src
+          # Make scripts see contracts at ../contracts from their location
+          ln -sfn $(pwd)/contracts $(pwd)/script/contracts 2>/dev/null || true
+          # Alternative approach if the above doesn't work
+          find script -type f -name "*.s.sol" -exec sed -i 's/\.\.\/contracts/\.\/contracts/g' {} \;
+          echo "Directory structure prepared"
+
       - name: Run deployment simulation
         run: |
           # Create a deployment directory if it doesn't exist
