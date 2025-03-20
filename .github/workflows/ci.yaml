@@ -196,9 +196,28 @@ jobs:
 
       - name: Run deployment simulation
         run: |
-          # Create a simulation script if you don't have one
+          # Create a deployment directory if it doesn't exist
           mkdir -p script
-          if [ ! -f script/DeploySimulation.s.sol ]; then
+          
+          # Start local anvil node for deployment simulation
+          echo "Starting local Anvil node for deployment simulation..."
+          anvil --silent &
+          ANVIL_PID=$!
+          
+          # Give anvil a moment to start
+          sleep 2
+          
+          # Set private key for testing (this is an Anvil default test account)
+          export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+          
+          # Run the deployment simulation
+          echo "Running deployment simulation..."
+          if [ -f script/DeployTreasureNet.s.sol ]; then
+            forge script script/DeployTreasureNet.s.sol --rpc-url http://localhost:8545 -vvv || echo "Deployment simulation encountered issues but continuing workflow"
+          else
+            echo "WARNING: DeployTreasureNet.s.sol not found. Using dummy deployment script instead."
+            
+            # Create a dummy simulation script if the real one doesn't exist
             echo "// SPDX-License-Identifier: UNLICENSED
             pragma solidity 0.8.29;
             
@@ -212,19 +231,9 @@ jobs:
                     vm.stopBroadcast();
                 }
             }" > script/DeploySimulation.s.sol
+            
+            forge script script/DeploySimulation.s.sol --rpc-url http://localhost:8545 -vvv || echo "Deployment simulation encountered issues but continuing workflow"
           fi
-          
-          # Start local anvil node instead of using unreliable public endpoints
-          echo "Starting local Anvil node for deployment simulation..."
-          anvil --silent &
-          ANVIL_PID=$!
-          
-          # Give anvil a moment to start
-          sleep 2
-          
-          # Run the simulation on local anvil instead of trying to fork mainnet
-          echo "Running deployment simulation..."
-          forge script script/DeploySimulation.s.sol --rpc-url http://localhost:8545 || echo "Deployment simulation encountered issues but continuing workflow"
           
           # Kill the anvil process
           kill $ANVIL_PID
