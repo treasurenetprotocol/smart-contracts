@@ -13,10 +13,10 @@ contract BaseTest is Test {
     address public constant ADMIN = address(0x1);
     address public constant PRODUCER_ACCOUNT = address(0x2);
     address public constant MINTING_ACCOUNT = address(0x3);
-    
+
     // Role identifiers
     bytes32 public constant FOUNDATION_MANAGER_ROLE = keccak256("FOUNDATION_MANAGER_ROLE");
-    
+
     /**
      * @dev Setup function that will be called before each test
      * Override in derived contracts but don't forget to call super.setUp()
@@ -27,7 +27,7 @@ contract BaseTest is Test {
         // Deploy shared contracts if needed
         vm.stopPrank();
     }
-    
+
     /**
      * @dev Helper function to assert producer data matches expected values
      * @param uniqueId The unique identifier of the producer
@@ -53,4 +53,4 @@ contract BaseTest is Test {
         // Implementation would compare actual values from the producer contract
         // with the expected values passed as parameters
     }
-} 
+}

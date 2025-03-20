@@ -9,55 +9,39 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // Create a simplified IGovernance interface for testing
 interface IGovernanceMock {
-    function addTreasure(
-        string memory _treasureType,
-        address _producer,
-        address _productionData
-    ) external;
+    function addTreasure(string memory _treasureType, address _producer, address _productionData) external;
 
     function fmThreshold() external returns (uint256);
 
-    function getTreasureByKind(string memory _treasureType)
-        external
-        view
-        returns (address, address);
+    function getTreasureByKind(string memory _treasureType) external view returns (address, address);
 }
 
 // Mock Governance contract for testing
 contract MockGovernance is IGovernanceMock {
     mapping(string => TreasureInfo) public treasures;
-    
+
     struct TreasureInfo {
         address producer;
         address productionData;
     }
-    
+
     uint256 private threshold = 5;
-    
+
     event AddTreasure(string treasureType, address producerContract, address produceDataContract);
-    
-    function addTreasure(
-        string memory _treasureType,
-        address _producer,
-        address _productionData
-    ) external override {
+
+    function addTreasure(string memory _treasureType, address _producer, address _productionData) external override {
         treasures[_treasureType] = TreasureInfo(_producer, _productionData);
         emit AddTreasure(_treasureType, _producer, _productionData);
     }
-    
+
     function fmThreshold() external view override returns (uint256) {
         return threshold;
     }
-    
-    function getTreasureByKind(string memory _treasureType)
-        external
-        view
-        override
-        returns (address, address)
-    {
+
+    function getTreasureByKind(string memory _treasureType) external view override returns (address, address) {
         return (treasures[_treasureType].producer, treasures[_treasureType].productionData);
     }
-    
+
     function setTreasure(string memory _treasureType, address _producer, address _productionData) external {
         treasures[_treasureType] = TreasureInfo(_producer, _productionData);
     }
@@ -163,11 +147,11 @@ contract StakeableMock {
 
 // Redefine TAT to use our mock interface and fixed Stakeable
 contract TATMock is
-Initializable,
-OwnableUpgradeable,
-ERC20PausableUpgradeable,
-ERC20BurnableUpgradeable,
-StakeableMock
+    Initializable,
+    OwnableUpgradeable,
+    ERC20PausableUpgradeable,
+    ERC20BurnableUpgradeable,
+    StakeableMock
 {
     IGovernanceMock private _governance;
 
@@ -175,11 +159,7 @@ StakeableMock
     /// @param _name Token name
     /// @param _symbol Token symbol
     /// @param _governanceContract The governance contract of TreasureNet
-    function initialize(
-        string memory _name,
-        string memory _symbol,
-        address _governanceContract
-    ) public initializer {
+    function initialize(string memory _name, string memory _symbol, address _governanceContract) public initializer {
         __Ownable_init();
         __ERC20_init(_name, _symbol);
         __ERC20Burnable_init();
@@ -194,23 +174,21 @@ StakeableMock
         _;
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override(ERC20Upgradeable, ERC20PausableUpgradeable) {
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
+        virtual
+        override(ERC20Upgradeable, ERC20PausableUpgradeable)
+    {
         super._beforeTokenTransfer(from, to, amount);
         require(!paused(), "ERC20Pausable: token transfer while paused");
     }
 
-    event TATHistory(string kind, bytes32 uniqueId, address from, address to, uint amount);
-    
-    function mint(
-        string memory _treasureKind,
-        bytes32 _uniqueId,
-        address to,
-        uint256 amount
-    ) public onlyProductionDataContract(_treasureKind) {
+    event TATHistory(string kind, bytes32 uniqueId, address from, address to, uint256 amount);
+
+    function mint(string memory _treasureKind, bytes32 _uniqueId, address to, uint256 amount)
+        public
+        onlyProductionDataContract(_treasureKind)
+    {
         require(to != address(0), "Zero address");
         _mint(to, amount);
         emit TATHistory(_treasureKind, _uniqueId, msg.sender, to, amount);
@@ -222,10 +200,7 @@ StakeableMock
         _mint(user, amount);
     }
 
-    function burn(string memory _treasureKind, uint256 tokens)
-    public
-    onlyProductionDataContract(_treasureKind)
-    {
+    function burn(string memory _treasureKind, uint256 tokens) public onlyProductionDataContract(_treasureKind) {
         _burn(_msgSender(), tokens);
     }
 
@@ -253,204 +228,204 @@ StakeableMock
 contract TATTest is Test {
     TATMock public tat;
     MockGovernance public governance;
-    
+
     address public owner;
     address public user1;
     address public user2;
     address public productionContract;
-    
+
     string public constant TREASURE_KIND = "OIL";
     bytes32 public constant UNIQUE_ID = bytes32(uint256(123456));
-    uint256 public constant MINT_AMOUNT = 1000 * 10**18;
-    uint256 public constant STAKE_AMOUNT = 500 * 10**18;
-    
+    uint256 public constant MINT_AMOUNT = 1000 * 10 ** 18;
+    uint256 public constant STAKE_AMOUNT = 500 * 10 ** 18;
+
     // Import the events from Stakeable
     event Stake(address from, uint256 amount);
     event Withdraw(address from, uint256 amount);
-    
+
     function setUp() public {
         owner = address(this);
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
         productionContract = makeAddr("productionContract");
-        
+
         // Deploy the governance mock
         governance = new MockGovernance();
-        
+
         // Deploy the TAT token implementation
         tat = new TATMock();
-        
+
         // Initialize the TAT token
         tat.initialize("TreasureNet Asset Token", "TAT", address(governance));
-        
+
         // Register the production contract
         governance.setTreasure(TREASURE_KIND, address(0), productionContract);
-        
+
         // Fund user accounts for testing
         vm.deal(user1, 10 ether);
         vm.deal(user2, 10 ether);
     }
-    
+
     function testInitialState() public view {
         assertEq(tat.name(), "TreasureNet Asset Token");
         assertEq(tat.symbol(), "TAT");
         assertEq(tat.totalSupply(), 0);
         assertEq(tat.owner(), owner);
     }
-    
+
     function testMint() public {
         // Mint tokens as the production contract
         vm.prank(productionContract);
         tat.mint(TREASURE_KIND, UNIQUE_ID, user1, MINT_AMOUNT);
-        
+
         assertEq(tat.balanceOf(user1), MINT_AMOUNT);
         assertEq(tat.totalSupply(), MINT_AMOUNT);
     }
-    
+
     function testMintFailsFromUnauthorized() public {
         // Try to mint tokens from unauthorized account
         vm.prank(user1);
         vm.expectRevert("Unauthorized caller");
         tat.mint(TREASURE_KIND, UNIQUE_ID, user2, MINT_AMOUNT);
     }
-    
+
     function testMintToZeroAddress() public {
         // Try to mint to the zero address
         vm.prank(productionContract);
         vm.expectRevert("Zero address");
         tat.mint(TREASURE_KIND, UNIQUE_ID, address(0), MINT_AMOUNT);
     }
-    
+
     function testFaucet() public {
         tat.faucet(user1, MINT_AMOUNT);
         assertEq(tat.balanceOf(user1), MINT_AMOUNT);
     }
-    
+
     function testStake() public {
         // Mint tokens first
         tat.faucet(user1, MINT_AMOUNT);
-        
+
         // Stake tokens
         vm.prank(user1);
         vm.expectEmit(true, true, false, true);
         emit Stake(user1, STAKE_AMOUNT);
         tat.stake(user1, STAKE_AMOUNT);
-        
+
         // Check balances
         assertEq(tat.balanceOf(user1), MINT_AMOUNT - STAKE_AMOUNT);
         assertEq(tat.stakeOf(user1), STAKE_AMOUNT);
         assertEq(tat.totalStakes(), STAKE_AMOUNT);
         assertEq(tat.totalStakers(), 1);
     }
-    
+
     function testStakeFailsWithInsufficientBalance() public {
         // Mint tokens first
         tat.faucet(user1, MINT_AMOUNT);
-        
+
         // Try to stake more than balance
         vm.prank(user1);
         vm.expectRevert("Stake amount exceeds balance");
         tat.stake(user1, MINT_AMOUNT + 1);
     }
-    
+
     function testWithdraw() public {
         // Mint tokens first
         tat.faucet(user1, MINT_AMOUNT);
-        
+
         // Stake tokens
         vm.prank(user1);
         tat.stake(user1, STAKE_AMOUNT);
-        
+
         // Withdraw tokens
         vm.prank(user1);
         vm.expectEmit(true, true, false, true);
         emit Withdraw(user1, STAKE_AMOUNT / 2);
         tat.withdraw(user1, STAKE_AMOUNT / 2);
-        
+
         // Check balances
         assertEq(tat.balanceOf(user1), MINT_AMOUNT - STAKE_AMOUNT + (STAKE_AMOUNT / 2));
         assertEq(tat.stakeOf(user1), STAKE_AMOUNT / 2);
     }
-    
+
     function testWithdrawFailsWithInsufficientStake() public {
         // Mint tokens first
         tat.faucet(user1, MINT_AMOUNT);
-        
+
         // Stake tokens
         vm.prank(user1);
         tat.stake(user1, STAKE_AMOUNT);
-        
+
         // Try to withdraw more than staked
         vm.prank(user1);
         vm.expectRevert("Withdrawal amount exceeds staked amount");
         tat.withdraw(user1, STAKE_AMOUNT + 1);
     }
-    
+
     function testPauseAndUnpause() public {
         // Mint tokens first
         tat.faucet(user1, MINT_AMOUNT);
-        
+
         // Pause the token
         tat.pause();
         assertTrue(tat.paused());
-        
+
         // Try to transfer while paused
         vm.prank(user1);
         vm.expectRevert("ERC20Pausable: token transfer while paused");
         tat.transfer(user2, 100);
-        
+
         // Unpause the token
         tat.unpause();
         assertFalse(tat.paused());
-        
+
         // Transfer should now succeed
         vm.prank(user1);
         tat.transfer(user2, 100);
         assertEq(tat.balanceOf(user2), 100);
     }
-    
+
     function testPauseUnpauseOnlyOwner() public {
         // Non-owner cannot pause
         vm.prank(user1);
         vm.expectRevert("Ownable: caller is not the owner");
         tat.pause();
-        
+
         // Owner can pause
         tat.pause();
         assertTrue(tat.paused());
-        
+
         // Non-owner cannot unpause
         vm.prank(user1);
         vm.expectRevert("Ownable: caller is not the owner");
         tat.unpause();
-        
+
         // Owner can unpause
         tat.unpause();
         assertFalse(tat.paused());
     }
-    
+
     function testMultipleStakeholders() public {
         // Mint tokens to multiple users
         tat.faucet(user1, MINT_AMOUNT);
         tat.faucet(user2, MINT_AMOUNT);
-        
+
         // Users stake tokens
         vm.prank(user1);
         tat.stake(user1, STAKE_AMOUNT);
-        
+
         vm.prank(user2);
         tat.stake(user2, STAKE_AMOUNT);
-        
+
         // Check total stakes and stakers
         assertEq(tat.totalStakes(), STAKE_AMOUNT * 2);
         assertEq(tat.totalStakers(), 2);
-        
+
         // User1 withdraws all their stake
         vm.prank(user1);
         tat.withdraw(user1, STAKE_AMOUNT);
-        
+
         // Check total stakes and stakers again
         assertEq(tat.totalStakes(), STAKE_AMOUNT);
         assertEq(tat.totalStakers(), 1);
     }
-} 
+}
