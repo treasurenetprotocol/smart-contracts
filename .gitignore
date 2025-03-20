@@ -8,7 +8,6 @@ build/*
 # Foundry specific
 out/
 cache/
-.gas-snapshot
 lib/
 forge-cache/
 broadcast/
