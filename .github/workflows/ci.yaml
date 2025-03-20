@@ -16,7 +16,7 @@ jobs:
     name: Coverage Report
     uses: treasurenetprotocol/reusable-workflows/.github/workflows/reusable-forge-code-coverage.yml@main
     with:
-      exclude_paths: "*/.git/*,*/node_modules/*,*/test/*,*/script/*,*/lib/*"
+      exclude_paths: ""
   test:
     runs-on: ubuntu-latest
     steps:
