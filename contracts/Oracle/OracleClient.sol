@@ -11,12 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * Provides functionality to send requests to an Oracle contract and handle responses
  */
 abstract contract OracleClient is Initializable {
-    event Request(
-        bytes32 requestid,
-        address callbackAddress,
-        bytes4 callbackFunctionId,
-        uint256 nonce
-    );
+    event Request(bytes32 requestid, address callbackAddress, bytes4 callbackFunctionId, uint256 nonce);
 
     using SafeMath for uint256;
 
@@ -71,12 +66,14 @@ abstract contract OracleClient is Initializable {
         address _callbackAddress,
         bytes4 _callbackFunctionId,
         uint256 _request_nonce
-    ) internal returns (bytes32) {
+    )
+        internal
+        returns (bytes32)
+    {
         bytes32 expectedRequestId = keccak256(abi.encodePacked(address(this), _request_nonce));
 
         require(
-            expectedRequestId ==
-                _oracle.createOracleRequest(_callbackAddress, _callbackFunctionId, _request_nonce),
+            expectedRequestId == _oracle.createOracleRequest(_callbackAddress, _callbackFunctionId, _request_nonce),
             "requestid mismatch,check oracle logic"
         );
 
@@ -89,11 +86,7 @@ abstract contract OracleClient is Initializable {
      * @param _callbackAddress The address of the callback contract
      * @param _callbackFunctionId The function selector of the callback function
      */
-    function _cancelOracleRequest(
-        bytes32 _requestId,
-        address _callbackAddress,
-        bytes4 _callbackFunctionId
-    ) internal {
+    function _cancelOracleRequest(bytes32 _requestId, address _callbackAddress, bytes4 _callbackFunctionId) internal {
         _oracle.cancelOracleRequest(_requestId, _callbackAddress, _callbackFunctionId);
     }
 }

@@ -23,15 +23,9 @@ abstract contract NoExpense is ContextUpgradeable {
         Status status;
     }
 
-    event ExpenseHistory(
-        uint256 time,
-        address operator,
-        Action _type,
-        string content,
-        uint256 tokens
-    );
+    event ExpenseHistory(uint256 time, address operator, Action _type, string content, uint256 tokens);
 
-    receive() external payable {}
+    receive() external payable { }
 
     mapping(address => Depositor) private _depositors;
 
@@ -45,19 +39,17 @@ abstract contract NoExpense is ContextUpgradeable {
         return true;
     }
     // solhint-disable-next-line
+
     function withdraw(uint256 amount) public payable returns (bool) {
         return true;
     }
 
     // solhint-disable-next-line
-    function _penalty(
-        address account,
-        uint256 value,
-        uint256 percent
-    ) internal returns (uint256) {
+    function _penalty(address account, uint256 value, uint256 percent) internal returns (uint256) {
         return 0;
     }
     // solhint-disable-next-line
+
     function marginOf(address _account) public view returns (uint256, Status) {
         return (0, Status.Normal);
     }

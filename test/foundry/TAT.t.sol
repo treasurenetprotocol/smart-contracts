@@ -141,8 +141,8 @@ contract StakeableMock {
     }
 
     // Virtual functions to be implemented
-    function stake(address account, uint256 _amount) public virtual {}
-    function withdraw(address account, uint256 _amount) public virtual {}
+    function stake(address account, uint256 _amount) public virtual { }
+    function withdraw(address account, uint256 _amount) public virtual { }
 }
 
 // Redefine TAT to use our mock interface and fixed Stakeable
@@ -174,7 +174,11 @@ contract TATMock is
         _;
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    )
         internal
         virtual
         override(ERC20Upgradeable, ERC20PausableUpgradeable)
@@ -185,7 +189,12 @@ contract TATMock is
 
     event TATHistory(string kind, bytes32 uniqueId, address from, address to, uint256 amount);
 
-    function mint(string memory _treasureKind, bytes32 _uniqueId, address to, uint256 amount)
+    function mint(
+        string memory _treasureKind,
+        bytes32 _uniqueId,
+        address to,
+        uint256 amount
+    )
         public
         onlyProductionDataContract(_treasureKind)
     {

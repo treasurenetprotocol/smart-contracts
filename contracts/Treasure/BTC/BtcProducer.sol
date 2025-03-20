@@ -24,14 +24,12 @@ contract BtcProducer is Producer {
         address _productionDataContract,
         string[] memory _dappNames,
         address[] memory _payees
-    ) public initializer {
+    )
+        public
+        initializer
+    {
         __ProducerInitialize(
-            _mulSigContract,
-            _roleContract,
-            _treasureKind,
-            _productionDataContract,
-            _dappNames,
-            _payees
+            _mulSigContract, _roleContract, _treasureKind, _productionDataContract, _dappNames, _payees
         );
     }
 
@@ -40,17 +38,11 @@ contract BtcProducer is Producer {
      * @param _uniqueId The unique ID of the producer.
      * @param _producer The producer details.
      */
-    function _beforeAddProducer(
-        bytes32 _uniqueId,
-        ProducerCore memory _producer
-    ) internal override {
+    function _beforeAddProducer(bytes32 _uniqueId, ProducerCore memory _producer) internal override {
         super._beforeAddProducer(_uniqueId, _producer);
 
         require(_producer.owner != address(0), "zero producer owner address");
-        require(
-            keccak256(bytes(_producer.nickname)) != keccak256(bytes("")),
-            "empty nickname"
-        );
+        require(keccak256(bytes(_producer.nickname)) != keccak256(bytes("")), "empty nickname");
 
         // initialize `Share`
         _setOwner(_uniqueId, _producer.owner);

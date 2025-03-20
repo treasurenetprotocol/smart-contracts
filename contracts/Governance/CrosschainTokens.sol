@@ -23,9 +23,7 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
 
     /// @dev Contract initialization
     /// @param mulSigAddress MulSig contract address
-    function initialize(
-        address mulSigAddress
-    ) public initializer {
+    function initialize(address mulSigAddress) public initializer {
         __Ownable_init();
         __AccessControl_init();
         _mulSig = MulSig(mulSigAddress);
@@ -64,7 +62,10 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         uint256 targetchainid,
         uint256 fee,
         uint256 chainId
-    ) external onlyMulSig {
+    )
+        external
+        onlyMulSig
+    {
         require(bytes(token).length > 0, "Token name cannot be empty");
 
         _crosschainTokens[chainId][token] = CrosschainTokenInfo({
@@ -77,7 +78,6 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
             targetchainid: targetchainid,
             fee: fee
         });
-
 
         emit ICrosschainTokens.CrosschainToken(
             token,
@@ -102,16 +102,11 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
     /// @return targetCrosschainAddress Target crosschain address
     /// @return targetchainid Target chain ID
     /// @return fee Fee amount
-    function getCrosschainToken(string memory token) public view returns (
-        string memory,
-        address,
-        address,
-        uint256,
-        address,
-        address,
-        uint256,
-        uint256
-    ) {
+    function getCrosschainToken(string memory token)
+        public
+        view
+        returns (string memory, address, address, uint256, address, address, uint256, uint256)
+    {
         CrosschainTokenInfo memory info = _crosschainTokens[block.chainid][token];
         return (
             info.token,
@@ -125,27 +120,20 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         );
     }
 
-
     function setMulSig(address mulSigAddress) external onlyOwner {
         require(mulSigAddress != address(0), "Invalid MulSig address");
         require(address(_mulSig) == address(0), "MulSig already set");
         _mulSig = MulSig(mulSigAddress);
     }
 
-
     function getCrosschainTokenByChainId(
         string memory token,
         uint256 chainId
-    ) public view returns (
-        string memory,
-        address,
-        address,
-        uint256,
-        address,
-        address,
-        uint256,
-        uint256
-    ) {
+    )
+        public
+        view
+        returns (string memory, address, address, uint256, address, address, uint256, uint256)
+    {
         CrosschainTokenInfo memory info = _crosschainTokens[chainId][token];
         return (
             info.token,
@@ -158,4 +146,4 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
             info.fee
         );
     }
-} 
+}

@@ -15,13 +15,12 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-
 /**
  * @dev ProductionData is the core contract for managing production data, implementing:
  *    - Trusted data source: Sending AssetValue
  *    - Trusted data source: Sending trusted production data
  *    - Producer: Sending production data
-*/
+ */
 abstract contract ProductionData is Context, Initializable, OracleClient, IProductionData, Expense {
     bytes32 public constant FEEDER = keccak256("FEEDER");
     bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
@@ -67,7 +66,10 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         address _parameterInfoContract,
         address _producerContract,
         address _tatContract
-    ) internal onlyInitializing {
+    )
+        internal
+        onlyInitializing
+    {
         __ExpenseInitialize(_parameterInfoContract);
         __oracleClientInitialize(_oracleContract);
 
@@ -92,29 +94,30 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         _;
     }
 
-
     modifier onlyProducerContract() {
         require(msg.sender == address(_producer), "only producer contract allowed");
         _;
     }
 
     modifier onlyWhenActive(bytes32 uniqueId) {
-        require(_producer.producerStatus(uniqueId) == IProducer.ProducerStatus.Active, "producer not active on this uniqueId");
+        require(
+            _producer.producerStatus(uniqueId) == IProducer.ProducerStatus.Active,
+            "producer not active on this uniqueId"
+        );
         _;
     }
 
     event RegisterAssetValueRequest(string kind, bytes32 requestid);
-    /** Resource asset value management */
+    /**
+     * Resource asset value management
+     */
     /// @dev Registering the request for trusted AssetValue (to Oracle)
     /// @return bytes32 request id
+
     function registerAssetValueRequest() public returns (bytes32) {
         require(_requestIdToPullAssetValue == bytes32(""), "already registerd");
         uint256 nonce = _nextNonce();
-        _requestIdToPullAssetValue = _sendOracleRequest(
-            address(this),
-            this.receiveAssetValue.selector,
-            nonce
-        );
+        _requestIdToPullAssetValue = _sendOracleRequest(address(this), this.receiveAssetValue.selector, nonce);
         emit RegisterAssetValueRequest(TREASURE_KIND, _requestIdToPullAssetValue);
         return _requestIdToPullAssetValue;
     }
@@ -122,11 +125,8 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
     event CancleAssetValueRequest(string kind, bytes32 requestId);
     /// @dev Canceling the request for asset price (to Oracle)
     /// @return bool whether the request was successful
-    function cancelAssetValueRequest()
-    external
-    override
-    returns (bool)
-    {
+
+    function cancelAssetValueRequest() external override returns (bool) {
         _cancelOracleRequest(_requestIdToPullAssetValue, address(this), this.receiveTrustedProductionData.selector);
         _requestIdToPullAssetValue = bytes32("");
         emit CancleAssetValueRequest(TREASURE_KIND, _requestIdToPullAssetValue);
@@ -142,32 +142,38 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
     /// @param _requestId Oracle request id
     /// @param _date Date of value
     /// @param _value AssetValue
+
     function receiveAssetValue(
         bytes32 _requestId,
         uint256 _date,
         uint256 _value
-    ) public override onlyFeeder returns (uint256) {
+    )
+        public
+        override
+        onlyFeeder
+        returns (uint256)
+    {
         require(_requestId == _requestIdToPullAssetValue, "invalid oracle request id");
         require(_date < 1000000, "Date format is not YYMMDD");
         bool isZero = false;
-        if(_value == 0){
+        if (_value == 0) {
             _value = _getAssetValue(_date);
             isZero = true;
-        }else{
+        } else {
             _counter.increment();
         }
-        _setResourceValue(_date,_value,isZero);
+        _setResourceValue(_date, _value, isZero);
         emit ReceiveAssetValue(TREASURE_KIND, _date, _value);
         return _value;
     }
 
-    function _setResourceValue(uint256 _date, uint256 _value,bool isZero) internal {
+    function _setResourceValue(uint256 _date, uint256 _value, bool isZero) internal {
         AssetValue memory value;
         value.Date = _date;
         value.Value = _value;
         value.Timestamp = block.timestamp;
         _assetMappedValues[_date] = value;
-        if (isZero == false){
+        if (isZero == false) {
             _assetValues.push(value);
         }
     }
@@ -207,28 +213,18 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         return value;
     }
 
-    /** Resource Trusted data management*/
-
+    /**
+     * Resource Trusted data management
+     */
     event RegisterTrustedDataRequest(string kind, bytes32 uniqueId, bytes32 requestid);
     /// @dev Registering the request for trusted production data (to Oracle)
     /// @param _uniqueId Producer unique ID
     /// @return bytes32 Oracle request ID
-    function registerTrustedDataRequest(bytes32 _uniqueId)
-    external
-    override
-    onlyProducerContract
-    returns (bytes32)
-    {
-        require(
-            _requestIdsToPullTrustedData[_uniqueId] == bytes32(""),
-            "product oracle request already sent"
-        );
+
+    function registerTrustedDataRequest(bytes32 _uniqueId) external override onlyProducerContract returns (bytes32) {
+        require(_requestIdsToPullTrustedData[_uniqueId] == bytes32(""), "product oracle request already sent");
         uint256 nonce = _nextNonce();
-        bytes32 requestID = _sendOracleRequest(
-            address(this),
-            this.receiveTrustedProductionData.selector,
-            nonce
-        );
+        bytes32 requestID = _sendOracleRequest(address(this), this.receiveTrustedProductionData.selector, nonce);
         _requestIdsToPullTrustedData[_uniqueId] = requestID;
 
         emit RegisterTrustedDataRequest(TREASURE_KIND, _uniqueId, requestID);
@@ -239,12 +235,8 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
     /// @dev Canceling the request for trusted production data (to Oracle)
     /// @param _uniqueId Producer unique ID
     /// @return bool whether the request was successful
-    function cancelTrustedDataRequest(bytes32 _uniqueId)
-    external
-    override
-    onlyProducerContract
-    returns (bool)
-    {
+
+    function cancelTrustedDataRequest(bytes32 _uniqueId) external override onlyProducerContract returns (bool) {
         bytes32 requestId = _requestIdsToPullTrustedData[_uniqueId];
         delete (_requestIdsToPullTrustedData[_uniqueId]);
         _cancelOracleRequest(requestId, address(this), this.receiveTrustedProductionData.selector);
@@ -260,43 +252,53 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
     /// @dev Receiving trusted production data request
     /// @param _requestId Trusted data request ID
     /// @param _uniqueId Producer unique ID
+
     function receiveTrustedProductionData(
         bytes32 _requestId,
         bytes32 _uniqueId,
         ProduceData memory _produceData
-    ) external virtual override {}
+    )
+        external
+        virtual
+        override
+    { }
 
     /* Resource untrusted produce data*/
 
-    event ProducerProductionData(string treasureKind, bytes32 uniqueId, uint256 month, uint256 date, uint256 amount, uint256 price);
+    event ProducerProductionData(
+        string treasureKind, bytes32 uniqueId, uint256 month, uint256 date, uint256 amount, uint256 price
+    );
     /// @dev Producers actively upload production data
     /// @param _uniqueId Producer unique ID
     /// @param _produceData Production data
-    function setProductionData(bytes32 _uniqueId, ProduceData memory _produceData)
-    public
-    virtual
-    override
-    onlyWhenActive(_uniqueId)
-    {}
 
-    function getProductionData(bytes32 _uniqueId, uint256 month) public virtual override returns (ProduceData memory){}
+    function setProductionData(
+        bytes32 _uniqueId,
+        ProduceData memory _produceData
+    )
+        public
+        virtual
+        override
+        onlyWhenActive(_uniqueId)
+    { }
+
+    function getProductionData(bytes32 _uniqueId, uint256 month) public virtual override returns (ProduceData memory) { }
 
     event ClearingReward(string treasureKind, bytes32 _uniqueId, uint256 _month, uint256 rewardAmount);
-    event ClearingPenalty(string treasureKind, bytes32 _uniqueId, uint256 _month, uint256 penaltyAmount, uint256 percent);
+    event ClearingPenalty(
+        string treasureKind, bytes32 _uniqueId, uint256 _month, uint256 penaltyAmount, uint256 percent
+    );
     /// @dev Conducting production data clearing, Mint TAT upon completion
     /// @param _uniqueId Producer unique ID
     /// @param _month Production month
+
     function clearing(bytes32 _uniqueId, uint256 _month) public override onlyWhenActive(_uniqueId) {
         _beforeClearing(_uniqueId);
         _clearing(_uniqueId, _month);
         _afterClearing(_uniqueId, _month);
     }
 
-    function _beforeClearing(bytes32 _uniqueId)
-    internal
-    view
-    returns (IProducer.ProducerCore memory)
-    {
+    function _beforeClearing(bytes32 _uniqueId) internal view returns (IProducer.ProducerCore memory) {
         IProducer.ProducerCore memory thisProducer = _getProducer(_uniqueId);
         require(_msgSender() == thisProducer.owner, "must be the producer");
         // status check
@@ -304,30 +306,26 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
     }
 
     // TODO[Refine]
-    function _clearing(
-        bytes32 _uniqueId,
-        uint256 _month
-    ) internal virtual returns (bool);
+    function _clearing(bytes32 _uniqueId, uint256 _month) internal virtual returns (bool);
 
     function _afterClearing(bytes32 _uniqueId, uint256 _month) internal virtual;
 
     // Utilities
-    function _getProducer(bytes32 _uniqueId)
-    internal
-    view
-    returns (IProducer.ProducerCore memory)
-    {
-        (IProducer.ProducerStatus status, IProducer.ProducerCore memory producer) = _producer
-        .getProducer(_uniqueId);
-        require(
-            status != IProducer.ProducerStatus.NotSet,
-            "producer with this unique id not found"
-        );
+    function _getProducer(bytes32 _uniqueId) internal view returns (IProducer.ProducerCore memory) {
+        (IProducer.ProducerStatus status, IProducer.ProducerCore memory producer) = _producer.getProducer(_uniqueId);
+        require(status != IProducer.ProducerStatus.NotSet, "producer with this unique id not found");
         return producer;
     }
 
-
-    function _reward(bytes32 uniqueId, address[] memory accounts, uint256[] memory amounts) internal virtual returns (uint256){
+    function _reward(
+        bytes32 uniqueId,
+        address[] memory accounts,
+        uint256[] memory amounts
+    )
+        internal
+        virtual
+        returns (uint256)
+    {
         uint256 total;
         require(accounts.length == amounts.length, "accounts and amounts must have same length");
         for (uint256 i = 0; i < accounts.length; i++) {

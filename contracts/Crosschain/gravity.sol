@@ -8,60 +8,60 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./cosmosToken.sol";
 
-    error InvalidSignature();
-    error InvalidValsetNonce(uint256 newNonce, uint256 currentNonce);
-    error InvalidBatchNonce(uint256 newNonce, uint256 currentNonce);
-    error InvalidLogicCallNonce(uint256 newNonce, uint256 currentNonce);
-    error InvalidLogicCallTransfers();
-    error InvalidLogicCallFees();
-    error InvalidSendToCosmos();
-    error IncorrectCheckpoint();
-    error MalformedNewValidatorSet();
-    error MalformedCurrentValidatorSet();
-    error MalformedBatch();
-    error InsufficientPower(uint256 cumulativePower, uint256 powerThreshold);
-    error BatchTimedOut();
-    error LogicCallTimedOut();
+error InvalidSignature();
+error InvalidValsetNonce(uint256 newNonce, uint256 currentNonce);
+error InvalidBatchNonce(uint256 newNonce, uint256 currentNonce);
+error InvalidLogicCallNonce(uint256 newNonce, uint256 currentNonce);
+error InvalidLogicCallTransfers();
+error InvalidLogicCallFees();
+error InvalidSendToCosmos();
+error IncorrectCheckpoint();
+error MalformedNewValidatorSet();
+error MalformedCurrentValidatorSet();
+error MalformedBatch();
+error InsufficientPower(uint256 cumulativePower, uint256 powerThreshold);
+error BatchTimedOut();
+error LogicCallTimedOut();
 
 // This is being used purely to avoid stack too deep errors
-    struct LogicCallArgs {
-        // Transfers out to the logic contract
-        uint256[] transferAmounts;
-        address[] transferTokenContracts;
-        // The fees (transferred to msg.sender)
-        uint256[] feeAmounts;
-        address[] feeTokenContracts;
-        // The arbitrary logic call
-        address logicContractAddress;
-        bytes payload;
-        // Invalidation metadata
-        uint256 timeOut;
-        bytes32 invalidationId;
-        uint256 invalidationNonce;
-    }
+struct LogicCallArgs {
+    // Transfers out to the logic contract
+    uint256[] transferAmounts;
+    address[] transferTokenContracts;
+    // The fees (transferred to msg.sender)
+    uint256[] feeAmounts;
+    address[] feeTokenContracts;
+    // The arbitrary logic call
+    address logicContractAddress;
+    bytes payload;
+    // Invalidation metadata
+    uint256 timeOut;
+    bytes32 invalidationId;
+    uint256 invalidationNonce;
+}
 
 // This is used purely to avoid stack too deep errors
 // represents everything about a given validator set
-    struct ValsetArgs {
-        // the validators in this set, represented by an Ethereum address
-        address[] validators;
-        // the powers of the given validators in the same order as above
-        uint256[] powers;
-        // the nonce of this validator set
-        uint256 valsetNonce;
-        // the reward amount denominated in the below reward token, can be
-        // set to zero
-        uint256 rewardAmount;
-        // the reward token, should be set to the zero address if not being used
-        address rewardToken;
-    }
+struct ValsetArgs {
+    // the validators in this set, represented by an Ethereum address
+    address[] validators;
+    // the powers of the given validators in the same order as above
+    uint256[] powers;
+    // the nonce of this validator set
+    uint256 valsetNonce;
+    // the reward amount denominated in the below reward token, can be
+    // set to zero
+    uint256 rewardAmount;
+    // the reward token, should be set to the zero address if not being used
+    address rewardToken;
+}
 
 // This represents a validator signature
-    struct Signature {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-    }
+struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
 
 contract Gravity is ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -88,11 +88,7 @@ contract Gravity is ReentrancyGuard {
     //
     // ValsetUpdatedEvent does not include the field _eventNonce because it is never submitted to the Cosmos
     // module. It is purely for the use of relayers to allow them to successfully submit batches.
-    event TransactionBatchExecutedEvent(
-        uint256 indexed _batchNonce,
-        address indexed _token,
-        uint256 _eventNonce
-    );
+    event TransactionBatchExecutedEvent(uint256 indexed _batchNonce, address indexed _token, uint256 _eventNonce);
     event SendToCosmosEvent(
         address indexed _tokenContract,
         address indexed _sender,
@@ -100,8 +96,8 @@ contract Gravity is ReentrancyGuard {
         uint256 _amount,
         uint256 _eventNonce
     );
-    event ERC20DeployedEvent(
     // FYI: Can't index on a string without doing a bunch of weird stuff
+    event ERC20DeployedEvent(
         string _cosmosDenom,
         address indexed _tokenContract,
         string _name,
@@ -117,12 +113,7 @@ contract Gravity is ReentrancyGuard {
         address[] _validators,
         uint256[] _powers
     );
-    event LogicCallEvent(
-        bytes32 _invalidationId,
-        uint256 _invalidationNonce,
-        bytes _returnData,
-        uint256 _eventNonce
-    );
+    event LogicCallEvent(bytes32 _invalidationId, uint256 _invalidationNonce, bytes _returnData, uint256 _eventNonce);
 
     // TEST FIXTURES
     // These are here to make it easier to measure gas usage. They should be removed before production
@@ -135,7 +126,10 @@ contract Gravity is ReentrancyGuard {
         Signature[] calldata _sigs,
         bytes32 _theHash,
         uint256 _powerThreshold
-    ) external pure {
+    )
+        external
+        pure
+    {
         checkValidatorSignatures(_currentValset, _sigs, _theHash, _powerThreshold);
     }
 
@@ -150,24 +144,15 @@ contract Gravity is ReentrancyGuard {
     }
 
     // Utility function to verify geth style signatures
-    function verifySig(
-        address _signer,
-        bytes32 _theHash,
-        Signature calldata _sig
-    ) private pure returns (bool) {
-        bytes32 messageDigest = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", _theHash)
-        );
+    function verifySig(address _signer, bytes32 _theHash, Signature calldata _sig) private pure returns (bool) {
+        bytes32 messageDigest = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _theHash));
         return _signer == ECDSA.recover(messageDigest, _sig.v, _sig.r, _sig.s);
     }
 
     // Utility function to determine that a validator set and signatures are well formed
     function validateValset(ValsetArgs calldata _valset, Signature[] calldata _sigs) private pure {
         // Check that current validators, powers, and signatures (v,r,s) set is well-formed
-        if (
-            _valset.validators.length != _valset.powers.length ||
-            _valset.validators.length != _sigs.length
-        ) {
+        if (_valset.validators.length != _valset.powers.length || _valset.validators.length != _sigs.length) {
             revert MalformedCurrentValidatorSet();
         }
     }
@@ -179,12 +164,9 @@ contract Gravity is ReentrancyGuard {
     // h(gravityId, "checkpoint", valsetNonce, validators[], powers[])
     // Where h is the keccak256 hash function.
     // The validator powers must be decreasing or equal. This is important for checking the signatures on the
-    // next valset, since it allows the caller to stop verifying signatures once a quorum of signatures have been verified.
-    function makeCheckpoint(ValsetArgs memory _valsetArgs, bytes32 _gravityId)
-    private
-    pure
-    returns (bytes32)
-    {
+    // next valset, since it allows the caller to stop verifying signatures once a quorum of signatures have been
+    // verified.
+    function makeCheckpoint(ValsetArgs memory _valsetArgs, bytes32 _gravityId) private pure returns (bytes32) {
         // bytes32 encoding of the string "checkpoint"
         bytes32 methodName = 0x636865636b706f696e7400000000000000000000000000000000000000000000;
 
@@ -204,18 +186,22 @@ contract Gravity is ReentrancyGuard {
     }
 
     function checkValidatorSignatures(
-    // The current validator set and their powers
+        // The current validator set and their powers
         ValsetArgs calldata _currentValset,
-    // The current validator's signatures
+        // The current validator's signatures
         Signature[] calldata _sigs,
-    // This is what we are checking they have signed
+        // This is what we are checking they have signed
         bytes32 _theHash,
         uint256 _powerThreshold
-    ) private pure {
+    )
+        private
+        pure
+    {
         uint256 cumulativePower = 0;
 
         for (uint256 i = 0; i < _currentValset.validators.length; i++) {
-            // If v is set to 0, this signifies that it was not possible to get a signature from this validator and we skip evaluation
+            // If v is set to 0, this signifies that it was not possible to get a signature from this validator and we
+            // skip evaluation
             // (In a valid signature, it is either 27 or 28)
             if (_sigs[i].v != 0) {
                 // Check that the current validator has signed off on the hash
@@ -243,41 +229,35 @@ contract Gravity is ReentrancyGuard {
     // This updates the valset by checking that the validators in the current valset have signed off on the
     // new valset. The signatures supplied are the signatures of the current valset over the checkpoint hash
     // generated from the new valset.
-    // Anyone can call this function, but they must supply valid signatures of constant_powerThreshold of the current valset over
+    // Anyone can call this function, but they must supply valid signatures of constant_powerThreshold of the current
+    // valset over
     // the new valset.
     function updateValset(
-    // The new version of the validator set
+        // The new version of the validator set
         ValsetArgs calldata _newValset,
-    // The current validators that approve the change
+        // The current validators that approve the change
         ValsetArgs calldata _currentValset,
-    // These are arrays of the parts of the current validator's signatures
+        // These are arrays of the parts of the current validator's signatures
         Signature[] calldata _sigs
-    ) external {
+    )
+        external
+    {
         // CHECKS
 
         // Check that the valset nonce is greater than the old one
         if (_newValset.valsetNonce <= _currentValset.valsetNonce) {
-            revert InvalidValsetNonce({
-            newNonce: _newValset.valsetNonce,
-            currentNonce: _currentValset.valsetNonce
-            });
+            revert InvalidValsetNonce({ newNonce: _newValset.valsetNonce, currentNonce: _currentValset.valsetNonce });
         }
 
         // Check that the valset nonce is less than a million nonces forward from the old one
         // this makes it difficult for an attacker to lock out the contract by getting a single
         // bad validator set through with uint256 max nonce
         if (_newValset.valsetNonce > _currentValset.valsetNonce + 1000000) {
-            revert InvalidValsetNonce({
-            newNonce: _newValset.valsetNonce,
-            currentNonce: _currentValset.valsetNonce
-            });
+            revert InvalidValsetNonce({ newNonce: _newValset.valsetNonce, currentNonce: _currentValset.valsetNonce });
         }
 
         // Check that new validators and powers set is well-formed
-        if (
-            _newValset.validators.length != _newValset.powers.length ||
-            _newValset.validators.length == 0
-        ) {
+        if (_newValset.validators.length != _newValset.powers.length || _newValset.validators.length == 0) {
             revert MalformedNewValidatorSet();
         }
 
@@ -294,10 +274,7 @@ contract Gravity is ReentrancyGuard {
             }
         }
         if (cumulativePower <= constant_powerThreshold) {
-            revert InsufficientPower({
-            cumulativePower: cumulativePower,
-            powerThreshold: constant_powerThreshold
-            });
+            revert InsufficientPower({ cumulativePower: cumulativePower, powerThreshold: constant_powerThreshold });
         }
 
         // Check that the supplied current validator set matches the saved checkpoint
@@ -339,41 +316,39 @@ contract Gravity is ReentrancyGuard {
 
     // submitBatch processes a batch of Cosmos -> Ethereum transactions by sending the tokens in the transactions
     // to the destination addresses. It is approved by the current Cosmos validator set.
-    // Anyone can call this function, but they must supply valid signatures of constant_powerThreshold of the current valset over
+    // Anyone can call this function, but they must supply valid signatures of constant_powerThreshold of the current
+    // valset over
     // the batch.
     function submitBatch(
-    // The validators that approve the batch
+        // The validators that approve the batch
         ValsetArgs calldata _currentValset,
-    // These are arrays of the parts of the validators signatures
+        // These are arrays of the parts of the validators signatures
         Signature[] calldata _sigs,
-    // The batch of transactions
+        // The batch of transactions
         uint256[] calldata _amounts,
         address[] calldata _destinations,
         uint256[] calldata _fees,
         uint256 _batchNonce,
         address _tokenContract,
-    // a block height beyond which this batch is not valid
-    // used to provide a fee-free timeout
+        // a block height beyond which this batch is not valid
+        // used to provide a fee-free timeout
         uint256 _batchTimeout
-    ) external nonReentrant {
+    )
+        external
+        nonReentrant
+    {
         // CHECKS scoped to reduce stack depth
         {
             // Check that the batch nonce is higher than the last nonce for this token
             if (_batchNonce <= state_lastBatchNonces[_tokenContract]) {
-                revert InvalidBatchNonce({
-                newNonce: _batchNonce,
-                currentNonce: state_lastBatchNonces[_tokenContract]
-                });
+                revert InvalidBatchNonce({ newNonce: _batchNonce, currentNonce: state_lastBatchNonces[_tokenContract] });
             }
 
             // Check that the batch nonce is less than one million nonces forward from the old one
             // this makes it difficult for an attacker to lock out the contract by getting a single
             // bad batch through with uint256 max nonce
             if (_batchNonce > state_lastBatchNonces[_tokenContract] + 1000000) {
-                revert InvalidBatchNonce({
-                newNonce: _batchNonce,
-                currentNonce: state_lastBatchNonces[_tokenContract]
-                });
+                revert InvalidBatchNonce({ newNonce: _batchNonce, currentNonce: state_lastBatchNonces[_tokenContract] });
             }
 
             // Check that the block height is less than the timeout height
@@ -398,11 +373,11 @@ contract Gravity is ReentrancyGuard {
             checkValidatorSignatures(
                 _currentValset,
                 _sigs,
-            // Get hash of the transaction batch and checkpoint
+                // Get hash of the transaction batch and checkpoint
                 keccak256(
                     abi.encode(
                         state_gravityId,
-                    // bytes32 encoding of "transactionBatch"
+                        // bytes32 encoding of "transactionBatch"
                         0x7472616e73616374696f6e426174636800000000000000000000000000000000,
                         _amounts,
                         _destinations,
@@ -450,12 +425,15 @@ contract Gravity is ReentrancyGuard {
     // They can be used for nonce-free replay prevention by using a different invalidationId
     // for each call.
     function submitLogicCall(
-    // The validators that approve the call
+        // The validators that approve the call
         ValsetArgs calldata _currentValset,
-    // These are arrays of the parts of the validators signatures
+        // These are arrays of the parts of the validators signatures
         Signature[] calldata _sigs,
         LogicCallArgs memory _args
-    ) external nonReentrant {
+    )
+        external
+        nonReentrant
+    {
         // CHECKS scoped to reduce stack depth
         {
             // Check that the call has not timed out
@@ -466,8 +444,8 @@ contract Gravity is ReentrancyGuard {
             // Check that the invalidation nonce is higher than the last nonce for this invalidation Id
             if (state_invalidationMapping[_args.invalidationId] >= _args.invalidationNonce) {
                 revert InvalidLogicCallNonce({
-                newNonce: _args.invalidationNonce,
-                currentNonce: state_invalidationMapping[_args.invalidationId]
+                    newNonce: _args.invalidationNonce,
+                    currentNonce: state_invalidationMapping[_args.invalidationId]
                 });
             }
 
@@ -495,7 +473,7 @@ contract Gravity is ReentrancyGuard {
             bytes32 argsHash = keccak256(
                 abi.encode(
                     state_gravityId,
-                // bytes32 encoding of "logicCall"
+                    // bytes32 encoding of "logicCall"
                     0x6c6f67696343616c6c0000000000000000000000000000000000000000000000,
                     _args.transferAmounts,
                     _args.transferTokenContracts,
@@ -513,7 +491,7 @@ contract Gravity is ReentrancyGuard {
             checkValidatorSignatures(
                 _currentValset,
                 _sigs,
-            // Get hash of the transaction batch and checkpoint
+                // Get hash of the transaction batch and checkpoint
                 argsHash,
                 constant_powerThreshold
             );
@@ -526,10 +504,7 @@ contract Gravity is ReentrancyGuard {
 
         // Send tokens to the logic contract
         for (uint256 i = 0; i < _args.transferAmounts.length; i++) {
-            IERC20(_args.transferTokenContracts[i]).safeTransfer(
-                _args.logicContractAddress,
-                _args.transferAmounts[i]
-            );
+            IERC20(_args.transferTokenContracts[i]).safeTransfer(_args.logicContractAddress, _args.transferAmounts[i]);
         }
 
         // Make call to logic contract
@@ -543,12 +518,7 @@ contract Gravity is ReentrancyGuard {
         // LOGS scoped to reduce stack depth
         {
             state_lastEventNonce = state_lastEventNonce + 1;
-            emit LogicCallEvent(
-                _args.invalidationId,
-                _args.invalidationNonce,
-                returnData,
-                state_lastEventNonce
-            );
+            emit LogicCallEvent(_args.invalidationId, _args.invalidationNonce, returnData, state_lastEventNonce);
         }
     }
 
@@ -556,7 +526,10 @@ contract Gravity is ReentrancyGuard {
         address _tokenContract,
         string calldata _destination,
         uint256 _amount
-    ) external nonReentrant {
+    )
+        external
+        nonReentrant
+    {
         // we snapshot our current balance of this token
         uint256 ourStartingBalance = IERC20(_tokenContract).balanceOf(address(this));
 
@@ -579,11 +552,7 @@ contract Gravity is ReentrancyGuard {
         // provided amount. This protects against a small set of wonky ERC20 behavior, like
         // burning on send but not tokens that for example change every users balance every day.
         emit SendToCosmosEvent(
-            _tokenContract,
-            msg.sender,
-            _destination,
-            ourEndingBalance - ourStartingBalance,
-            state_lastEventNonce
+            _tokenContract, msg.sender, _destination, ourEndingBalance - ourStartingBalance, state_lastEventNonce
         );
     }
 
@@ -592,27 +561,22 @@ contract Gravity is ReentrancyGuard {
         string calldata _name,
         string calldata _symbol,
         uint8 _decimals
-    ) external {
+    )
+        external
+    {
         // Deploy an ERC20 with entire supply granted to Gravity.sol
         CosmosERC20 erc20 = new CosmosERC20(address(this), _name, _symbol, _decimals);
 
         // Fire an event to let the Cosmos module know
         state_lastEventNonce = state_lastEventNonce + 1;
-        emit ERC20DeployedEvent(
-            _cosmosDenom,
-            address(erc20),
-            _name,
-            _symbol,
-            _decimals,
-            state_lastEventNonce
-        );
+        emit ERC20DeployedEvent(_cosmosDenom, address(erc20), _name, _symbol, _decimals, state_lastEventNonce);
     }
 
     constructor(
-    // A unique identifier for this gravity instance to use in signatures
+        // A unique identifier for this gravity instance to use in signatures
         bytes32 _gravityId,
-    // The validator set, not in valset args format since many of it's
-    // arguments would never be used in this case
+        // The validator set, not in valset args format since many of it's
+        // arguments would never be used in this case
         address[] memory _validators,
         uint256[] memory _powers
     ) {
@@ -633,10 +597,7 @@ contract Gravity is ReentrancyGuard {
             }
         }
         if (cumulativePower <= constant_powerThreshold) {
-            revert InsufficientPower({
-            cumulativePower: cumulativePower,
-            powerThreshold: constant_powerThreshold
-            });
+            revert InsufficientPower({ cumulativePower: cumulativePower, powerThreshold: constant_powerThreshold });
         }
 
         ValsetArgs memory _valset;
@@ -651,13 +612,6 @@ contract Gravity is ReentrancyGuard {
 
         // LOGS
 
-        emit ValsetUpdatedEvent(
-            state_lastValsetNonce,
-            state_lastEventNonce,
-            0,
-            address(0),
-            _validators,
-            _powers
-        );
+        emit ValsetUpdatedEvent(state_lastValsetNonce, state_lastEventNonce, 0, address(0), _validators, _powers);
     }
 }

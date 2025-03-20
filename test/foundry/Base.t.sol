@@ -48,7 +48,9 @@ contract BaseTest is Test {
         uint256 sulphur,
         address account,
         address producerAddress
-    ) internal {
+    )
+        internal
+    {
         // Compare producer data with expected values
         // Implementation would compare actual values from the producer contract
         // with the expected values passed as parameters

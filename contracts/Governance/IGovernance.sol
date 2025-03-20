@@ -8,11 +8,7 @@ interface IGovernance {
     /// @param _treasureType Asset name
     /// @param _producer Management contract address corresponding to the asset's producer
     /// @param _productionData Management contract address corresponding to the asset's production data
-    function addTreasure(
-        string memory _treasureType,
-        address _producer,
-        address _productionData
-    ) external;
+    function addTreasure(string memory _treasureType, address _producer, address _productionData) external;
 
     /// @dev Return the current threshold set by the Governance multisig contract
     /// @return uint256 threshold
@@ -22,8 +18,5 @@ interface IGovernance {
     /// @param _treasureType Asset name
     /// @return address Producer management contract address
     /// @return address Production data management contract address
-    function getTreasureByKind(string memory _treasureType)
-        external
-        view
-        returns (address, address);
+    function getTreasureByKind(string memory _treasureType) external view returns (address, address);
 }
