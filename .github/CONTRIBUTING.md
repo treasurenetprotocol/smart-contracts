@@ -7,7 +7,7 @@ Thank you for your interest in contributing to the TreasureNet smart contracts! 
 ### Prerequisites
 - Node.js 20.x
 - npm
-- Foundry (for advanced testing)
+- Foundry (for testing)
 
 ### Initial Setup
 1. Fork and clone the repository
@@ -15,7 +15,7 @@ Thank you for your interest in contributing to the TreasureNet smart contracts! 
    ```
    npm install
    ```
-3. Set up Foundry (for advanced testing):
+3. Set up Foundry:
    ```
    npm run setup:foundry
    ```
@@ -31,25 +31,25 @@ Thank you for your interest in contributing to the TreasureNet smart contracts! 
   - Refactoring: `refactor--descriptive-name`
 
 ### Testing
-All code changes must include tests. We use two testing frameworks:
+All code changes must include tests. We use Foundry for testing:
 
-1. **Truffle Tests**
+1. **Run Tests**
    ```
-   npm run test
-   ```
-
-2. **Foundry Tests** (for new features)
-   ```
-   npm run test:foundry
+   forge test
    ```
 
-3. **Complete Test Suite**
+2. **Run Tests with Gas Reports**
    ```
-   npm run test:all
+   forge test --gas-report
+   ```
+
+3. **Generate and Check Coverage**
+   ```
+   forge coverage --report lcov
    ```
 
 ### Gas Optimization
-- Use the gas reporter to monitor gas usage: `npm run test:foundry:gas`
+- Use the gas reporter to monitor gas usage: `forge test --gas-report`
 - For functions expected to be called frequently, aim to minimize gas costs
 - Document any gas optimization strategies used
 
