@@ -41,7 +41,7 @@ fi
 # Install forge-std if not already installed
 if [ ! -d "./lib/forge-std" ]; then
     echo -e "${BLUE}Installing forge-std library...${NC}"
-    forge install foundry-rs/forge-std --no-commit
+    forge install foundry-rs/forge-std
 else
     echo -e "${GREEN}forge-std library already installed!${NC}"
 fi

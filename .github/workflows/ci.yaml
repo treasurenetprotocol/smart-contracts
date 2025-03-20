@@ -112,7 +112,7 @@ jobs:
           key: ${{ runner.os }}-foundry-${{ hashFiles('foundry.toml') }}-${{ hashFiles('contracts/**/*.sol') }}
 
       - name: Install Forge libraries
-        run: forge install foundry-rs/forge-std --no-commit
+        run: forge install foundry-rs/forge-std
 
       - name: Build contracts
         run: forge build --sizes
@@ -187,7 +187,7 @@ jobs:
         run: npm install
 
       - name: Install Forge libraries
-        run: forge install foundry-rs/forge-std --no-commit
+        run: forge install foundry-rs/forge-std
 
       - name: Run deployment simulation
         run: |
