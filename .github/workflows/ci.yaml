@@ -42,7 +42,7 @@ jobs:
         run: npm install
 
       - name: Install Forge libraries
-        run: forge install foundry-rs/forge-std --no-commit
+        run: forge install foundry-rs/forge-std
 
       # Cache Foundry artifacts for all jobs
       - name: Cache Foundry artifacts
