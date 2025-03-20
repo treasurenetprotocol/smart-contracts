@@ -16,7 +16,13 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  */
 contract TreasureBtcTest is BaseTest {
     using Strings for uint256;
-    
+    // @dev: This is a test contract for the BTC producer functionality
+    // @dev: It is used to test the addProducerAndModifyStatus function
+    // @dev: It is also used to test the getProducer function
+    // @dev: It is also used to test the setProducerStatus function
+    // @dev: It is also used to test the getProducerStatus function
+    // @dev: It is also used to test the getProducerNickname function
+    // @dev: It is also used to test the getProducerAccount function
     // Contract instances
     BtcProducer public btcProducer;
     BtcData public btcData;
