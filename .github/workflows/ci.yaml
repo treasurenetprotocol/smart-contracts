@@ -224,10 +224,10 @@ jobs:
           
           # Run the deployment simulation
           echo "Running deployment simulation..."
-          if [ -f script/DeployTreasureNet.s.sol ]; then
-            forge script script/DeployTreasureNet.s.sol --rpc-url http://localhost:8545 -vvv || echo "Deployment simulation encountered issues but continuing workflow"
+          if [ -f script/DeploySimulation.s.soll ]; then
+            forge script script/DeploySimulation.s.sol --rpc-url http://localhost:8545 -vvv || echo "Deployment simulation encountered issues but continuing workflow"
           else
-            echo "WARNING: DeployTreasureNet.s.sol not found. Using dummy deployment script instead."
+            echo "WARNING: DeploySimulation.s.sol not found. Using dummy deployment script instead."
             
             # Create a dummy simulation script if the real one doesn't exist
             echo "// SPDX-License-Identifier: UNLICENSED
