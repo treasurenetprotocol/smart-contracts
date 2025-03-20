@@ -5,17 +5,17 @@ on:
       - main
       - release/**
   pull_request:
+    types: [opened, synchronize, reopened]
   merge_group:
 permissions:
   contents: read
 
 jobs:
-  secrects-scanning:
+  secrets-scanning:
     name: Secrets Scanning
-    uses: treasurenetprotocol/resuable-workflows/.github/workflows/reusable-forge-code-coverage.yml@main
+    uses: treasurenetprotocol/reusable-workflows/.github/workflows/reusable-forge-code-coverage.yml@main
     with:
-      exclude_paths: "contracts/**"
-
+      exclude_paths: ".git/,node_modules/"
   test:
     runs-on: ubuntu-latest
     steps:
