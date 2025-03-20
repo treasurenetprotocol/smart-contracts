@@ -138,13 +138,13 @@ jobs:
       - name: Generate coverage report
         run: |
           # Generate coverage with source-based approach
-          forge coverage --report lcov --report-file lcov.info
+          forge coverage --report lcov --report-file lcov.info --ir-minimum
           
           # Check if we have valid records
           if ! lcov --summary lcov.info > /dev/null 2>&1; then
             echo "No valid records found in lcov.info, trying alternative approach"
             # Try alternative approach
-            FOUNDRY_PROFILE=coverage forge coverage --report lcov
+            FOUNDRY_PROFILE=coverage forge coverage --report lcov --ir-minimum
           fi
           
           # Create directory for the report
