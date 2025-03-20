@@ -10,6 +10,9 @@ permissions:
   contents: read
 
 jobs:
+  secrects-scanning:
+    name: Secrets Scanning
+    uses: treasurenetprotocol/resuable-workflows/.github/workflows/reusable-secrets-scanning.yml@main
   lint:
     name: Solidity Linting
     runs-on: ubuntu-latest
