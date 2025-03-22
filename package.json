@@ -20,7 +20,7 @@
     "compile": "truffle compile --all",
     "migrate": "truffle migrate --network ganache",
     "migrate:treasurenet": "truffle migrate --compile-all --network treasurenet",
-    "migrate:ethereum": "truffle migrate --compile-all --network ethereum",
+    "migrate:ethereum": "truffle migrate --compile-all --network ethereum"
   },
   "keywords": [],
   "author": "",
