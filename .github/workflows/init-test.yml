@@ -27,7 +27,7 @@ jobs:
 
       - name: Verify Foundry Installation
         run: |
-          foundryup --version
+          sleep 2
           forge --version
           anvil --version
           cast --version
