@@ -1,8 +1,10 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Locate forge executable - check common locations
-if [ -f "$HOME/.foundry/bin/forge" ]; then
+# Use FORGE_PATH if set, otherwise locate forge executable
+if [ -n "$FORGE_PATH" ]; then
+  FORGE="$FORGE_PATH"
+elif [ -f "$HOME/.foundry/bin/forge" ]; then
   FORGE="$HOME/.foundry/bin/forge"
 elif [ -f "$HOME/.cargo/bin/forge" ]; then
   FORGE="$HOME/.cargo/bin/forge"

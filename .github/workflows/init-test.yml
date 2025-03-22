@@ -25,28 +25,30 @@ jobs:
         run: |
           chmod +x ./setup-foundry.sh
           ./setup-foundry.sh
-
-      - name: Setup Foundry environment
+          
+      - name: Set Foundry PATH
         run: |
-          # Source environment files based on the installation message
-          [ -f ~/.bashrc ] && source ~/.bashrc
-          [ -f ~/.zshenv ] && source ~/.zshenv
+          # Direct installation of foundryup if not found
+          if [ ! -f "$HOME/.foundry/bin/foundryup" ]; then
+            curl -L https://foundry.paradigm.xyz | bash
+          fi
           
-          # Explicitly set PATH to include foundry binaries
-          export PATH="$HOME/.foundry/bin:$PATH"
+          # Add foundry to PATH for all subsequent steps
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
           
-          # Save path to GitHub environment for subsequent steps
-          echo "PATH=$PATH" >> $GITHUB_ENV
-          
-          # Activate foundry
-          [ -f ~/.foundry/bin/foundryup ] && ~/.foundry/bin/foundryup
+          # Verify PATH update
+          echo "Updated PATH: $GITHUB_PATH"
 
       - name: Verify Foundry Installation
         run: |
-          # Use full paths if needed
+          # Check if forge is in PATH
+          which forge || echo "forge not found in PATH"
+          
+          # List foundry directory contents
+          ls -la $HOME/.foundry/bin || echo "Foundry directory not found"
+          
+          # Try to run forge directly with full path
           $HOME/.foundry/bin/forge --version
-          $HOME/.foundry/bin/anvil --version
-          $HOME/.foundry/bin/cast --version
 
       - name: Verify Husky Installation
         run: |
@@ -55,14 +57,10 @@ jobs:
           test -x .husky/pre-commit || (echo "Pre-commit hook not executable" && exit 1)
 
       - name: Verify Foundry Build Works
-        run: |
-          export PATH="$HOME/.foundry/bin:$PATH"
-          npm run build
+        run: $HOME/.foundry/bin/forge build
 
       - name: Run Simple Test
-        run: |
-          export PATH="$HOME/.foundry/bin:$PATH"
-          npm test -- --match-test "testSimple" || echo "No simple test found, but forge command worked"
+        run: $HOME/.foundry/bin/forge test -vvv --match-test "testSimple" || echo "No simple test found, but forge command worked"
 
       - name: Simulate Git Commit to Test Pre-commit Hook
         run: |
@@ -71,5 +69,7 @@ jobs:
           touch test-file.sol
           echo "// SPDX-License-Identifier: GPL-3.0\npragma solidity 0.8.29;\n\ncontract Test {}" > test-file.sol
           git add test-file.sol
-          export PATH="$HOME/.foundry/bin:$PATH"
+          
+          # Set FORGE_PATH env var for the pre-commit hook
+          export FORGE_PATH="$HOME/.foundry/bin/forge"
           GIT_HOOK_BYPASS=true git commit -m "test: Add test file to verify hooks" || echo "Pre-commit hook executed" 
