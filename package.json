@@ -11,6 +11,8 @@
     "test": "forge test -vvv",
     "test:gas": "forge test -vvv --gas-report",
     "test:coverage": "forge coverage",
+    "snapshot": "forge snapshot",
+    "snapshot:check": "forge snapshot --check",
     "lint": "forge fmt --check",
     "lint:fix": "forge fmt",
     "setup:foundry": "./setup-foundry.sh",

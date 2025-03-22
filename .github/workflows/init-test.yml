@@ -149,6 +149,18 @@ jobs:
           
           echo "Installed forge-std in lib directory"
 
+      - name: Check Gas Snapshots
+        run: |
+          # Find forge binary
+          FORGE_BIN=$(find $HOME -name forge -type f 2>/dev/null | head -n 1)
+          if [ -n "$FORGE_BIN" ]; then
+            # Run the snapshot check
+            echo "Checking gas snapshots against current implementation..."
+            $FORGE_BIN snapshot --check || echo "Gas usage has changed, consider updating snapshots"
+          else
+            echo "⚠️ Could not find forge binary, skipping gas snapshot check"
+          fi
+
       - name: Verify Husky Installation
         run: |
           test -d .husky || (echo "Husky directory not found" && exit 1)

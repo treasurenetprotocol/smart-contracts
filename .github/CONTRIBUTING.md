@@ -77,6 +77,31 @@ All code changes must include tests. We use Foundry for testing, with npm script
 - For functions expected to be called frequently, aim to minimize gas costs
 - Document any gas optimization strategies used
 
+### Gas Snapshots
+We use gas snapshots to track and monitor gas usage across the codebase:
+
+1. **Viewing Gas Usage**: 
+   ```
+   npm run test:gas  # Shows current gas usage without updating snapshot
+   ```
+
+2. **Updating Gas Snapshots**:
+   ```
+   forge snapshot  # Updates the .gas-snapshot file with current gas usage
+   ```
+
+3. **When to Update Snapshots**:
+   - After implementing gas optimizations
+   - After adding new contracts or test cases
+   - Before submitting a PR that modifies contract logic
+   - When requested by reviewers during code reviews
+
+4. **Reviewing Gas Changes**:
+   - Use `forge snapshot --check` to compare current gas usage against the snapshot
+   - If gas usage increases significantly, consider optimizing before submitting
+
+Git will track changes to the `.gas-snapshot` file, allowing reviewers to see the impact of your changes on gas consumption.
+
 ## Smart Contract Standards
 
 ### Code Style

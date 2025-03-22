@@ -356,6 +356,10 @@ This project provides several npm scripts for development and testing:
 - `npm run test:gas` - Run tests with gas reporting
 - `npm run test:coverage` - Generate test coverage report
 
+### Gas Analysis
+- `forge snapshot` - Update gas snapshots in `.gas-snapshot` file
+- `forge snapshot --check` - Compare current gas usage against snapshots
+
 ### Linting & Formatting
 - `npm run lint` - Check Solidity formatting without making changes
 - `npm run lint:fix` - Format Solidity files (same as lint:sol)
