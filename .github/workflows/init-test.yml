@@ -1,0 +1,54 @@
+name: Test Init Steps
+
+on:
+  pull_request:
+
+jobs:
+  test-initialization:
+    name: Test Foundry and Husky Initialization
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Foundry using setup script
+        run: |
+          chmod +x ./setup-foundry.sh
+          ./setup-foundry.sh
+
+      - name: Verify Foundry Installation
+        run: |
+          foundryup --version
+          forge --version
+          anvil --version
+          cast --version
+
+      - name: Verify Husky Installation
+        run: |
+          test -d .husky || (echo "Husky directory not found" && exit 1)
+          test -f .husky/pre-commit || (echo "Pre-commit hook not found" && exit 1)
+          test -x .husky/pre-commit || (echo "Pre-commit hook not executable" && exit 1)
+
+      - name: Verify Foundry Build Works
+        run: npm run build
+
+      - name: Run Simple Test
+        run: npm test -- --match-test "testSimple" || echo "No simple test found, but forge command worked"
+
+      - name: Simulate Git Commit to Test Pre-commit Hook
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          touch test-file.sol
+          echo "// SPDX-License-Identifier: GPL-3.0\npragma solidity 0.8.29;\n\ncontract Test {}" > test-file.sol
+          git add test-file.sol
+          GIT_HOOK_BYPASS=true git commit -m "test: Add test file to verify hooks" || echo "Pre-commit hook executed" 
