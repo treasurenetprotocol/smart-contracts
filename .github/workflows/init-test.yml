@@ -2,6 +2,7 @@ name: Test Init Steps
 
 on:
   pull_request:
+    branches: [ main, develop ]
 
 jobs:
   test-initialization:
@@ -18,19 +19,34 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install Foundry using setup script
         run: |
           chmod +x ./setup-foundry.sh
           ./setup-foundry.sh
 
+      - name: Setup Foundry environment
+        run: |
+          # Source environment files based on the installation message
+          [ -f ~/.bashrc ] && source ~/.bashrc
+          [ -f ~/.zshenv ] && source ~/.zshenv
+          
+          # Explicitly set PATH to include foundry binaries
+          export PATH="$HOME/.foundry/bin:$PATH"
+          
+          # Save path to GitHub environment for subsequent steps
+          echo "PATH=$PATH" >> $GITHUB_ENV
+          
+          # Activate foundry
+          [ -f ~/.foundry/bin/foundryup ] && ~/.foundry/bin/foundryup
+
       - name: Verify Foundry Installation
         run: |
-          sleep 2
-          forge --version
-          anvil --version
-          cast --version
+          # Use full paths if needed
+          $HOME/.foundry/bin/forge --version
+          $HOME/.foundry/bin/anvil --version
+          $HOME/.foundry/bin/cast --version
 
       - name: Verify Husky Installation
         run: |
@@ -39,10 +55,14 @@ jobs:
           test -x .husky/pre-commit || (echo "Pre-commit hook not executable" && exit 1)
 
       - name: Verify Foundry Build Works
-        run: npm run build
+        run: |
+          export PATH="$HOME/.foundry/bin:$PATH"
+          npm run build
 
       - name: Run Simple Test
-        run: npm test -- --match-test "testSimple" || echo "No simple test found, but forge command worked"
+        run: |
+          export PATH="$HOME/.foundry/bin:$PATH"
+          npm test -- --match-test "testSimple" || echo "No simple test found, but forge command worked"
 
       - name: Simulate Git Commit to Test Pre-commit Hook
         run: |
@@ -51,4 +71,5 @@ jobs:
           touch test-file.sol
           echo "// SPDX-License-Identifier: GPL-3.0\npragma solidity 0.8.29;\n\ncontract Test {}" > test-file.sol
           git add test-file.sol
+          export PATH="$HOME/.foundry/bin:$PATH"
           GIT_HOOK_BYPASS=true git commit -m "test: Add test file to verify hooks" || echo "Pre-commit hook executed" 
