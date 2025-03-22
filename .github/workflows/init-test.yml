@@ -110,7 +110,7 @@ jobs:
 
       - name: Setup PATH for Foundry
         run: |
-          # Find the forge binary
+          # Find the forge binary (check both .foundry and .config/.foundry)
           FORGE_BIN=$(find $HOME -name forge -type f 2>/dev/null | head -n 1)
           if [ -n "$FORGE_BIN" ]; then
             echo "Found forge at $FORGE_BIN"
@@ -121,12 +121,33 @@ jobs:
             # Also create symlinks
             sudo mkdir -p /usr/local/bin
             sudo ln -sf "$FORGE_BIN" /usr/local/bin/forge
+            sudo ln -sf "$(dirname "$FORGE_BIN")/cast" /usr/local/bin/cast 2>/dev/null || true
+            sudo ln -sf "$(dirname "$FORGE_BIN")/anvil" /usr/local/bin/anvil 2>/dev/null || true
             
             # Export for current step
             export PATH="$FORGE_DIR:$PATH"
+            
+            # Verify forge is working
+            echo "Testing forge with symlink:"
+            /usr/local/bin/forge --version
           else
             echo "❌ Could not find forge binary"
           fi
+
+      - name: Install lib dependencies
+        run: |
+          # Create a default remappings.txt file
+          echo "forge-std/=lib/forge-std/src/" > remappings.txt
+          
+          # Ensure lib directory exists
+          mkdir -p lib
+          
+          # Install forge-std directly with git
+          cd lib
+          git clone https://github.com/foundry-rs/forge-std.git --depth 1
+          cd ..
+          
+          echo "Installed forge-std in lib directory"
 
       - name: Verify Husky Installation
         run: |
