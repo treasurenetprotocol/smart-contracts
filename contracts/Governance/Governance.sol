@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /// @title Treasurenet's governance contract
 /// @author bjwswang
 contract Governance is OwnableUpgradeable {
-    
     bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
 
     // bytes32 public constant TREAUSRE_OIL = keccak256("OIL");
@@ -22,18 +21,18 @@ contract Governance is OwnableUpgradeable {
 
     mapping(bytes32 => Treasure) private _treasures;
 
-     /// @dev Treasure's core data structure, representing a similar asset, such as OIL/GAS/ETHER
+    /// @dev Treasure's core data structure, representing a similar asset, such as OIL/GAS/ETHER
     struct Treasure {
         bytes32 Kind;
         address ProducerContract;
         address ProductionDataContract;
     }
 
-     /// @dev Used for the initialization of the Governance contract
-     /// @param _daoContract DAO contract address
-     /// @param _mulSigContract Multisig contract address
-     /// @param _roleContract Role management contract address
-     /// @param _parameterInfoContract Parameter management contract address
+    /// @dev Used for the initialization of the Governance contract
+    /// @param _daoContract DAO contract address
+    /// @param _mulSigContract Multisig contract address
+    /// @param _roleContract Role management contract address
+    /// @param _parameterInfoContract Parameter management contract address
     function initialize(
         address _daoContract,
         address _mulSigContract,
@@ -41,20 +40,25 @@ contract Governance is OwnableUpgradeable {
         address _parameterInfoContract,
         string[] memory _treasureTypes,
         address[] memory _producers,
-        address[] memory _productionDatas        
-    ) public initializer {
+        address[] memory _productionDatas
+    )
+        public
+        initializer
+    {
         _role = IRoles(_roleContract);
         _parameterInfo = _parameterInfoContract;
         _mulSig = _mulSigContract;
 
         _dao = _daoContract;
 
-        require(_treasureTypes.length == _producers.length,"treasure length mismatch");
-        require(_treasureTypes.length == _productionDatas.length,"treasureTypes mismatch with productionDatas length");
+        require(_treasureTypes.length == _producers.length, "treasure length mismatch");
+        require(_treasureTypes.length == _productionDatas.length, "treasureTypes mismatch with productionDatas length");
 
         for (uint256 i = 0; i < _treasureTypes.length; ++i) {
-            require(_addTreasure(_treasureTypes[i], _producers[i], _productionDatas[i]),"failed to initialize treasure");
-        }   
+            require(
+                _addTreasure(_treasureTypes[i], _producers[i], _productionDatas[i]), "failed to initialize treasure"
+            );
+        }
     }
 
     modifier onlyDAO() {
@@ -66,33 +70,37 @@ contract Governance is OwnableUpgradeable {
         require(_msgSender() == _mulSig, "");
         _;
     }
-    
-     /// @dev Return the current threshold set by the Governance multisig contract
-     /// @return uint256 threshold
+
+    /// @dev Return the current threshold set by the Governance multisig contract
+    /// @return uint256 threshold
     function fmThreshold() public view returns (uint256) {
         return _role.getRoleMemberCount(FOUNDATION_MANAGER) / 2 + 1;
     }
 
-    event AddTreasure(string treasureType,address producerContract,address produceDataContract);
-     /// @dev Used to add new Treasure assets (this method can only be called from the Multisig contract)
-     ///   - Events:
-     ///    - event AddTreasure(string treasureType,address producerContract,address produceDataContract);
-     /// @param _treasureType Asset name
-     /// @param _producer Management contract address corresponding to the asset's producer
-     /// @param _productionData Management contract address corresponding to the asset's production data
-    function addTreasure(
+    event AddTreasure(string treasureType, address producerContract, address produceDataContract);
+    /// @dev Used to add new Treasure assets (this method can only be called from the Multisig contract)
+    ///   - Events:
+    ///    - event AddTreasure(string treasureType,address producerContract,address produceDataContract);
+    /// @param _treasureType Asset name
+    /// @param _producer Management contract address corresponding to the asset's producer
+    /// @param _productionData Management contract address corresponding to the asset's production data
+
+    function addTreasure(string memory _treasureType, address _producer, address _productionData) public onlyMulSig {
+        require(_addTreasure(_treasureType, _producer, _productionData), "failed to add treasure");
+    }
+
+    function _addTreasure(
         string memory _treasureType,
         address _producer,
         address _productionData
-    ) public onlyMulSig {
-        require(_addTreasure(_treasureType, _producer, _productionData),"failed to add treasure");
-    }
-
-    function _addTreasure(string memory _treasureType,address _producer,address _productionData) internal returns(bool){
+    )
+        internal
+        returns (bool)
+    {
         bytes32 kind = keccak256(bytes(_treasureType));
         require(_treasures[kind].ProducerContract == address(0), "treasure type already exists");
-        require(_producer != address(0),"empty producer contract");
-        require(_productionData!= address(0),"empty production data contract");
+        require(_producer != address(0), "empty producer contract");
+        require(_productionData != address(0), "empty production data contract");
 
         Treasure memory newTreasure;
         newTreasure.Kind = kind;

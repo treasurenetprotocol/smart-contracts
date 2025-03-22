@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract Bid is Initializable, OwnableUpgradeable {
-
     event BidRecord(address account, uint256 amount);
     event BidStart(uint256 height);
 
@@ -40,10 +39,10 @@ contract Bid is Initializable, OwnableUpgradeable {
         emit BidStart(_startBlock);
     }
 
-    receive() external payable {}
+    receive() external payable { }
 
     /* Has the bonus stake been conducted */
-    function isTATBider(address account) public view returns (bool){
+    function isTATBider(address account) public view returns (bool) {
         /* Waiting for trigger situation beyond the cycle */
         if (block.number > _startBlock + ROUND_BLOCK) {
             return false;
@@ -52,7 +51,7 @@ contract Bid is Initializable, OwnableUpgradeable {
     }
 
     /* Check how much TAT you have invested */
-    function mybidAmount() public view returns (uint256){
+    function mybidAmount() public view returns (uint256) {
         /* The user does not exist */
         if (bidAmount[msg.sender] == 0) {
             return 0;
@@ -65,7 +64,7 @@ contract Bid is Initializable, OwnableUpgradeable {
     }
 
     /* query start block number  */
-    function roundStartBlock() public view returns (uint256){
+    function roundStartBlock() public view returns (uint256) {
         require(_startBlock > 0, "bonus stake has not started yet");
         uint256 _block = _startBlock;
         if (block.number > _startBlock + ROUND_BLOCK) {
@@ -75,7 +74,7 @@ contract Bid is Initializable, OwnableUpgradeable {
     }
 
     /* Bonus Stake main process */
-    function bidTAT(uint256 amount) public returns (bool){
+    function bidTAT(uint256 amount) public returns (bool) {
         require(amount >= TAT_THRESHOLD, "TAT not enough to bid");
         if (block.number > _startBlock + ROUND_BLOCK) {
             _startBlock = _startBlock + (block.number - _startBlock) / ROUND_BLOCK * ROUND_BLOCK;
@@ -103,11 +102,10 @@ contract Bid is Initializable, OwnableUpgradeable {
         emit BidRecord(msg.sender, amount);
 
         return true;
-
     }
 
     /* Query List */
-    function bidderList() public view returns (BiderList[] memory, uint256, uint256){
+    function bidderList() public view returns (BiderList[] memory, uint256, uint256) {
         uint256 _block = _startBlock;
         /* Situation where waiting for trigger beyond the cycle */
         if (block.number > _startBlock + ROUND_BLOCK) {
@@ -124,5 +122,4 @@ contract Bid is Initializable, OwnableUpgradeable {
         }
         return (list, _totalBid, _block);
     }
-
 }

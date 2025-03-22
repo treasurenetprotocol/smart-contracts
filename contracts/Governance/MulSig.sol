@@ -43,13 +43,13 @@ contract MulSig is Initializable, OwnableUpgradeable {
         address _add;
         uint256 value;
         IParameterInfo.PriceDiscountConfig data;
-        uint256 _type; // 1: adminPermission 2: addResource 3: dataConfig 4: discountConfig 5: registerDApp 6: setCrosschainToken
+        uint256 _type; // 1: adminPermission 2: addResource 3: dataConfig 4: discountConfig 5: registerDApp 6:
+            // setCrosschainToken
         uint8 signatureCount;
         uint256 excuteTime;
         address producer;
         address productionData;
         mapping(address => uint8) signatures;
-
         string treasureKind;
         address payee;
         string token;
@@ -79,7 +79,10 @@ contract MulSig is Initializable, OwnableUpgradeable {
         address _parameterInfoContract,
         address _crosschainTokensContract,
         uint256 _confirmation
-    ) public initializer {
+    )
+        public
+        initializer
+    {
         __Ownable_init();
 
         confirmDuration = _confirmation * 1 seconds;
@@ -101,7 +104,6 @@ contract MulSig is Initializable, OwnableUpgradeable {
         _;
     }
 
-
     event ManagePermission(uint256 proposalId, address proposer, string name, address _add);
     /// @dev Initiates a new proposal to add or revoke role permissions for a certain user
     /// - Only allowed to be initiated by FoundationManager
@@ -114,7 +116,15 @@ contract MulSig is Initializable, OwnableUpgradeable {
     /// - FEEDERA: Revoke FEEDER permission
     /// @param _account Account address
     /// @return bool Whether the proposal is successfully initiated
-    function proposeToManagePermission(string memory _name, address _account) public onlyFoundationManager returns (bool) {
+
+    function proposeToManagePermission(
+        string memory _name,
+        address _account
+    )
+        public
+        onlyFoundationManager
+        returns (bool)
+    {
         require(address(0) != _account, "MulSig:zero address");
         uint256 proposalID = proposalIDx++;
         proposal storage kk = proposals[proposalID];
@@ -130,7 +140,9 @@ contract MulSig is Initializable, OwnableUpgradeable {
         return true;
     }
 
-    event AddResource(uint256 proposalId, address proposer, string name, address producerContract, address productionContract);
+    event AddResource(
+        uint256 proposalId, address proposer, string name, address producerContract, address productionContract
+    );
     /// @dev Used to add a new Treasure asset
     /// - Event:
     /// - event AddResource(address proposer, string name, address producerContract,address productionContract);
@@ -138,11 +150,16 @@ contract MulSig is Initializable, OwnableUpgradeable {
     /// @param _producer Producer management contract
     /// @param _productionData Production data management contract
     /// @return bool Whether the proposal is successfully initiated
+
     function proposeToAddResource(
         string memory _name,
         address _producer,
         address _productionData
-    ) public onlyFoundationManager returns (bool) {
+    )
+        public
+        onlyFoundationManager
+        returns (bool)
+    {
         uint256 proposalID = proposalIDx++;
         proposal storage kk = proposals[proposalID];
         kk.proposer = msg.sender;
@@ -165,7 +182,11 @@ contract MulSig is Initializable, OwnableUpgradeable {
         string memory _treasure,
         string memory _dapp,
         address _payee
-    ) public onlyFoundationManager returns (bool) {
+    )
+        public
+        onlyFoundationManager
+        returns (bool)
+    {
         require(keccak256(bytes(_treasure)) != keccak256(bytes("")), "empty treasure name");
         require(keccak256(bytes(_dapp)) != keccak256(bytes("")), "empty dapp name");
         require(_payee != address(0), "empty DApp payee");
@@ -191,7 +212,6 @@ contract MulSig is Initializable, OwnableUpgradeable {
         return true;
     }
 
-
     event SetPlatformConfig(uint256 proposalId, address proposer, string name, uint256 _value);
     /// @dev Used to initiate the modification of the platform configuration information (parameterInfo)
     /// - Event
@@ -199,7 +219,15 @@ contract MulSig is Initializable, OwnableUpgradeable {
     /// @param _name The key of the configuration information
     /// @param _value The value of the configuration information
     /// @return bool Whether the proposal is successfully initiated
-    function proposeToSetPlatformConfig(string memory _name, uint256 _value) public onlyFoundationManager returns (bool) {
+
+    function proposeToSetPlatformConfig(
+        string memory _name,
+        uint256 _value
+    )
+        public
+        onlyFoundationManager
+        returns (bool)
+    {
         uint256 proposalID = proposalIDx++;
         proposal storage kk = proposals[proposalID];
         kk.proposer = msg.sender;
@@ -230,6 +258,7 @@ contract MulSig is Initializable, OwnableUpgradeable {
     /// @param b5 discount[2]
     /// @param b6 discount[3]
     /// @return bool Whether the proposal is successfully initiated
+
     function proposeToSetDiscountConfig(
         uint256 b1,
         uint256 b2,
@@ -237,7 +266,11 @@ contract MulSig is Initializable, OwnableUpgradeable {
         uint256 b4,
         uint256 b5,
         uint256 b6
-    ) public onlyFoundationManager returns (bool) {
+    )
+        public
+        onlyFoundationManager
+        returns (bool)
+    {
         uint256 proposalID = proposalIDx++;
         proposal storage kk = proposals[proposalID];
         kk.proposer = msg.sender;
@@ -268,7 +301,11 @@ contract MulSig is Initializable, OwnableUpgradeable {
         uint256 targetchainid,
         uint256 fee,
         uint256 chainId
-    ) public onlyFoundationManager returns (bool) {
+    )
+        public
+        onlyFoundationManager
+        returns (bool)
+    {
         uint256 proposalID = proposalIDx++;
         proposal storage kk = proposals[proposalID];
         kk.proposer = msg.sender;
@@ -299,6 +336,7 @@ contract MulSig is Initializable, OwnableUpgradeable {
     /// @dev Issued by the FoundationManager to sign a transaction and approve a certain proposal
     /// @param _proposalId The ID of the corresponding proposal
     /// @return bool Whether the request was successful
+
     function signTransaction(uint256 _proposalId) public onlyFoundationManager returns (bool) {
         proposal storage pro = proposals[_proposalId];
         // Not meeting the multi-signature threshold requirement
@@ -320,9 +358,10 @@ contract MulSig is Initializable, OwnableUpgradeable {
     }
 
     event ProposalExecuted(uint256 proposalId);
-/// @dev Executed by the FoundationManager for a specific proposal (with completed voting)
-/// @param _proposalId The ID of the corresponding proposal
-/// @return bool Whether the request was successful
+    /// @dev Executed by the FoundationManager for a specific proposal (with completed voting)
+    /// @param _proposalId The ID of the corresponding proposal
+    /// @return bool Whether the request was successful
+
     function executeProposal(uint256 _proposalId) public onlyFoundationManager returns (bool) {
         proposal storage pro = proposals[_proposalId];
         // Ensure the execution time has been reached
@@ -401,16 +440,12 @@ contract MulSig is Initializable, OwnableUpgradeable {
     }
 
     /**
-    * Get detailed information about a proposal based on its ID.
-    *
-    * @param _proposalId The unique identifier of the proposal.
-    * @return Returns a ProposalResponse struct containing different types of information about the proposal.
-    */
-    function transactionDetails(uint256 _proposalId)
-    public
-    view
-    returns (ProposalResponse memory)
-    {
+     * Get detailed information about a proposal based on its ID.
+     *
+     * @param _proposalId The unique identifier of the proposal.
+     * @return Returns a ProposalResponse struct containing different types of information about the proposal.
+     */
+    function transactionDetails(uint256 _proposalId) public view returns (ProposalResponse memory) {
         proposal storage pro = proposals[_proposalId];
         ProposalResponse memory pr;
         if (pro._type == 1) {

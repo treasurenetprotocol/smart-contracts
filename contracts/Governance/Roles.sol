@@ -25,11 +25,14 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
     /// @param crosschainSenders The accounts of crosschain message senders (CROSSCHAIN_SENDER)
     function initialize(
         address _mulSigContract,
-        address[] memory managers,         // FOUNDATION_MANAGER
-        address[] memory auctionManagers,  // AUCTION_MANAGER
-        address[] memory feeders,          // FEEDER
+        address[] memory managers, // FOUNDATION_MANAGER
+        address[] memory auctionManagers, // AUCTION_MANAGER
+        address[] memory feeders, // FEEDER
         address[] memory crosschainSenders // CROSSCHAIN_SENDER
-    ) public initializer {
+    )
+        public
+        initializer
+    {
         __Ownable_init();
 
         _mulSig = _mulSigContract;
@@ -37,7 +40,7 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
 
         _setRoleAdmin(ADMIN, ADMIN);
         _setRoleAdmin(FOUNDATION_MANAGER, ADMIN);
-        _setRoleAdmin(AUCTION_MANAGER,FOUNDATION_MANAGER);
+        _setRoleAdmin(AUCTION_MANAGER, FOUNDATION_MANAGER);
         _setRoleAdmin(FEEDER, ADMIN);
         _setRoleAdmin(_CROSSCHAIN_SENDER, ADMIN);
 
@@ -67,23 +70,11 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
         _;
     }
 
-    function _msgSender()
-    internal
-    view
-    virtual
-    override(Context, ContextUpgradeable)
-    returns (address)
-    {
+    function _msgSender() internal view virtual override(Context, ContextUpgradeable) returns (address) {
         return msg.sender;
     }
 
-    function _msgData()
-    internal
-    view
-    virtual
-    override(Context, ContextUpgradeable)
-    returns (bytes calldata)
-    {
+    function _msgData() internal view virtual override(Context, ContextUpgradeable) returns (bytes calldata) {
         return msg.data;
     }
 

@@ -45,7 +45,10 @@ abstract contract Producer is Initializable, IProducer, Share {
         address _productionDataContract,
         string[] memory _dappNames,
         address[] memory _payees
-    ) internal onlyInitializing {
+    )
+        internal
+        onlyInitializing
+    {
         require(_mulSigContract != address(0), "empty MulSig contract");
         require(_roleContract != address(0), "empty Role contract");
         require(keccak256(bytes(_assetType)) != keccak256(bytes("")), "empty treasure type");
@@ -54,7 +57,6 @@ abstract contract Producer is Initializable, IProducer, Share {
         _asset_type = _assetType;
         _roles = IRoles(_roleContract);
         _productionData = IProductionData(_productionDataContract);
-
 
         require(_dappNames.length == _payees.length, "dapps array must equal to payees array");
         for (uint256 i = 0; i < _dappNames.length; i++) {
@@ -72,7 +74,6 @@ abstract contract Producer is Initializable, IProducer, Share {
         _;
     }
 
-
     modifier onlyMulSig() {
         require(msg.sender == _mulSig, "");
         _;
@@ -83,10 +84,7 @@ abstract contract Producer is Initializable, IProducer, Share {
     ///     event AddProducer(bytes32 uniqueId,ProducerCore producer);
     /// @param _uniqueId Unique ID of the producer
     /// @param _producer Producer information
-    function addProducer(bytes32 _uniqueId, ProducerCore memory _producer)
-    public
-    override
-    {
+    function addProducer(bytes32 _uniqueId, ProducerCore memory _producer) public override {
         _beforeAddProducer(_uniqueId, _producer);
         _addProducer(_uniqueId, _producer);
         _afterAddProducer(_uniqueId);
@@ -95,10 +93,7 @@ abstract contract Producer is Initializable, IProducer, Share {
 
     // TODO: implement below functions
 
-    function _beforeAddProducer(bytes32 _uniqueId, ProducerCore memory _producer)
-    internal
-    virtual
-    {
+    function _beforeAddProducer(bytes32 _uniqueId, ProducerCore memory /* _producer */ ) internal virtual {
         ProducerCore memory producer = _producers[_uniqueId];
         require(producer.owner == address(0), "producer already exist");
     }
@@ -121,11 +116,7 @@ abstract contract Producer is Initializable, IProducer, Share {
     //     Active,
     //     Deactive
     // }
-    function setProducerStatus(bytes32 _uniqueId, ProducerStatus _newStatus)
-    public
-    override
-    onlyFoundationManager
-    {
+    function setProducerStatus(bytes32 _uniqueId, ProducerStatus _newStatus) public override onlyFoundationManager {
         //require(producerStatus(_uniqueId) != _newStatus, "status not changed");
         require(_newStatus != ProducerStatus.NotSet, "invalid status");
 
@@ -156,8 +147,9 @@ abstract contract Producer is Initializable, IProducer, Share {
     ///     uint256 API;
     ///     uint256 sulphur;
     /// }
+
     function updateProdcuer(bytes32 _uniqueId, ProducerCore memory _producer) public override {
-        (,ProducerCore memory curr) = getProducer(_uniqueId);
+        (, ProducerCore memory curr) = getProducer(_uniqueId);
         require(curr.owner == _producer.owner, "owner change not allowd");
         require(curr.owner == msg.sender, "only owner can update");
         _updateProducer(_uniqueId, _producer);
@@ -182,12 +174,7 @@ abstract contract Producer is Initializable, IProducer, Share {
     /// @param _uniqueId Unique ID of the producer
     /// @return ProducerStatus Producer status
     /// @return ProducerCore
-    function getProducer(bytes32 _uniqueId)
-    public
-    view
-    override
-    returns (ProducerStatus, ProducerCore memory)
-    {
+    function getProducer(bytes32 _uniqueId) public view override returns (ProducerStatus, ProducerCore memory) {
         if (producerStatus(_uniqueId) == ProducerStatus.NotSet) {
             ProducerCore memory emptyProducer;
             return (ProducerStatus.NotSet, emptyProducer);
@@ -200,6 +187,7 @@ abstract contract Producer is Initializable, IProducer, Share {
     /// @param dapp Name of the DApp
     /// @param payee Payee address of the DApp
     /// @return bytes32 ID of the DApp
+
     function registerDAppConnect(string memory dapp, address payee) external override onlyMulSig returns (bytes32) {
         require(keccak256(bytes(dapp)) != keccak256(bytes("")), "empty dapp name");
         require(payee != address(0), "empty DApp payee");
@@ -210,7 +198,7 @@ abstract contract Producer is Initializable, IProducer, Share {
         return dappId;
     }
 
-    function getDAppPayee(bytes32 _dappId) public override view returns (address) {
+    function getDAppPayee(bytes32 _dappId) public view override returns (address) {
         address payee = _dapps[_dappId];
         require(payee != address(0), "dapp with this dappId not registered yet");
         return payee;
@@ -228,14 +216,16 @@ abstract contract Producer is Initializable, IProducer, Share {
         string[] memory nicknames = new string[](_uniqueIds.length);
 
         for (uint256 i = 0; i < _uniqueIds.length; i++) {
-            (ProducerStatus status,ProducerCore memory p) = getProducer(_uniqueIds[i]);
+            (ProducerStatus status, ProducerCore memory p) = getProducer(_uniqueIds[i]);
             require(status == ProducerStatus.Active, "producer not active");
-            //require(isHolder(_uniqueIds[i], msg.sender) || msg.sender == p.owner, "only producer holder or producer owner can link stream");
+            //require(isHolder(_uniqueIds[i], msg.sender) || msg.sender == p.owner, "only producer holder or producer
+            // owner can link stream");
             require(isHolder(_uniqueIds[i], _dapps[_dappId]), "dapp's payee must be producer's holder");
             Holder memory hold = holder(_uniqueIds[i], _dapps[_dappId]);
 
             /*uint256 occupied = _producerTotalOccupied[_uniqueIds[i]];
-            require(occupied + hold.ratio <= MAX_PIECES, "occupied ratio of a producer cannot exceedes MAX_PIECES(100)");
+            require(occupied + hold.ratio <= MAX_PIECES, "occupied ratio of a producer cannot exceedes
+            MAX_PIECES(100)");
             _producerTotalOccupied[_uniqueIds[i]] = occupied + hold.ratio;
             ratios[i] = _producerTotalOccupied[_uniqueIds[i]];*/
             ratios[i] = hold.ratio;

@@ -15,25 +15,15 @@ import "../Governance/IGovernance.sol";
  *    - Pausable
  *    - Burnable
  *    - Stake
-*/
-contract TAT is
-Initializable,
-OwnableUpgradeable,
-ERC20PausableUpgradeable,
-ERC20BurnableUpgradeable,
-Stakeable
-{
+ */
+contract TAT is Initializable, OwnableUpgradeable, ERC20PausableUpgradeable, ERC20BurnableUpgradeable, Stakeable {
     IGovernance private _governance;
 
     /// @dev Initializes the contract
     /// @param _name Token name
     /// @param _symbol Token symbol
     /// @param _governanceContract The governance contract of TreasureNet
-    function initialize(
-        string memory _name,
-        string memory _symbol,
-        address _governanceContract
-    ) public initializer {
+    function initialize(string memory _name, string memory _symbol, address _governanceContract) public initializer {
         __Ownable_init();
         __ERC20_init(_name, _symbol);
         __ERC20Burnable_init();
@@ -52,22 +42,30 @@ Stakeable
         address from,
         address to,
         uint256 amount
-    ) internal virtual override(ERC20Upgradeable, ERC20PausableUpgradeable) {
+    )
+        internal
+        virtual
+        override(ERC20Upgradeable, ERC20PausableUpgradeable)
+    {
         super._beforeTokenTransfer(from, to, amount);
         require(!paused(), "ERC20Pausable: token transfer while paused");
     }
 
-    event TATHistory(string kind, bytes32 uniqueId, address from, address to, uint amount);
+    event TATHistory(string kind, bytes32 uniqueId, address from, address to, uint256 amount);
     /// @dev Mint TAT tokens
     /// @param _treasureKind The type of treasure
     /// @param to The recipient address of TAT tokens
     /// @param amount The amount of TAT tokens to mint
+
     function mint(
         string memory _treasureKind,
         bytes32 _uniqueId,
         address to,
         uint256 amount
-    ) public onlyProductionDataContract(_treasureKind) {
+    )
+        public
+        onlyProductionDataContract(_treasureKind)
+    {
         require(to != address(0), "Zero address");
         _mint(to, amount);
         emit TATHistory(_treasureKind, _uniqueId, msg.sender, to, amount);
@@ -82,10 +80,7 @@ Stakeable
     /// @dev Burn TAT tokens
     /// @param _treasureKind The type of treasure
     /// @param tokens The amount of tokens to burn
-    function burn(string memory _treasureKind, uint256 tokens)
-    public
-    onlyProductionDataContract(_treasureKind)
-    {
+    function burn(string memory _treasureKind, uint256 tokens) public onlyProductionDataContract(_treasureKind) {
         _burn(_msgSender(), tokens);
     }
 
@@ -98,7 +93,6 @@ Stakeable
     function unpause() public onlyOwner {
         _unpause();
     }
-
 
     /// @dev Stake TAT tokens
     ///  - Event

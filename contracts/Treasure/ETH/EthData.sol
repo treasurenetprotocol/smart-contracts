@@ -44,14 +44,12 @@ contract EthData is ProductionData {
         address _parameterInfoContract,
         address _producerContract,
         address _tatContract
-    ) public initializer {
+    )
+        public
+        initializer
+    {
         __ProductionDataInitialize(
-            _treasureKind,
-            _oracleContract,
-            _rolesContract,
-            _parameterInfoContract,
-            _producerContract,
-            _tatContract
+            _treasureKind, _oracleContract, _rolesContract, _parameterInfoContract, _producerContract, _tatContract
         );
     }
 
@@ -65,19 +63,17 @@ contract EthData is ProductionData {
         bytes32 _requestId,
         bytes32 _uniqueId,
         ProduceData memory _produceData
-    ) external override onlyFeeder onlyWhenActive(_uniqueId) {
+    )
+        external
+        override
+        onlyFeeder
+        onlyWhenActive(_uniqueId)
+    {
         require(
-            _requestId == _requestIdsToPullTrustedData[_uniqueId],
-            "invalid oracle request id,not for production data"
+            _requestId == _requestIdsToPullTrustedData[_uniqueId], "invalid oracle request id,not for production data"
         );
-        require(
-            _produceData.blockNumber != 0,
-            "production block number cant be zero"
-        );
-        require(
-            _produceData.blockReward != 0,
-            "production block reward cant be zero"
-        );
+        require(_produceData.blockNumber != 0, "production block number cant be zero");
+        require(_produceData.blockReward != 0, "production block reward cant be zero");
         /*require(_produceData.miner != address(0), "production miner cant be zero");*/
 
         IProducer.ProducerCore memory thisProducer = _getProducer(_uniqueId);
@@ -86,13 +82,11 @@ contract EthData is ProductionData {
         _trustedProduceData[_produceData.blockNumber][_uniqueId] = _produceData;
 
         require(
-            keccak256(abi.encodePacked(_produceData.miner)) ==
-                keccak256(abi.encodePacked(thisProducer.account)),
+            keccak256(abi.encodePacked(_produceData.miner)) == keccak256(abi.encodePacked(thisProducer.account)),
             "miner is not the same of producer account"
         );
 
-        _trustedProduceData[_produceData.blockNumber][_uniqueId]
-            .amount = _produceData.amount;
+        _trustedProduceData[_produceData.blockNumber][_uniqueId].amount = _produceData.amount;
 
         emit TrustedDigitalProductionData(
             TREASURE_KIND,
@@ -106,34 +100,20 @@ contract EthData is ProductionData {
     }
 
     // _month is block number
-    function _clearing(
-        bytes32 _uniqueId,
-        uint256 blockNumber
-    ) internal override returns (bool) {
-        ProduceData storage trusted = _trustedProduceData[blockNumber][
-            _uniqueId
-        ];
+    function _clearing(bytes32 _uniqueId, uint256 blockNumber) internal override returns (bool) {
+        ProduceData storage trusted = _trustedProduceData[blockNumber][_uniqueId];
         /*require(
             trusted.account != address(0),
             "cleared or product data not found at this blockNumber"
         );*/
-        require(
-            trusted.status == ProduceDataStatus.UNAUDITED,
-            "trusted data already audited"
-        );
+        require(trusted.status == ProduceDataStatus.UNAUDITED, "trusted data already audited");
 
         emit VerifiedProduction(_uniqueId, blockNumber, trusted.amount);
 
         require(
-            _rewardByShare(_uniqueId, trusted.amount) == trusted.amount,
-            "total minted must equal to trusted.amount"
+            _rewardByShare(_uniqueId, trusted.amount) == trusted.amount, "total minted must equal to trusted.amount"
         );
-        emit ClearingReward(
-            TREASURE_KIND,
-            _uniqueId,
-            blockNumber,
-            trusted.amount
-        );
+        emit ClearingReward(TREASURE_KIND, _uniqueId, blockNumber, trusted.amount);
 
         trusted.status = ProduceDataStatus.FINISHED;
         _trustedProduceData[blockNumber][_uniqueId] = trusted;
@@ -141,17 +121,10 @@ contract EthData is ProductionData {
         return true;
     }
 
-    function _afterClearing(
-        bytes32 _uniqueId,
-        uint256 blockNumber
-    ) internal override {}
+    function _afterClearing(bytes32 _uniqueId, uint256 blockNumber) internal override { }
 
-    function _rewardByShare(
-        bytes32 uniqueId,
-        uint256 total
-    ) internal returns (uint256) {
-        (address[] memory accounts, uint256[] memory amounts) = _producer
-            .calculateRewards(uniqueId, total);
+    function _rewardByShare(bytes32 uniqueId, uint256 total) internal returns (uint256) {
+        (address[] memory accounts, uint256[] memory amounts) = _producer.calculateRewards(uniqueId, total);
         return _reward(uniqueId, accounts, amounts);
     }
 }

@@ -5,7 +5,7 @@ import "./interfaces/IShare.sol";
 
 /**
  * @dev Share is the contract for profit distribution
-*/
+ */
 contract Share is IShare {
     // MAX_HOLDER except owner
     uint256 public constant MAX_HOLDERS = 9;
@@ -41,23 +41,17 @@ contract Share is IShare {
     /// @param _uniqueId Unique ID of the producer (mine)
     /// @param _producer Account address
     /// @return bool Whether it's the owner
-    function isProducerOwner(bytes32 _uniqueId, address _producer)
-        public
-        view
-        returns (bool)
-    {
+    function isProducerOwner(bytes32 _uniqueId, address _producer) public view returns (bool) {
         return (_owners[_uniqueId] == _producer);
     }
 
     // Core functions in Share Contract
 
-
     /// @dev Maximum number of shareholders (including the owner of the producer)
     /// @return uint256 The number
     function maxShares() public pure override returns (uint256) {
-        return MAX_HOLDERS+1;
+        return MAX_HOLDERS + 1;
     }
-
 
     /// @dev Current number of shareholders
     /// @param _uniqueId Unique ID of the producer (mine)
@@ -68,7 +62,7 @@ contract Share is IShare {
 
     /// @dev Current shared pieces
     /// @param _uniqueId Unique ID of the producer (mine)
-    /// @return uint256 The number  
+    /// @return uint256 The number
     function totalShared(bytes32 _uniqueId) public view override returns (uint256) {
         return _totalShared[_uniqueId];
     }
@@ -77,12 +71,7 @@ contract Share is IShare {
     /// @param _uniqueId Unique ID of the producer (mine)
     /// @param _holder Holder's account
     /// @return bool Whether it's a holder
-    function isHolder(bytes32 _uniqueId, address _holder)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function isHolder(bytes32 _uniqueId, address _holder) public view override returns (bool) {
         Holder memory h = _holders[_uniqueId][_holder];
         return (h.flag == Flag.Holder);
     }
@@ -91,12 +80,7 @@ contract Share is IShare {
     /// @param _uniqueId Unique ID of the producer (mine)
     /// @param _holder Holder's account
     /// @return Holder Holder's information
-    function holder(bytes32 _uniqueId, address _holder)
-        public
-        view
-        override
-        returns (Holder memory)
-    {
+    function holder(bytes32 _uniqueId, address _holder) public view override returns (Holder memory) {
         return _holders[_uniqueId][_holder];
     }
 
@@ -108,18 +92,18 @@ contract Share is IShare {
         bytes32 _uniqueId,
         address[] memory _holderAddrs,
         uint256[] memory _ratios
-    ) public override onlyProducerOwner(_uniqueId) {
-        require(_holderAddrs.length == _ratios.length,"Holders and Ratios must have same length");
-        for(uint i=0; i< _holderAddrs.length; i++){
+    )
+        public
+        override
+        onlyProducerOwner(_uniqueId)
+    {
+        require(_holderAddrs.length == _ratios.length, "Holders and Ratios must have same length");
+        for (uint256 i = 0; i < _holderAddrs.length; i++) {
             _setHolder(_uniqueId, _holderAddrs[i], _ratios[i]);
         }
     }
 
-    function _setHolder(
-        bytes32 _uniqueId,
-        address _holder,
-        uint256 _ratio
-    ) internal {
+    function _setHolder(bytes32 _uniqueId, address _holder, uint256 _ratio) internal {
         require(!isProducerOwner(_uniqueId, _holder), "share owner do not need to setHolder");
 
         require(_ratio <= MAX_PIECES, "ratio excceedes MAX_PIECES(100)");
@@ -133,7 +117,7 @@ contract Share is IShare {
             _th += 1;
             require(_th <= MAX_HOLDERS, "exceedes MAX_HOLDERS(10)");
             // save holder address to `_holderAddresses`
-            h.index =  _holderAddresses[_uniqueId].length;
+            h.index = _holderAddresses[_uniqueId].length;
             _holderAddresses[_uniqueId].push(_holder);
         }
 
@@ -150,8 +134,6 @@ contract Share is IShare {
 
         emit SetHolder(_uniqueId, _holder, _ratio, _th, _ts);
     }
- 
-
 
     /// @dev Transfer the holding shares to another person.
     /// @param _uniqueId Unique ID of the producer (mine)
@@ -159,22 +141,30 @@ contract Share is IShare {
     /// @param _ratio Number of shares to transfer
     /// @return uint256 Sender's latest share
     /// @return uint256 Recipient's latest share
-    function splitHolder(bytes32 _uniqueId,address _toHolder,uint256 _ratio) public override returns(uint256,uint256)  {
-        require(_toHolder != address(0),"receiver must not be zero address");
-        require(_ratio <= MAX_PIECES,"ratio exceedes MAX_PIECE(100)");
-     
-        Holder memory sender = holder(_uniqueId,msg.sender);
-        require(sender.flag == Flag.Holder,"not a share holder");
-        require(sender.ratio >= _ratio,"sender's ratio not enough");
+    function splitHolder(
+        bytes32 _uniqueId,
+        address _toHolder,
+        uint256 _ratio
+    )
+        public
+        override
+        returns (uint256, uint256)
+    {
+        require(_toHolder != address(0), "receiver must not be zero address");
+        require(_ratio <= MAX_PIECES, "ratio exceedes MAX_PIECE(100)");
+
+        Holder memory sender = holder(_uniqueId, msg.sender);
+        require(sender.flag == Flag.Holder, "not a share holder");
+        require(sender.ratio >= _ratio, "sender's ratio not enough");
 
         sender.ratio = sender.ratio - _ratio;
 
-        Holder memory receiver = holder(_uniqueId,_toHolder);
+        Holder memory receiver = holder(_uniqueId, _toHolder);
 
         receiver.ratio = receiver.ratio + _ratio;
 
         // Update total holders
-        if (receiver.flag == Flag.NotHolder){
+        if (receiver.flag == Flag.NotHolder) {
             uint256 _th = totalHolders(_uniqueId);
             _th += 1;
             require(_th <= MAX_HOLDERS, "exceedes MAX_HOLDERS(10)");
@@ -183,7 +173,7 @@ contract Share is IShare {
             _totalHolders[_uniqueId] = _th;
 
             // save new receiver to `_holderAddresses`
-            receiver.index =  _holderAddresses[_uniqueId].length;
+            receiver.index = _holderAddresses[_uniqueId].length;
             _holderAddresses[_uniqueId].push(_toHolder);
         }
 
@@ -192,17 +182,13 @@ contract Share is IShare {
 
         emit SplitHolder(_uniqueId, msg.sender, _toHolder, _ratio);
 
-        return (sender.ratio,receiver.ratio);
+        return (sender.ratio, receiver.ratio);
     }
 
     /// @dev Delete a holder.
     /// @param _uniqueId Unique ID of the producer (mine)
     /// @param _holder Holder's address
-    function deleteHolder(bytes32 _uniqueId, address _holder)
-        public
-        override
-        onlyProducerOwner(_uniqueId)
-    {
+    function deleteHolder(bytes32 _uniqueId, address _holder) public override onlyProducerOwner(_uniqueId) {
         Holder memory h = holder(_uniqueId, _holder);
         require(h.flag == Flag.Holder, "must be a holder");
         require(h.ratio == 0, "must have zero share");
@@ -211,8 +197,8 @@ contract Share is IShare {
 
         uint256 index = h.index;
         address[] storage hs = _holderAddresses[_uniqueId];
-        if(hs.length >1) {
-            hs[index] = hs[hs.length-1];
+        if (hs.length > 1) {
+            hs[index] = hs[hs.length - 1];
         }
         hs.pop();
 
@@ -221,20 +207,27 @@ contract Share is IShare {
         _totalHolders[_uniqueId] -= 1;
     }
 
-    
     /// @dev Calculate the earnings for each holder.
     /// @param _uniqueId Unique ID of the producer (mine)
     /// @param total Total earnings
-    function calculateRewards(bytes32 _uniqueId,uint256 total) public view override returns(address[] memory,uint256[] memory) {
-        address[] memory accounts = new address[](_totalHolders[_uniqueId]+1);
-        uint256[] memory amounts = new uint256[](_totalHolders[_uniqueId]+1);
+    function calculateRewards(
+        bytes32 _uniqueId,
+        uint256 total
+    )
+        public
+        view
+        override
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory accounts = new address[](_totalHolders[_uniqueId] + 1);
+        uint256[] memory amounts = new uint256[](_totalHolders[_uniqueId] + 1);
         uint256 shared;
 
-        for(uint256 i=0;i<_totalHolders[_uniqueId];i++) {
-            address account =  _holderAddresses[_uniqueId][i];
-            Holder memory h = holder(_uniqueId,account);
+        for (uint256 i = 0; i < _totalHolders[_uniqueId]; i++) {
+            address account = _holderAddresses[_uniqueId][i];
+            Holder memory h = holder(_uniqueId, account);
             accounts[i] = account;
-            uint256 share =  h.ratio*total/100;
+            uint256 share = h.ratio * total / 100;
             amounts[i] = share;
             shared = shared + share;
         }
@@ -242,6 +235,6 @@ contract Share is IShare {
         accounts[_totalHolders[_uniqueId]] = _owners[_uniqueId];
         amounts[_totalHolders[_uniqueId]] = total - shared;
 
-        return (accounts,amounts);
+        return (accounts, amounts);
     }
 }

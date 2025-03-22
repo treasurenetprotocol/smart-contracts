@@ -1,0 +1,167 @@
+# Contributing to TreasureNet Smart Contracts
+
+Thank you for your interest in contributing to the TreasureNet smart contracts! This document provides guidelines and workflows to ensure a smooth contribution process.
+
+## Development Environment Setup
+
+### Prerequisites
+- Node.js 20.x
+- npm
+- Foundry (for testing)
+
+### Initial Setup
+1. Fork and clone the repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
+3. Set up Foundry:
+   ```
+   npm run setup:foundry
+   ```
+4. Set up Git hooks (for automatic linting):
+   ```
+   npm run prepare
+   ```
+
+## Development Workflow
+
+### Code Quality
+The repository uses Git hooks to ensure code quality:
+- **Pre-commit hook**: Automatically formats Solidity files using `forge fmt` and runs `forge build` to verify compilation
+
+You can manually run the formatter with:
+```
+npm run lint:fix  # Format all Solidity files
+```
+
+Or check for formatting issues without fixing them:
+```
+npm run lint  # Check formatting without modifying files
+```
+
+### Building the Project
+To ensure contracts compile properly:
+```
+npm run build  # Runs forge build
+```
+
+### Branching Strategy
+- `main`: The production branch, containing the deployed code
+- `release/*`: Release branches for staging
+- Feature/bugfix branches should be created from `main` and follow the naming convention:
+  - Features: `feat--descriptive-name`
+  - Bugfixes: `fix--descriptive-name`
+  - Refactoring: `refactor--descriptive-name`
+
+### Testing
+All code changes must include tests. We use Foundry for testing, with npm scripts that wrap foundry commands:
+
+1. **Run Tests**
+   ```
+   npm test  # Runs forge test -vvv
+   ```
+
+2. **Run Tests with Gas Reports**
+   ```
+   npm run test:gas  # Runs forge test -vvv --gas-report
+   ```
+
+3. **Generate and Check Coverage**
+   ```
+   npm run test:coverage  # Runs forge coverage
+   ```
+
+### Gas Optimization
+- Use the gas reporter to monitor gas usage: `npm run test:gas`
+- For functions expected to be called frequently, aim to minimize gas costs
+- Document any gas optimization strategies used
+
+### Gas Snapshots
+We use gas snapshots to track and monitor gas usage across the codebase:
+
+1. **Viewing Gas Usage**: 
+   ```
+   npm run test:gas  # Shows current gas usage without updating snapshot
+   ```
+
+2. **Updating Gas Snapshots**:
+   ```
+   forge snapshot  # Updates the .gas-snapshot file with current gas usage
+   ```
+
+3. **When to Update Snapshots**:
+   - After implementing gas optimizations
+   - After adding new contracts or test cases
+   - Before submitting a PR that modifies contract logic
+   - When requested by reviewers during code reviews
+
+4. **Reviewing Gas Changes**:
+   - Use `forge snapshot --check` to compare current gas usage against the snapshot
+   - If gas usage increases significantly, consider optimizing before submitting
+
+Git will track changes to the `.gas-snapshot` file, allowing reviewers to see the impact of your changes on gas consumption.
+
+## Smart Contract Standards
+
+### Code Style
+- Follow the Solidity style guide
+- Use explicit function visibility modifiers
+- Use NatSpec comments for all public interfaces
+- Follow consistent naming conventions:
+  - Contracts: CamelCase
+  - Interfaces: ICamelCase
+  - Libraries: CamelCase
+  - Functions: camelCase
+  - Variables: camelCase
+  - Events: CamelCase
+  - Modifiers: camelCase
+
+### Security Best Practices
+- Follow the [check-effects-interactions pattern](https://docs.soliditylang.org/en/latest/security-considerations.html#use-the-checks-effects-interactions-pattern)
+- Be aware of [reentrancy vulnerabilities](https://docs.soliditylang.org/en/latest/security-considerations.html#reentrancy)
+- Avoid unbounded loops
+- Implement appropriate access controls
+- Be cautious with external calls
+- Validate all inputs
+- Use SafeMath or Solidity 0.8.x built-in overflow checks
+- Document security considerations
+
+### Documentation
+- Document all public functions with NatSpec comments
+- Update README.md if necessary
+- Document all security-critical components
+- Add inline comments for complex logic
+
+## Pull Request Process
+
+1. Create a PR from your feature branch to `main`
+2. Fill out the PR template completely
+3. Ensure all CI checks pass
+4. Request a review from at least one maintainer
+5. Address any feedback or requested changes
+
+### Review Criteria
+PRs will be evaluated based on:
+- Correctness
+- Security
+- Gas efficiency
+- Test coverage
+- Code quality
+- Documentation
+
+## Security Disclosures
+
+If you discover a security vulnerability, please do NOT open an issue. Email [security@treasurenet.io](mailto:security@treasurenet.io) instead.
+
+## License
+By contributing, you agree that your contributions will be licensed under the project's license (GPL-3.0).
+
+## Pre-commit Hooks
+
+This repository uses pre-commit hooks to ensure code quality and consistency:
+
+1. **Solidity Formatting**: All Solidity files are automatically formatted using `forge fmt` before each commit.
+2. **Build Verification**: The pre-commit hook runs `forge build` to ensure all contracts compile successfully before allowing commits.
+
+If the build fails, the commit will be rejected, and you'll need to fix the compilation errors before trying again. 

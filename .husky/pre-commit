@@ -1,0 +1,56 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Use FORGE_PATH if set, otherwise locate forge executable
+if [ -n "$FORGE_PATH" ]; then
+  FORGE="$FORGE_PATH"
+elif [ -f "$HOME/.foundry/bin/forge" ]; then
+  FORGE="$HOME/.foundry/bin/forge"
+elif [ -f "$HOME/.config/.foundry/bin/forge" ]; then
+  FORGE="$HOME/.config/.foundry/bin/forge"
+elif [ -f "$HOME/.config/.foundry/versions/stable/forge" ]; then
+  FORGE="$HOME/.config/.foundry/versions/stable/forge"
+elif [ -f "$HOME/.cargo/bin/forge" ]; then
+  FORGE="$HOME/.cargo/bin/forge"
+else
+  # Try to find forge in PATH
+  FORGE=$(command -v forge || echo "")
+fi
+
+# Verify forge is available
+if [ -z "$FORGE" ] || [ ! -x "$FORGE" ]; then
+  echo "Error: forge not found. Please install Foundry or make sure it's in your PATH"
+  echo "You can install Foundry by running:"
+  echo "  curl -L https://foundry.paradigm.xyz | bash"
+  echo "  foundryup"
+  exit 1
+fi
+
+echo "Using forge at: $FORGE"
+
+# Format Solidity files
+git diff --cached --name-only --diff-filter=ACM | grep -E '\.sol$' | xargs -I{} $FORGE fmt {} || {
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "Error: forge fmt failed with status $status"
+    echo "Try running forge fmt manually to debug the issue"
+    exit $status
+  fi
+}
+
+# Stage the formatted files
+git diff --cached --name-only --diff-filter=ACM | grep -E '\.sol$' | xargs -I{} git add {}
+
+# Run forge build to ensure contracts are buildable (skip if SKIP_FORGE_BUILD is set)
+if [ -z "$SKIP_FORGE_BUILD" ]; then
+  echo "Running forge build to check contract compilation..."
+  $FORGE build --silent || {
+    status=$?
+    echo "Error: forge build failed with status $status"
+    echo "Please fix compilation errors before committing"
+    exit $status
+  }
+  echo "✅ Contract compilation successful"
+else
+  echo "⚠️ Skipping contract compilation check (SKIP_FORGE_BUILD is set)"
+fi

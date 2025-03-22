@@ -16,18 +16,14 @@ interface IERC20Mintable is IERC20Upgradeable {
 }
 
 interface IERC20TOKEN is IERC20Mintable {
-    function addBalance(address add, uint amount) external returns (bool);
-    function reduceBalance(address add, uint amount) external returns (bool);
+    function addBalance(address add, uint256 amount) external returns (bool);
+    function reduceBalance(address add, uint256 amount) external returns (bool);
 }
 
 /// @title Crosschain Bridge Contract
 /// @author qiangwei
 /// @notice This contract handles cross-chain token transfers
-contract CrosschainBridge is
-Initializable,
-OwnableUpgradeable,
-ReentrancyGuardUpgradeable
-{
+contract CrosschainBridge is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // Constants
@@ -79,21 +75,11 @@ ReentrancyGuardUpgradeable
         uint256 chainId
     );
 
-    event CrossFromEth(
-        uint256 indexed id,
-        address indexed account,
-        string token,
-        uint256 amount
-    );
+    event CrossFromEth(uint256 indexed id, address indexed account, string token, uint256 amount);
 
     event ConfirmFromEth(uint256 indexed id);
 
-    event CrossRollback(
-        uint256 indexed id,
-        address indexed account,
-        string token,
-        uint256 amount
-    );
+    event CrossRollback(uint256 indexed id, address indexed account, string token, uint256 amount);
 
     event FeeWithdrawn(address token, uint256 amount, address to);
 
@@ -111,12 +97,9 @@ ReentrancyGuardUpgradeable
     error WithdrawFailed();
 
     // Storage slot for persistence across upgrades
-    bytes32 private constant CURRENT_ID_POSITION =
-    keccak256("crosschain.bridge.current.id.v1");
-    bytes32 private constant LAST_CLEANED_ID_POSITION =
-    keccak256("crosschain.bridge.last.cleaned.id.v1");
-    bytes32 private constant TRANSACTION_POSITION_PREFIX =
-    keccak256("crosschain.bridge.transaction.v1.");
+    bytes32 private constant CURRENT_ID_POSITION = keccak256("crosschain.bridge.current.id.v1");
+    bytes32 private constant LAST_CLEANED_ID_POSITION = keccak256("crosschain.bridge.last.cleaned.id.v1");
+    bytes32 private constant TRANSACTION_POSITION_PREFIX = keccak256("crosschain.bridge.transaction.v1.");
 
     // Define a struct at contract level to store crosschain information
     struct CrosschainInfo {
@@ -162,15 +145,11 @@ ReentrancyGuardUpgradeable
         _lastCleanedId = value;
     }
 
-    function _getTransactionStoragePosition(
-        uint256 id
-    ) private pure returns (bytes32) {
+    function _getTransactionStoragePosition(uint256 id) private pure returns (bytes32) {
         return keccak256(abi.encodePacked(TRANSACTION_POSITION_PREFIX, id));
     }
 
-    function _getTransaction(
-        uint256 id
-    ) private view returns (TransactionInfo memory) {
+    function _getTransaction(uint256 id) private view returns (TransactionInfo memory) {
         return _transactions[id];
     }
 
@@ -186,10 +165,7 @@ ReentrancyGuardUpgradeable
     /// @notice Initialize the contract
     /// @param crosschainTokensContract CrosschainTokens contract address
     /// @param rolesContract Roles contract address
-    function initialize(
-        address crosschainTokensContract,
-        address rolesContract
-    ) public initializer {
+    function initialize(address crosschainTokensContract, address rolesContract) public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
         _crosschainTokens = ICrosschainTokens(crosschainTokensContract);
@@ -206,11 +182,7 @@ ReentrancyGuardUpgradeable
     /// @param token Token name
     /// @param amount Total amount (including fee)
     /// @param chainId Chain ID
-    function crossToEth(
-        string calldata token,
-        uint256 amount,
-        uint256 chainId
-    ) external payable nonReentrant {
+    function crossToEth(string calldata token, uint256 amount, uint256 chainId) external payable nonReentrant {
         if (amount == 0) revert InvalidAmount();
 
         // Modify ID generation logic
@@ -219,11 +191,7 @@ ReentrancyGuardUpgradeable
         _setCurrentId(currentId + 1);
 
         // Get and process crosschain information
-        CrossToEthInfo memory info = _prepareCrossToEthInfo(
-            token,
-            amount,
-            chainId
-        );
+        CrossToEthInfo memory info = _prepareCrossToEthInfo(token, amount, chainId);
 
         // Process user asset locking
         if (info.sourceERC20address == address(0)) {
@@ -304,8 +272,7 @@ ReentrancyGuardUpgradeable
             TransactionInfo memory info = _getTransaction(id);
             if (
                 // info.status == 9 && // completed
-                !info.isProcessed &&
-            block.number > info.expirationBlock + CLEANUP_BLOCKS
+                !info.isProcessed && block.number > info.expirationBlock + CLEANUP_BLOCKS
             ) {
                 // Mark transaction as processed
                 info.isProcessed = true;
@@ -328,12 +295,12 @@ ReentrancyGuardUpgradeable
         uint256 amount,
         address account,
         uint256 chainId
-    ) external nonReentrant {
+    )
+        external
+        nonReentrant
+    {
         // Check if caller has CROSSCHAIN_SENDER role
-        require(
-            _roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender),
-            "Caller is not a CROSSCHAIN_SENDER"
-        );
+        require(_roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender), "Caller is not a CROSSCHAIN_SENDER");
 
         // Check amount
         if (amount == 0) revert InvalidAmount();
@@ -353,10 +320,7 @@ ReentrancyGuardUpgradeable
     /// @param id Transaction ID
     function confirmFromEth(uint256 id) external nonReentrant {
         // Check if caller has CROSSCHAIN_SENDER role
-        require(
-            _roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender),
-            "Caller is not a CROSSCHAIN_SENDER"
-        );
+        require(_roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender), "Caller is not a CROSSCHAIN_SENDER");
 
         TransactionInfo memory info = _getTransaction(id);
         require(info.startBlock > 0, "Transaction does not exist");
@@ -388,21 +352,19 @@ ReentrancyGuardUpgradeable
 
     /// @notice Get complete transaction record information
     /// @param id Transaction ID
-    function getRecord(
-        uint256 id
-    )
-    external
-    view
-    returns (
-        string memory token,
-        uint256 amount,
-        uint256 fee,
-        uint256 startBlock,
-        uint256 expirationBlock,
-        uint256 availableBlock,
-    // uint256 status,
-        bool isProcessed
-    )
+    function getRecord(uint256 id)
+        external
+        view
+        returns (
+            string memory token,
+            uint256 amount,
+            uint256 fee,
+            uint256 startBlock,
+            uint256 expirationBlock,
+            uint256 availableBlock,
+            // uint256 status,
+            bool isProcessed
+        )
     {
         TransactionInfo memory info = _getTransaction(id);
         return (
@@ -412,7 +374,7 @@ ReentrancyGuardUpgradeable
             info.startBlock,
             info.expirationBlock,
             info.availableBlock,
-        // info.status,
+            // info.status,
             info.isProcessed
         );
     }
@@ -422,7 +384,11 @@ ReentrancyGuardUpgradeable
         string memory token,
         uint256 chainId,
         uint256 amount
-    ) private view returns (CrosschainInfo memory) {
+    )
+        private
+        view
+        returns (CrosschainInfo memory)
+    {
         (
             string memory tokenName,
             address sourceERC20address, // sourceCrosschainAddress
@@ -431,14 +397,12 @@ ReentrancyGuardUpgradeable
             address targetERC20address, // targetCrosschainAddress
             ,
             uint256 targetchainid,
-
         ) = _crosschainTokens.getCrosschainTokenByChainId(token, chainId);
 
         // Validate token information
         if (bytes(tokenName).length == 0) revert TokenNotSupported();
 
-        return
-            CrosschainInfo({
+        return CrosschainInfo({
             token: token,
             sourceERC20address: sourceERC20address,
             targetERC20address: targetERC20address,
@@ -451,33 +415,26 @@ ReentrancyGuardUpgradeable
     }
 
     // New helper function: Handle asset transfer
-    function _handleAssetTransfer(
-        CrosschainInfo memory info,
-        address account
-    ) private {
+    function _handleAssetTransfer(CrosschainInfo memory info, address account) private {
         // Handle target chain assets
         if (info.isTargetNative) {
-            if (address(this).balance < info.amount)
+            if (address(this).balance < info.amount) {
                 revert("Insufficient balance");
-            (bool success, ) = account.call{value: info.amount}("");
+            }
+            (bool success,) = account.call{ value: info.amount }("");
             if (!success) revert TransferFailed();
         } else {
-            if (info.targetERC20address == address(0))
+            if (info.targetERC20address == address(0)) {
                 revert InvalidTokenInfo();
+            }
 
-            IERC20Upgradeable targetToken = IERC20Upgradeable(
-                info.targetERC20address
-            );
+            IERC20Upgradeable targetToken = IERC20Upgradeable(info.targetERC20address);
             _handleTargetTokenTransfer(targetToken, account, info.amount);
         }
     }
 
     // Modified helper function: Handle target token transfer
-    function _handleTargetTokenTransfer(
-        IERC20Upgradeable targetToken,
-        address account,
-        uint256 amount
-    ) private {
+    function _handleTargetTokenTransfer(IERC20Upgradeable targetToken, address account, uint256 amount) private {
         // Directly mint tokens to the target account
         try IERC20TOKEN(address(targetToken)).mint(account, amount) {
             return;
@@ -493,7 +450,11 @@ ReentrancyGuardUpgradeable
         string memory token,
         uint256 amount,
         uint256 chainId
-    ) private view returns (CrossToEthInfo memory) {
+    )
+        private
+        view
+        returns (CrossToEthInfo memory)
+    {
         // Get token information
         (
             string memory tokenName,
@@ -507,8 +468,9 @@ ReentrancyGuardUpgradeable
         ) = _crosschainTokens.getCrosschainTokenByChainId(token, chainId);
 
         // Validate token configuration
-        if (bytes(tokenName).length == 0)
+        if (bytes(tokenName).length == 0) {
             revert("Token is not configured in the system");
+        }
         if (fee == 0 || fee >= 10000) revert("Fee must be between 0 and 10000");
 
         // Calculate actual transfer amount and fee
@@ -517,11 +479,11 @@ ReentrancyGuardUpgradeable
 
         // Validate calculation results
         if (transferAmount == 0) revert("Transfer amount too small");
-        if (feeAmount + transferAmount != amount)
+        if (feeAmount + transferAmount != amount) {
             revert("Amount calculation error");
+        }
 
-        return
-            CrossToEthInfo({
+        return CrossToEthInfo({
             token: token,
             transferAmount: transferAmount,
             feeAmount: feeAmount,
@@ -530,20 +492,12 @@ ReentrancyGuardUpgradeable
             sourcechainid: sourcechainid,
             targetchainid: targetchainid,
             availableBlock: block.number + TRUST_BLOCKS,
-            expirationBlock: block.number +
-        (
-            sourcechainid == 1
-                ? ETH_EXPIRATION_BLOCKS
-                : TN_EXPIRATION_BLOCKS
-        )
+            expirationBlock: block.number + (sourcechainid == 1 ? ETH_EXPIRATION_BLOCKS : TN_EXPIRATION_BLOCKS)
         });
     }
 
     // New helper function: Record transaction information
-    function _recordTransaction(
-        uint256 id,
-        CrossToEthInfo memory info
-    ) private {
+    function _recordTransaction(uint256 id, CrossToEthInfo memory info) private {
         TransactionInfo memory infoItem = TransactionInfo({
             startBlock: uint64(block.number),
             expirationBlock: uint64(info.expirationBlock),
@@ -562,19 +516,18 @@ ReentrancyGuardUpgradeable
         string calldata token,
         uint256 chainId,
         uint256 amount
-    ) external nonReentrant {
-        require(
-            _roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender),
-            "Caller is not a CROSSCHAIN_SENDER"
-        );
+    )
+        external
+        nonReentrant
+    {
+        require(_roles.hasRole(_roles.CROSSCHAIN_SENDER(), msg.sender), "Caller is not a CROSSCHAIN_SENDER");
         // Get token information
-        (, address sourceERC20address, , , , , , ) = _crosschainTokens
-            .getCrosschainTokenByChainId(token, chainId);
+        (, address sourceERC20address,,,,,,) = _crosschainTokens.getCrosschainTokenByChainId(token, chainId);
 
         // Return user assets
         if (sourceERC20address == address(0)) {
             // If it's a native token
-            (bool success, ) = payable(account).call{value: amount}("");
+            (bool success,) = payable(account).call{ value: amount }("");
             if (!success) revert TransferFailed();
         } else {
             // If it's an ERC20 token, use USTN interface
@@ -590,17 +543,13 @@ ReentrancyGuardUpgradeable
     }
 
     // Add helper function to parse ID
-    function _parseId(
-        uint256 id
-    ) private pure returns (uint256 chainId, uint256 sequenceId) {
+    function _parseId(uint256 id) private pure returns (uint256 chainId, uint256 sequenceId) {
         chainId = id >> CHAIN_ID_SHIFT;
         sequenceId = id & ((1 << CHAIN_ID_SHIFT) - 1);
     }
 
     // Add public function to get ID information
-    function parseId(
-        uint256 id
-    ) external pure returns (uint256 chainId, uint256 sequenceId) {
+    function parseId(uint256 id) external pure returns (uint256 chainId, uint256 sequenceId) {
         return _parseId(id);
     }
 
@@ -608,26 +557,19 @@ ReentrancyGuardUpgradeable
     /// @param token token address(address(0) means native token)
     /// @param amount withdraw amount
     /// @param to receive address
-    function withdrawFee(
-        address token,
-        uint256 amount,
-        address to
-    ) external onlyOwner {
+    function withdrawFee(address token, uint256 amount, address to) external onlyOwner {
         require(to != address(0), "Invalid address");
         require(amount > 0, "Invalid amount");
 
         if (token == address(0)) {
             // withdraw native token
             require(address(this).balance >= amount, "Insufficient balance");
-            (bool success, ) = to.call{value: amount}("");
+            (bool success,) = to.call{ value: amount }("");
             if (!success) revert WithdrawFailed();
         } else {
             // withdraw ERC20 token
             IERC20TOKEN tokenContract = IERC20TOKEN(token);
-            require(
-                tokenContract.balanceOf(address(this)) >= amount,
-                "Insufficient token balance"
-            );
+            require(tokenContract.balanceOf(address(this)) >= amount, "Insufficient token balance");
             if (!tokenContract.reduceBalance(address(this), amount)) {
                 revert WithdrawFailed();
             }

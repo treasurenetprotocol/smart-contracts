@@ -37,17 +37,16 @@ interface IDAO {
         address[] memory targets,
         bytes[] memory calldatas,
         string memory description
-    ) external returns (uint256 proposalId);
+    )
+        external
+        returns (uint256 proposalId);
 
     /**
      * @dev Cast a vote
      *
      * Emits a {VoteCast} event.
      */
-    function castVote(
-        uint256 proposalId,
-        uint8 support
-    ) external payable returns (uint256 balance);
+    function castVote(uint256 proposalId, uint8 support) external payable returns (uint256 balance);
 
     function withdraw(uint256 proposalId) external payable returns (uint256);
 
@@ -60,7 +59,9 @@ interface IDAO {
         address[] memory targets,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) external returns (uint256);
+    )
+        external
+        returns (uint256);
 
     /**
      * @dev Execute a successful proposal. This requires the quorum to be reached, the vote to be successful, and the
@@ -74,16 +75,16 @@ interface IDAO {
         address[] memory targets,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) external payable returns (uint256 proposalId);
+    )
+        external
+        payable
+        returns (uint256 proposalId);
 
     /**
      * @notice module:voting
      * @dev Returns weither `account` has cast a vote on `proposalId`.
      */
-    function hasVoted(
-        uint256 proposalId,
-        address account
-    ) external view returns (bool);
+    function hasVoted(uint256 proposalId, address account) external view returns (bool);
 
     /**
      * @notice module:core

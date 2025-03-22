@@ -3,5 +3,13 @@ node_modules/*
 build/*
 .openzeppelin/*
 .idea
-package-lock.json
 .env
+
+# Foundry specific
+out/
+cache/
+lib/
+forge-cache/
+broadcast/
+lcov.info
+coverage/

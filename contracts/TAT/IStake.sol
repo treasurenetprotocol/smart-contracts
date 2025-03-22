@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IStake {
-     /**
+    /**
      * @dev Stake tokens for a specific account
      * @param account The account to stake tokens for
      * @param _amount The amount of tokens to stake

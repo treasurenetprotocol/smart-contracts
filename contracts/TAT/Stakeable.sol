@@ -95,7 +95,7 @@ abstract contract Stakeable is IStake {
         emit Withdraw(account, amount);
     }
 
-    function stake(address account, uint256 _amount) public override virtual;
+    function stake(address account, uint256 _amount) public virtual override;
 
-    function withdraw(address account, uint256 _amount) public override virtual;
+    function withdraw(address account, uint256 _amount) public virtual override;
 }

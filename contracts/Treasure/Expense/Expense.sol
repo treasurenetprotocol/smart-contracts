@@ -17,21 +17,16 @@ abstract contract Expense is Initializable {
         Normal,
         Abnormal
     }
+
     struct Depositor {
         uint256 margin;
         address debtor;
         Status status;
     }
 
-    event ExpenseHistory(
-        uint256 time,
-        address operator,
-        Action _type,
-        string content,
-        uint256 tokens
-    );
+    event ExpenseHistory(uint256 time, address operator, Action _type, string content, uint256 tokens);
 
-    receive() external payable {}
+    receive() external payable { }
 
     mapping(address => Depositor) private _depositors;
 
@@ -41,9 +36,7 @@ abstract contract Expense is Initializable {
      * @dev Initialize the Expense contract.
      * @param _parameterInfoContract Address of the ParameterInfo contract.
      */
-    function __ExpenseInitialize(
-        address _parameterInfoContract
-    ) internal onlyInitializing {
+    function __ExpenseInitialize(address _parameterInfoContract) internal onlyInitializing {
         _parameterInfo = IParameterInfo(_parameterInfoContract);
     }
 
@@ -57,10 +50,7 @@ abstract contract Expense is Initializable {
     }
 
     modifier onlyDepositorNormal(address _account) {
-        require(
-            _depositors[_account].status == Status.Normal,
-            "must be depositor and must be Normal"
-        );
+        require(_depositors[_account].status == Status.Normal, "must be depositor and must be Normal");
         _;
     }
 
@@ -96,33 +86,19 @@ abstract contract Expense is Initializable {
             }
         }
 
-        emit ExpenseHistory(
-            block.timestamp,
-            msg.sender,
-            Action.Deposite,
-            "deposite",
-            msg.value
-        );
+        emit ExpenseHistory(block.timestamp, msg.sender, Action.Deposite, "deposite", msg.value);
 
         return true;
     }
 
-    function withdraw(
-        uint256 amount
-    ) public payable onlyDepositorNormal(msg.sender) returns (bool) {
+    function withdraw(uint256 amount) public payable onlyDepositorNormal(msg.sender) returns (bool) {
         Depositor storage depositor = _depositors[msg.sender];
         require(depositor.margin >= amount, "margin is not enough");
 
         _depositors[msg.sender].margin -= amount;
         payable(msg.sender).transfer(amount);
 
-        emit ExpenseHistory(
-            block.timestamp,
-            msg.sender,
-            Action.Withdraw,
-            "withdraw",
-            amount
-        );
+        emit ExpenseHistory(block.timestamp, msg.sender, Action.Withdraw, "withdraw", amount);
 
         return true;
     }
@@ -132,13 +108,15 @@ abstract contract Expense is Initializable {
         address account,
         uint256 value,
         uint256 percent
-    ) internal onlyDepositorNormal(account) returns (uint256) {
+    )
+        internal
+        onlyDepositorNormal(account)
+        returns (uint256)
+    {
         Depositor storage depositor = _depositors[account];
 
         /* For precision, since 100% equals 10000, we divide by an extra two zeros here */
-        uint256 penaltyCost = (value *
-            percent *
-            _parameterInfo.getPlatformConfig("marginRatio")) / 100000000;
+        uint256 penaltyCost = (value * percent * _parameterInfo.getPlatformConfig("marginRatio")) / 100000000;
 
         if (depositor.margin >= penaltyCost) {
             depositor.margin -= penaltyCost;
@@ -153,13 +131,7 @@ abstract contract Expense is Initializable {
             payable(address(this)).transfer(depositor.margin); //TODO: Transfer to oneself?
         }
 
-        emit ExpenseHistory(
-            block.timestamp,
-            account,
-            Action.Penalty,
-            "penalty",
-            penaltyCost
-        );
+        emit ExpenseHistory(block.timestamp, account, Action.Penalty, "penalty", penaltyCost);
 
         return penaltyCost;
     }

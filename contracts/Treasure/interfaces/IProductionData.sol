@@ -35,11 +35,7 @@ interface IProductionData {
     }
 
     // By Oracle
-    function receiveAssetValue(
-        bytes32 _requestId,
-        uint256 _date,
-        uint256 _value
-    ) external returns (uint256);
+    function receiveAssetValue(bytes32 _requestId, uint256 _date, uint256 _value) external returns (uint256);
 
     function cancelAssetValueRequest() external returns (bool);
 
@@ -48,13 +44,9 @@ interface IProductionData {
     function getAssetValue(uint256 _date) external returns (uint256);
 
     // register oracle request
-    function registerTrustedDataRequest(
-        bytes32 _uniqueId
-    ) external returns (bytes32);
+    function registerTrustedDataRequest(bytes32 _uniqueId) external returns (bytes32);
 
-    function cancelTrustedDataRequest(
-        bytes32 _uniqueId
-    ) external returns (bool);
+    function cancelTrustedDataRequest(bytes32 _uniqueId) external returns (bool);
 
     function getTDRequestID(bytes32 _uniqueId) external view returns (bytes32);
 
@@ -63,18 +55,13 @@ interface IProductionData {
         bytes32 _requestId,
         bytes32 _uniqueId,
         ProduceData memory _produceData
-    ) external;
+    )
+        external;
 
     // TODO[Refine] by producer itself
-    function setProductionData(
-        bytes32 _uniqueId,
-        ProduceData memory _produceData
-    ) external;
+    function setProductionData(bytes32 _uniqueId, ProduceData memory _produceData) external;
 
-    function getProductionData(
-        bytes32 _uniqueId,
-        uint256 month
-    ) external returns (ProduceData memory);
+    function getProductionData(bytes32 _uniqueId, uint256 month) external returns (ProduceData memory);
 
     function clearing(bytes32 _uniqueId, uint256 _month) external;
 }

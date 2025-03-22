@@ -49,7 +49,8 @@ interface ICrosschainTokens {
         uint256 targetchainid,
         uint256 fee,
         uint256 chainId
-    ) external;
+    )
+        external;
 
     /// @dev Get cross-chain token information
     /// @param token Token name
@@ -61,16 +62,10 @@ interface ICrosschainTokens {
     /// @return address Target cross-chain contract address
     /// @return uint256 Target chain ID
     /// @return uint256 Transaction fee
-    function getCrosschainToken(string memory token) external view returns (
-        string memory,
-        address,
-        address,
-        uint256,
-        address,
-        address,
-        uint256,
-        uint256
-    );
+    function getCrosschainToken(string memory token)
+        external
+        view
+        returns (string memory, address, address, uint256, address, address, uint256, uint256);
 
     /// @dev Get cross-chain token information by chain ID
     /// @param token Token name
@@ -86,14 +81,8 @@ interface ICrosschainTokens {
     function getCrosschainTokenByChainId(
         string memory token,
         uint256 chainId
-    ) external view returns (
-        string memory,
-        address,
-        address,
-        uint256,
-        address,
-        address,
-        uint256,
-        uint256
-    );
-} 
+    )
+        external
+        view
+        returns (string memory, address, address, uint256, address, address, uint256, uint256);
+}

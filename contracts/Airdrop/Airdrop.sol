@@ -68,14 +68,17 @@ contract AirDrop is Initializable, OwnableUpgradeable {
 
     uint256 private PROPOSAL_TIME_LOCK;
 
-    receive() external payable {}
+    receive() external payable { }
 
     function initialize(
         address[] memory vips,
         uint256[] memory ratios,
         address[] memory foundationManagers,
         address[] memory boardDirectors
-    ) public initializer {
+    )
+        public
+        initializer
+    {
         __Ownable_init();
         require(foundationManagers.length >= 2, "must provide >2 foundation managers");
         require(boardDirectors.length >= 3, "must provide > 3 board directorys");
@@ -179,16 +182,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         return (_vipAccs, ratios);
     }
 
-    function getVIPInfo(address vip)
-    public
-    view
-    returns (
-        uint256,
-        uint256,
-        uint256,
-        uint256
-    )
-    {
+    function getVIPInfo(address vip) public view returns (uint256, uint256, uint256, uint256) {
         (uint256 totalClaimable, uint256 sinceMonth, uint256 toMonth) = _vipClaimable(vip);
         return (_vipClaimedAmount[vip], totalClaimable, sinceMonth, toMonth);
     }
@@ -197,17 +191,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         return _remainedToVips;
     }
 
-    function claimable()
-    public
-    view
-    returns (
-        Role,
-        uint256,
-        ClaimStage,
-        uint256,
-        uint256
-    )
-    {
+    function claimable() public view returns (Role, uint256, ClaimStage, uint256, uint256) {
         address sender = msg.sender;
         // Foundation
         if (sender == _foundation) {
@@ -261,7 +245,8 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         // Calculate between the current unwithdrawn month and the current withdrawable month
         uint256 totalClaimable;
         for (uint256 i = claimedMonth + 1; i <= current; i++) {
-            //Calculate the amount withdrawable for that month (total amount withdrawable for that month * withdrawal ratio)
+            //Calculate the amount withdrawable for that month (total amount withdrawable for that month * withdrawal
+            // ratio)
             uint256 actualRatio;
             for (uint256 j = i; j > 0; j--) {
                 // Find the most recent update as the actual ratio for the current month
@@ -275,8 +260,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
             /*amount = (_totalPerMonth[i] * actualRatio) / 100;*/
             if (i == 1) {
                 amount = (_totalPerMonth[i] * actualRatio) / 100;
-            }
-            else {
+            } else {
                 amount = _totalPerMonth[i] * actualRatio / 100 / 1e6;
                 //1e6 actualRatio 1e6 decimal issue,from the second period onwards
             }
@@ -285,13 +269,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         return (totalClaimable, claimedMonth + 1, current);
     }
 
-    event Claimed(
-        Role role,
-        uint256 claimedAmount,
-        ClaimStage stage,
-        uint256 sinceMonth,
-        uint256 toMonth
-    );
+    event Claimed(Role role, uint256 claimedAmount, ClaimStage stage, uint256 sinceMonth, uint256 toMonth);
 
     function claim() public {
         if (msg.sender == _foundation) {
@@ -332,14 +310,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
 
     event VIPClaimed(address vip, uint256 sinceMonth, uint256 toMonth, uint256 amount);
 
-    function _vipClaim()
-    internal
-    returns (
-        uint256,
-        uint256,
-        uint256
-    )
-    {
+    function _vipClaim() internal returns (uint256, uint256, uint256) {
         // Calculate the current withdrawable amount
         (uint256 amount, uint256 sinceMonth, uint256 toMonth) = _vipClaimable(msg.sender);
 
@@ -360,12 +331,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
     }
 
     // eceiveIntermidiateFund UNIT to `toVIPs`
-    event ReceivedInterFund(
-        address from,
-        uint256 currentMonth,
-        uint256 amount,
-        uint256 remainedToVips
-    );
+    event ReceivedInterFund(address from, uint256 currentMonth, uint256 amount, uint256 remainedToVips);
 
     function receiveIntermidiateFund() public payable {
         require(msg.value > 0, "zero UNIT");
@@ -385,11 +351,9 @@ contract AirDrop is Initializable, OwnableUpgradeable {
 
     event FoundationClaimedVIPs(address account, uint256 amount);
     // After 1 year, the foundation can withdraw all the airdrop funds allocated for VIPs
+
     function foundationClaimVIPs() public onlyFoundation {
-        require(
-            _currentMonth() > RELEASE_PERIODS,
-            "only excceedes the total periods(1year/12months)"
-        );
+        require(_currentMonth() > RELEASE_PERIODS, "only excceedes the total periods(1year/12months)");
         require(_remainedToVips > 0, "all claimed by VIPs(zero remainedToVips)");
 
         payable(_foundation).transfer(_remainedToVips);
@@ -397,8 +361,6 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         emit FoundationClaimedVIPs(_foundation, _remainedToVips);
 
         _remainedToVips = 0;
-
-
     }
 
     // The current withdrawable month (3.1 == 3)
@@ -412,6 +374,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
     enum ProposalPurpose {
         ChangeVIP
     }
+
     struct Proposal {
         address proposer;
         ProposalPurpose purpose;
@@ -431,20 +394,17 @@ contract AirDrop is Initializable, OwnableUpgradeable {
     }
 
     // send the proposal
-    event SendProposal(
-        uint256 proposalId,
-        address proposer,
-        ProposalPurpose purpose,
-        address[] vips,
-        uint256[] ratios
-    );
+    event SendProposal(uint256 proposalId, address proposer, ProposalPurpose purpose, address[] vips, uint256[] ratios);
 
     //allows the contract deployer to submit proposals to the contract
     function propose(
         ProposalPurpose purpose,
         address[] memory vips,
         uint256[] memory ratios
-    ) public returns (uint256) {
+    )
+        public
+        returns (uint256)
+    {
         require(vips.length == ratios.length, "vips and ratios must have same length");
         //Initialize temporary variable to store the total ratios
         uint256 tempTotal = _totalRatios;

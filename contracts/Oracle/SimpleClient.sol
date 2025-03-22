@@ -11,12 +11,7 @@ import "../Governance/IRoles.sol";
 contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     using Counters for Counters.Counter;
 
-    event OracleRequest(
-        address requester,
-        bytes32 requesterid,
-        address callbackAddress,
-        bytes4 callbackFunctionId
-    );
+    event OracleRequest(address requester, bytes32 requesterid, address callbackAddress, bytes4 callbackFunctionId);
 
     event AssetValueSet(bytes32 requesterid, uint256 Date, uint256 Value);
 
@@ -49,10 +44,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
 
     // restrict access to functions only to feeders
     modifier onlyFeeder() {
-        require(
-            _roleController.hasRole(keccak256("FEEDER"), _msgSender()),
-            "Only Feeder can push data"
-        );
+        require(_roleController.hasRole(keccak256("FEEDER"), _msgSender()), "Only Feeder can push data");
         _;
     }
 
@@ -70,18 +62,9 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     function registerAssetValueRequest() public onlyOwner returns (bytes32) {
         uint256 nonce = _nextNonce();
 
-        _requestIdToPullAssetValue = _sendOracleRequest(
-            address(this),
-            this.receiveAssetValue.selector,
-            nonce
-        );
+        _requestIdToPullAssetValue = _sendOracleRequest(address(this), this.receiveAssetValue.selector, nonce);
 
-        emit OracleRequest(
-            address(this),
-            _requestIdToPullAssetValue,
-            address(this),
-            this.receiveAssetValue.selector
-        );
+        emit OracleRequest(address(this), _requestIdToPullAssetValue, address(this), this.receiveAssetValue.selector);
 
         return _requestIdToPullAssetValue;
     }
@@ -92,11 +75,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
      * @param _date The date for which the asset value is received
      * @param _value The asset value received from the oracle
      */
-    function receiveAssetValue(
-        bytes32 _requestId,
-        uint256 _date,
-        uint256 _value
-    ) public onlyFeeder {
+    function receiveAssetValue(bytes32 _requestId, uint256 _date, uint256 _value) public onlyFeeder {
         require(_requestId == _requestIdToPullAssetValue, "invalid oracle request id");
         require(_value > 0, "zero asset value");
         _setResourceValue(_date, _value);
