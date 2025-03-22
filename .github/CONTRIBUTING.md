@@ -28,7 +28,7 @@ Thank you for your interest in contributing to the TreasureNet smart contracts! 
 
 ### Code Quality
 The repository uses Git hooks to ensure code quality:
-- **Pre-commit hook**: Automatically formats Solidity files using `forge fmt`
+- **Pre-commit hook**: Automatically formats Solidity files using `forge fmt` and runs `forge build` to verify compilation
 
 You can manually run the formatter with:
 ```
@@ -40,6 +40,12 @@ Or check for formatting issues without fixing them:
 npm run lint  # Check formatting without modifying files
 ```
 
+### Building the Project
+To ensure contracts compile properly:
+```
+npm run build  # Runs forge build
+```
+
 ### Branching Strategy
 - `main`: The production branch, containing the deployed code
 - `release/*`: Release branches for staging
@@ -49,25 +55,25 @@ npm run lint  # Check formatting without modifying files
   - Refactoring: `refactor--descriptive-name`
 
 ### Testing
-All code changes must include tests. We use Foundry for testing:
+All code changes must include tests. We use Foundry for testing, with npm scripts that wrap foundry commands:
 
 1. **Run Tests**
    ```
-   forge test
+   npm test  # Runs forge test -vvv
    ```
 
 2. **Run Tests with Gas Reports**
    ```
-   forge test --gas-report
+   npm run test:gas  # Runs forge test -vvv --gas-report
    ```
 
 3. **Generate and Check Coverage**
    ```
-   forge coverage --report lcov
+   npm run test:coverage  # Runs forge coverage
    ```
 
 ### Gas Optimization
-- Use the gas reporter to monitor gas usage: `forge test --gas-report`
+- Use the gas reporter to monitor gas usage: `npm run test:gas`
 - For functions expected to be called frequently, aim to minimize gas costs
 - Document any gas optimization strategies used
 

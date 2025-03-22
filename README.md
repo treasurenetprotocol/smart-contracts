@@ -343,3 +343,29 @@ For questions or collaboration, please contact:
 
 -----
 _Treasurenet Foundation 2024_
+
+# TreasureNet Smart Contracts
+
+## Available NPM Scripts
+
+This project provides several npm scripts for development and testing:
+
+### Build & Test
+- `npm run build` - Build all contracts with Foundry
+- `npm test` - Run tests with verbose output
+- `npm run test:gas` - Run tests with gas reporting
+- `npm run test:coverage` - Generate test coverage report
+
+### Linting & Formatting
+- `npm run lint` - Check Solidity formatting without making changes
+- `npm run lint:fix` - Format Solidity files (same as lint:sol)
+- `npm run lint:sol` - Format Solidity files
+
+### Setup
+- `npm run setup:foundry` - Install and configure Foundry
+- `npm run prepare` - Set up Git hooks (runs automatically after npm install)
+
+### Pre-commit Hooks
+- `npm run precommit` - Run linting and build checks (used by Git hooks)
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more details on the development workflow.
