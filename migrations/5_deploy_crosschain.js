@@ -87,8 +87,8 @@ module.exports = async function (deployer, network, accounts) {
 
         // 初始化Roles合约 (注意：这里需要提供必要的初始角色地址数组)
         await roles.initialize(mulSig.address, 
-            [accounts[0], '0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10'], 
-            [accounts[0], '0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10'], 
+            [accounts[0], '0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10','0x6A79824E6be14b7e5Cb389527A02140935a76cD5'], 
+            [accounts[0], '0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10','0x6A79824E6be14b7e5Cb389527A02140935a76cD5'], 
             [oracle.address, accounts[0], "0x6A79824E6be14b7e5Cb389527A02140935a76cD5"], 
             [crosschainBridge.address, "0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10", "0x6A79824E6be14b7e5Cb389527A02140935a76cD5"],
             [tcash.address, tcashLoan.address]
