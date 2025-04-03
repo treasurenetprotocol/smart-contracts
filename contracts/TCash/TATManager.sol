@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -8,6 +8,7 @@ import "../Governance/IRoles.sol";
 contract TATManager is Initializable, OwnableUpgradeable {
     // 状态变量
     IRoles public roles;
+    bytes32 private constant FOUNDATION_MANAGER_ROLE = keccak256("FOUNDATION_MANAGER");
     
     // 用户TAT铸造记录
     struct TATMintRecord {
@@ -26,14 +27,14 @@ contract TATManager is Initializable, OwnableUpgradeable {
     
     // 设置用户TAT铸造次数（仅供管理员使用）
     function setMintCount(address account, uint256 count) external {
-        require(roles.hasRole("FOUNDATION_MANAGER", msg.sender), "Not authorized");
+        require(roles.hasRole(FOUNDATION_MANAGER_ROLE, msg.sender), "Not authorized");
         tatMintRecords[account].mintCount = count;
         tatMintRecords[account].lastUpdateTime = block.timestamp;
     }
     
     // 设置用户未被占用的TAT的3个月均值（仅供管理员使用）
     function setUnusedTATAverage(address account, uint256 average) external {
-        require(roles.hasRole("FOUNDATION_MANAGER", msg.sender), "Not authorized");
+        require(roles.hasRole(FOUNDATION_MANAGER_ROLE, msg.sender), "Not authorized");
         tatMintRecords[account].unusedTATAverage = average;
         tatMintRecords[account].lastUpdateTime = block.timestamp;
     }

@@ -1,170 +1,287 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./TCash.sol";
 import "../Governance/IRoles.sol";
-import "./TCashLoan.sol";
+
+interface TCashLoanInterface {
+    function auctionOver(
+        address bider,
+        uint tokens,
+        uint a,
+        uint b
+    ) external returns (bool);
+}
 
 contract TCashAuction is Initializable, OwnableUpgradeable {
-    // 事件定义
-    event AuctionStart(
-        uint256 indexed auctionID,
-        uint256 indexed loanID,
-        uint256 collateralAmount,
-        uint256 debtAmount,
-        uint256 startTime,
-        uint256 endTime
+    //_extractStatus 1: not extracted 2: extracted
+    event auctionDetail(
+        uint n,
+        uint _time,
+        address bider,
+        uint _highValue,
+        uint _extractStatus
     );
-
-    event AuctionBid(
-        uint256 indexed auctionID,
-        address indexed bidder,
-        uint256 bidAmount
+    //_status 1:start 2:ing 3:over
+    event auctionStatus(
+        uint n,
+        uint _time,
+        uint _auction,
+        uint _startValue,
+        uint _highValue,
+        uint _overTime,
+        uint _status
     );
+    event personalAuction(address _user, uint n, uint _sales);
 
-    event AuctionEnd(
-        uint256 indexed auctionID,
-        address indexed winner,
-        uint256 finalPrice
-    );
-
-    // 拍卖结构
-    struct Auction {
-        uint256 auctionID;
-        uint256 loanID;
-        uint256 collateralAmount;
-        uint256 debtAmount;
-        uint256 startTime;
-        uint256 endTime;
-        address highestBidder;
-        uint256 highestBid;
-        bool ended;
+    struct auctions {
+        uint sales;
+        uint startValue;
+        uint nowValue;
+        uint timeOver;
+        uint state;
+        uint debt;
     }
 
-    // 状态变量
-    TCashLoan public tcashLoan;
-    IRoles public roles;
+    auctions[] auctionList;
 
-    uint256 public nextAuctionID;
-    mapping(uint256 => Auction) public auctions;
-    mapping(uint256 => mapping(address => uint256)) public bids;
-    mapping(uint256 => address[]) public bidders;
+    struct auctionbider {
+        uint time;
+        address bider;
+        uint value;
+    }
 
-    // 拍卖参数
-    uint256 public constant AUCTION_DURATION = 24 hours;
-    uint256 public constant MIN_BID_INCREASE = 5; // 5%
+    bytes32 public constant FOUNDATION_MANAGER =
+        keccak256("FOUNDATION_MANAGER");
+    bytes32 public constant AUCTION_MANAGER = keccak256("AUCTION_MANAGER");
 
-    // 初始化函数
+    mapping(uint => address) private bider;
+    mapping(uint => mapping(address => uint)) private bidValue;
+    mapping(uint => auctionbider[]) private bidUsers;
+    mapping(uint => mapping(address => bool)) private _bider;
+    uint private bidDuration;
+
+    TCash private TCashget;
+
+    address private _tcashLoanContract;
+    TCashLoanInterface private TCashLoanget;
+
+    IRoles private _roles;
+
+    //Set the related governance contract address
     function initialize(
-        address _tcashLoan,
-        address _roles
+        address _rolesContract,
+        address _tcash,
+        address _tcashLoan
     ) public initializer {
         __Ownable_init();
-        tcashLoan = TCashLoan(_tcashLoan);
-        roles = IRoles(_roles);
+
+        require(_rolesContract != address(0), "zero roles contract");
+        require(_tcash != address(0), "zero tcash contract");
+        require(_tcashLoan != address(0), "zero loan contract");
+
+        _roles = IRoles(_rolesContract);
+
+        TCashget = TCash(_tcash);
+        TCashLoanget = TCashLoanInterface(_tcashLoan);
+        _tcashLoanContract = _tcashLoan;
+
+        bidDuration = 10 minutes;
     }
 
-    // 开始拍卖
-    function startAuction(
-        uint256 loanID,
-        uint256 collateralAmount,
-        uint256 debtAmount
-    ) external returns (uint256) {
-        require(roles.hasRole("FOUNDATION_MANAGER", msg.sender), "Not authorized");
-        
-        uint256 auctionID = nextAuctionID++;
-        Auction storage newAuction = auctions[auctionID];
-        
-        newAuction.auctionID = auctionID;
-        newAuction.loanID = loanID;
-        newAuction.collateralAmount = collateralAmount;
-        newAuction.debtAmount = debtAmount;
-        newAuction.startTime = block.timestamp;
-        newAuction.endTime = block.timestamp + AUCTION_DURATION;
-        newAuction.ended = false;
-
-        emit AuctionStart(
-            auctionID,
-            loanID,
-            collateralAmount,
-            debtAmount,
-            newAuction.startTime,
-            newAuction.endTime
+    modifier onlyTCashLoan() {
+        require(
+            msg.sender == _tcashLoanContract,
+            "only TCash Loan contract allowed"
         );
-
-        return auctionID;
+        _;
     }
 
-    // 出价
-    function bid(uint256 auctionID) external payable returns (bool) {
-        Auction storage auction = auctions[auctionID];
-        require(!auction.ended, "Auction ended");
-        require(block.timestamp <= auction.endTime, "Auction expired");
-        require(msg.value > 0, "Invalid bid amount");
+    modifier onlyFoundationManager() {
+        require(
+            _roles.hasRole(FOUNDATION_MANAGER, msg.sender),
+            "only FoundationManager allowed"
+        );
+        _;
+    }
 
-        uint256 currentBid = bids[auctionID][msg.sender] + msg.value;
-        require(currentBid > auction.highestBid, "Bid too low");
+    function queryAuctionManager() public view returns (address) {
+        address manager = _roles.getRoleMember(AUCTION_MANAGER, 0);
+        require(manager != address(0), "no auction manager set yet");
+        return manager;
+    }
 
-        // 更新最高出价
-        if (currentBid > auction.highestBid) {
-            auction.highestBid = currentBid;
-            auction.highestBidder = msg.sender;
+    //Auction listing operation, triggered by TCashLoan contract
+    //mortgage is the number of UNITs in the auction, debt is the starting auction price, and _debt is the interest generated by the loan
+    function auctionStart(
+        uint mortgage,
+        uint debt,
+        uint _debt
+    ) public onlyTCashLoan returns (auctions memory) {
+        auctions memory auction;
+        auction.sales = mortgage;
+        auction.startValue = debt;
+        auction.nowValue = debt;
+        auction.timeOver = block.timestamp + bidDuration;
+        auction.state = 1;
+        auction.debt = _debt;
+        auctionList.push(auction);
+
+        emit auctionStatus(
+            auctionList.length - 1,
+            block.timestamp,
+            mortgage,
+            debt,
+            0,
+            block.timestamp + bidDuration,
+            1
+        );
+        return auction;
+    }
+
+    //Query the information of all auction items
+    function queryAuctions() public view returns (auctions[] memory) {
+        return auctionList;
+    }
+
+    //The winner of the n th auction item and the auction price of the winner
+    function queryBider(uint n) public view returns (address, uint) {
+        return (bider[n], bidValue[n][bider[n]]);
+    }
+
+    function isbider(uint n, address pAddr) internal view returns (bool) {
+        return _bider[n][pAddr];
+    }
+
+    //Bidding function, the n th auction item, the TCash of the bidAmount amount
+    function bid(uint n, uint bidAmount) public returns (bool) {
+        require(
+            auctionList[n].timeOver > block.timestamp,
+            "TCashAuction: auction is over"
+        );
+        require(
+            auctionList[n].nowValue < (bidValue[n][msg.sender] + bidAmount),
+            "TCashAuction: bid is not enough"
+        );
+        require(
+            TCashget.bidCost(msg.sender, bidAmount),
+            "TCashAuction: TCash is not enough"
+        );
+        if (!isbider(n, msg.sender)) {
+            _bider[n][msg.sender] = true;
+
+            auctionbider memory bi;
+            bi.time = block.timestamp;
+            bi.bider = msg.sender;
+            bi.value = bidAmount;
+            bidUsers[n].push(bi);
         }
 
-        // 记录出价
-        bids[auctionID][msg.sender] = currentBid;
-        if (!isBidder(auctionID, msg.sender)) {
-            bidders[auctionID].push(msg.sender);
-        }
+        bider[n] = msg.sender;
+        auctionList[n].nowValue = bidValue[n][msg.sender] + bidAmount;
+        bidValue[n][msg.sender] += bidAmount;
 
-        emit AuctionBid(auctionID, msg.sender, currentBid);
-
+        emit auctionDetail(
+            n,
+            block.timestamp,
+            msg.sender,
+            bidValue[n][msg.sender],
+            1
+        );
+        emit auctionStatus(
+            n,
+            block.timestamp,
+            auctionList[n].sales,
+            auctionList[n].startValue,
+            auctionList[n].nowValue,
+            auctionList[n].timeOver,
+            2
+        );
         return true;
     }
 
-    // 结束拍卖
-    function endAuction(uint256 auctionID) external returns (bool) {
-        require(roles.hasRole("FOUNDATION_MANAGER", msg.sender), "Not authorized");
-        
-        Auction storage auction = auctions[auctionID];
-        require(!auction.ended, "Auction already ended");
-        require(block.timestamp > auction.endTime, "Auction not expired");
+    //Retrieve the TCash bid for the n th auction item, which can only be called when it is not currently the highest price
+    function bidWithdrawal(uint n) public returns (bool) {
+        require(bider[n] != msg.sender, "TCashAuction: you are owner of bid");
+        require(bidValue[n][msg.sender] > 0, "TCashAuction: no TCash on bid");
+        require(
+            TCashget.bidBack(msg.sender, bidValue[n][msg.sender]),
+            "TCashAuction: bidBack failed"
+        );
+        bidValue[n][msg.sender] = 0;
 
-        auction.ended = true;
-
-        // 如果有中标者，转移抵押品
-        if (auction.highestBidder != address(0)) {
-            payable(auction.highestBidder).transfer(auction.collateralAmount);
-        }
-
-        emit AuctionEnd(auctionID, auction.highestBidder, auction.highestBid);
-
+        emit auctionDetail(
+            n,
+            block.timestamp,
+            msg.sender,
+            bidValue[n][msg.sender],
+            2
+        );
         return true;
     }
 
-    // 查询拍卖信息
-    function getAuction(uint256 auctionID) external view returns (Auction memory) {
-        return auctions[auctionID];
+    //Get the n th auction item and update the corresponding status at the same time
+    function getAuction(uint n) public returns (bool) {
+        require(auctionList[n].state != 2, "TCashAuction: auction is not over");
+        require(
+            auctionList[n].timeOver < block.timestamp,
+            "TCashAuction: auction is not over"
+        );
+        require(
+            bider[n] == msg.sender,
+            "TCashAuction: you are not owner of bid"
+        );
+        TCashLoanget.auctionOver(
+            msg.sender,
+            auctionList[n].sales,
+            auctionList[n].debt,
+            auctionList[n].startValue - auctionList[n].debt
+        );
+        TCashget.burnFrom(queryAuctionManager(), auctionList[n].startValue);
+        auctionList[n].state = 2;
+
+        emit auctionStatus(
+            n,
+            block.timestamp,
+            auctionList[n].sales,
+            auctionList[n].startValue,
+            auctionList[n].nowValue,
+            auctionList[n].timeOver,
+            3
+        );
+        emit personalAuction(msg.sender, n, auctionList[n].sales);
+        return true;
     }
 
-    // 查询用户出价
-    function getUserBid(uint256 auctionID, address user) external view returns (uint256) {
-        return bids[auctionID][user];
+    //Get the addresses of all users who have participated in the bidding of the n th auction item
+    function getAuctionBider(
+        uint n
+    ) public view returns (auctionbider[] memory) {
+        return bidUsers[n];
     }
 
-    // 查询拍卖出价者列表
-    function getBidders(uint256 auctionID) external view returns (address[] memory) {
-        return bidders[auctionID];
-    }
-
-    // 内部函数
-    function isBidder(uint256 auctionID, address user) internal view returns (bool) {
-        for (uint256 i = 0; i < bidders[auctionID].length; i++) {
-            if (bidders[auctionID][i] == user) {
-                return true;
+    //Update the status, when the auction time ends and there is no bid
+    //FoundationManager can update the time of the auction item and restart the auction
+    function upgradeState() public onlyFoundationManager returns (bool) {
+        for (uint a = 0; a < auctionList.length; a++) {
+            if (
+                auctionList[a].timeOver < block.timestamp &&
+                bider[a] == address(0)
+            ) {
+                auctionList[a].timeOver = block.timestamp + bidDuration;
+                emit auctionStatus(
+                    a,
+                    block.timestamp,
+                    auctionList[a].sales,
+                    auctionList[a].startValue,
+                    0,
+                    block.timestamp + bidDuration,
+                    1
+                );
             }
         }
-        return false;
+        return true;
     }
 } 

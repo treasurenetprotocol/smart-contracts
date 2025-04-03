@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "../Governance/IRoles.sol";
 import "../Oracle/IOracle.sol";
 
 pragma solidity ^0.8.10;
 
-contract USTN is IERC20, Initializable, OwnableUpgradeable {
+contract USTN is IERC20Upgradeable, Initializable, OwnableUpgradeable {
     event convert(
         uint _time,
         address _user,

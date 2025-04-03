@@ -35,23 +35,23 @@ Stakeable
     // 用户地址 => 铸造记录
     mapping(address => TATRecord) private _tatRecords;
     
-    // 只有ProductionData合约可以调用
-    modifier onlyProductionData() {
-        // 从治理合约获取ProductionData地址
-        bool isProductionData = false;
-        for (uint i = 0; i < 10; i++) { // 假设最多有10种treasure类型
-            string memory treasureKind = getKindByIndex(i);
-            if (bytes(treasureKind).length == 0) break;
+    // // 只有ProductionData合约可以调用
+    // modifier onlyProductionData() {
+    //     // 从治理合约获取ProductionData地址
+    //     bool isProductionData = false;
+    //     for (uint i = 0; i < 10; i++) { // 假设最多有10种treasure类型
+    //         string memory treasureKind = getKindByIndex(i);
+    //         if (bytes(treasureKind).length == 0) break;
             
-            (, address productionContract) = _governance.getTreasureByKind(treasureKind);
-            if (_msgSender() == productionContract) {
-                isProductionData = true;
-                break;
-            }
-        }
-        require(isProductionData, "Only ProductionData contract can call");
-        _;
-    }
+    //         (, address productionContract) = _governance.getTreasureByKind(treasureKind);
+    //         if (_msgSender() == productionContract) {
+    //             isProductionData = true;
+    //             break;
+    //         }
+    //     }
+    //     require(isProductionData, "Only ProductionData contract can call");
+    //     _;
+    // }
     
     // 辅助函数 - 获取指定索引的treasure类型，具体实现需要根据实际情况调整
     function getKindByIndex(uint256 index) internal view returns (string memory) {
@@ -105,11 +105,11 @@ Stakeable
     ) public onlyProductionDataContract(_treasureKind) {
         require(to != address(0), "Zero address");
         
-        // 获取当前年月，格式YYYYMM
-        uint256 currentMonth = getCurrentYearMonth();
+        // // 获取当前年月，格式YYYYMM
+        // uint256 currentMonth = getCurrentYearMonth();
         
-        // 记录用户铸造历史
-        setTATRecord(to, amount, currentMonth);
+        // // 记录用户铸造历史
+        // setTATRecord(to, amount, currentMonth);
         
         // 铸造代币
         _mint(to, amount);
@@ -153,12 +153,9 @@ Stakeable
     /* Temp faucet */
     function faucet(address user, uint256 amount) public {
         require(user != address(0), "Zero address");
-        
-        // 获取当前年月
-        uint256 currentMonth = getCurrentYearMonth();
-        
+    
         // 记录用户铸造历史
-        setTATRecord(user, amount, currentMonth);
+        setTATRecord(user, amount);
         
         // 铸造代币
         _mint(user, amount);
@@ -188,28 +185,16 @@ Stakeable
      * @dev 设置用户TAT铸造记录
      * @param account 用户地址
      * @param amount 铸造代币数量
-     * @param month 年月(格式YYYYMM)
      */
     function setTATRecord(
         address account,
-        uint256 amount,
-        uint256 month
-    ) public onlyProductionData {
+        uint256 amount
+    ) public {
         require(account != address(0), "User address cannot be zero");
         require(amount > 0, "Mint amount must be greater than 0");
         
         TATRecord storage record = _tatRecords[account];
         
-        // 检查是否已经存在该月份的记录
-        for (uint8 i = 0; i < 3; i++) {
-            if (record.months[i] == month) {
-                // 如果存在相同月份，则累加金额
-                record.amounts[i] += amount;
-                return;
-            }
-        }
-        
-        // 不存在相同月份记录，添加新记录
         // 如果还未初始化，设置currentIndex为0
         if (record.months[0] == 0 && record.months[1] == 0 && record.months[2] == 0) {
             record.currentIndex = 0;
@@ -219,7 +204,7 @@ Stakeable
         }
         
         // 更新记录
-        record.months[record.currentIndex] = month;
+        record.months[record.currentIndex] = getCurrentYearMonth();
         record.amounts[record.currentIndex] = amount;
     }
     

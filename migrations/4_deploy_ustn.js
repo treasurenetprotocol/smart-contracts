@@ -28,42 +28,49 @@ module.exports = async function (deployer, network, accounts) {
         const tcash = await TCash.deployed();
 
         // 部署USTN合约
-        const ustn = await deployProxy(USTN, [
-            mulSig.address,
-            roles.address,
-            parameterInfo.address
-        ], { deployer });
+        const ustn = await deployProxy(USTN, { initializer: false }, { deployer });
+
         console.log('USTN部署成功:', ustn.address);
         fs.appendFileSync('contracts.txt', `const USTN_ADDRESS='${ustn.address}'\n`);
 
         // 部署USTNAuction拍卖合约
-        const ustnAuction = await deployProxy(USTNAuction, [
-            ustn.address,
-            tcash.address,
-            mulSig.address,
-            roles.address,
-            parameterInfo.address
-        ], { deployer });
+        const ustnAuction = await deployProxy(USTNAuction, { initializer: false }, { deployer });
         console.log('USTNAuction部署成功:', ustnAuction.address);
         fs.appendFileSync('contracts.txt', `const USTN_AUCTION_ADDRESS='${ustnAuction.address}'\n`);
 
         // 部署USTNFinance金融合约
-        const ustnFinance = await deployProxy(USTNFinance, [
-            ustn.address,
-            tcash.address,
-            oracle.address,
-            mulSig.address,
-            roles.address,
-            parameterInfo.address
-        ], { deployer });
+        const ustnFinance = await deployProxy(USTNFinance, { initializer: false }, { deployer });
         console.log('USTNFinance部署成功:', ustnFinance.address);
         fs.appendFileSync('contracts.txt', `const USTN_FINANCE_ADDRESS='${ustnFinance.address}'\n`);
 
-        // 设置合约关系
-        await ustn.setFinance(ustnFinance.address);
-        await ustn.setAuction(ustnAuction.address);
-        await ustnAuction.setFinance(ustnFinance.address);
-        await ustnFinance.setAuction(ustnAuction.address);
+
+        await ustnAuction.initialize(
+            roles.address,
+            ustn.address,
+            ustnFinance.address
+        );
+
+        await ustnFinance.initialize(
+            roles.address,
+            parameterInfo.address,
+            oracle.address,
+            ustn.address,
+            ustnAuction.address
+        );
+
+        await ustn.initialize(
+            roles.address,
+            oracle.address,
+            ustnAuction.address,
+            ustnFinance.address
+        );
+        
+        
+        // // 设置合约关系
+        // await ustn.setFinance(ustnFinance.address);
+        // await ustn.setAuction(ustnAuction.address);
+        // await ustnAuction.setFinance(ustnFinance.address);
+        // await ustnFinance.setAuction(ustnAuction.address);
 
         console.log('USTN相关合约部署完成');
     } catch (error) {

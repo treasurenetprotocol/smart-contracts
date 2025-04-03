@@ -30,12 +30,10 @@ interface ITAT is IERC20Upgradeable,IStake {
      * @dev 设置用户TAT铸造记录
      * @param account 用户地址
      * @param amount 铸造代币数量
-     * @param month 年月(格式YYYYMM)
      */
     function setTATRecord(
         address account,
-        uint256 amount,
-        uint256 month
+        uint256 amount
     ) external;
     
     /**

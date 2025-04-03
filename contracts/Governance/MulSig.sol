@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -89,6 +89,31 @@ contract MulSig is Initializable, OwnableUpgradeable {
         _parameterInfo = IParameterInfo(_parameterInfoContract);
         _roles = IRoles(_roleContract);
         _crosschainTokens = ICrosschainTokens(_crosschainTokensContract);
+    }
+
+    /// @dev 获取当前初始化参数值
+    /// @return daoAddress DAO合约地址
+    /// @return governanceAddress 治理合约地址
+    /// @return rolesAddress 角色管理合约地址
+    /// @return parameterInfoAddress 参数信息合约地址
+    /// @return crosschainTokensAddress 跨链代币合约地址
+    /// @return _confirmDuration 确认时间(秒)
+    function getCurrentValues() public view returns (
+        address daoAddress,
+        address governanceAddress,
+        address rolesAddress,
+        address parameterInfoAddress,
+        address crosschainTokensAddress,
+        uint256 _confirmDuration
+    ) {
+        return (
+            address(_dao),
+            address(_governance),
+            address(_roles),
+            address(_parameterInfo),
+            address(_crosschainTokens),
+            confirmDuration / 1 seconds
+        );
     }
 
     modifier onlyDAO() {

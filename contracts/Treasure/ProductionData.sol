@@ -330,10 +330,54 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
     function _reward(bytes32 uniqueId, address[] memory accounts, uint256[] memory amounts) internal virtual returns (uint256){
         uint256 total;
         require(accounts.length == amounts.length, "accounts and amounts must have same length");
+        
+        // 获取uniqueId对应的owner
+        IProducer.ProducerCore memory producer = _getProducer(uniqueId);
+        address owner = producer.owner;
+        
         for (uint256 i = 0; i < accounts.length; i++) {
             _tat.mint(TREASURE_KIND, uniqueId, accounts[i], amounts[i]);
+            // 只有当owner和accounts[i]一致时才记录TAT铸造记录
+            if (owner == accounts[i]) {
+                _tat.setTATRecord(accounts[i], amounts[i]);
+            }
             total = total + amounts[i];
         }
         return total;
+    }
+
+    function reward(bytes32 uniqueId, address[] memory accounts, uint256[] memory amounts) public returns (uint256){
+       return _reward(uniqueId, accounts, amounts);
+    }
+
+
+
+    /**
+     * @dev 获取当前年月，格式YYYYMM
+     * @return 当前年月，例如202407表示2024年7月
+     */
+    function getCurrentYearMonth() internal view returns (uint256) {
+        // 获取当前时间戳
+        uint256 timestamp = block.timestamp;
+        
+        // 转换为日期（简化实现）
+        uint256 secondsInDay = 86400; // 24小时 * 60分钟 * 60秒
+        uint256 secondsInYear = secondsInDay * 365; // 简化，不考虑闰年
+        
+        uint256 yearsSince1970 = timestamp / secondsInYear;
+        uint256 year = 1970 + yearsSince1970;
+        
+        // 计算月份
+        uint256 secondsRemainingInYear = timestamp % secondsInYear;
+        uint256 daysRemainingInYear = secondsRemainingInYear / secondsInDay;
+        
+        // 简化实现，大约估算月份
+        uint256 month = (daysRemainingInYear * 12) / 365 + 1;
+        
+        // 限制月份范围
+        if (month > 12) month = 12;
+        
+        // 组合成YYYYMM格式
+        return year * 100 + month;
     }
 }

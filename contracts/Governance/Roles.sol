@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IRoles.sol";
 
 /// @title Role management contract
 /// @author bjwswang
-contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IRoles {
+contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerableUpgradeable, IRoles {
     bytes32 public constant ADMIN = keccak256("ADMIN");
     bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
     bytes32 public constant AUCTION_MANAGER = keccak256("AUCTION_MANAGER");
     bytes32 public constant FEEDER = keccak256("FEEDER");
     bytes32 private constant _CROSSCHAIN_SENDER = keccak256("CROSSCHAIN_SENDER");
-
+    bytes32 private constant _TCASH_MINTER = keccak256("TCASH_MINTER");
+    bytes32 private constant _TCASH_BURNER = keccak256("TCASH_BURNER");
     address private _mulSig;
 
     /// @dev Initializes the role management contract
@@ -28,7 +29,8 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
         address[] memory managers,         // FOUNDATION_MANAGER
         address[] memory auctionManagers,  // AUCTION_MANAGER
         address[] memory feeders,          // FEEDER
-        address[] memory crosschainSenders // CROSSCHAIN_SENDER
+        address[] memory crosschainSenders, // CROSSCHAIN_SENDER
+        address[] memory tcashManagers     // TCASH_MINTER, TCASH_BURNER
     ) public initializer {
         __Ownable_init();
 
@@ -40,7 +42,8 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
         _setRoleAdmin(AUCTION_MANAGER,FOUNDATION_MANAGER);
         _setRoleAdmin(FEEDER, ADMIN);
         _setRoleAdmin(_CROSSCHAIN_SENDER, ADMIN);
-
+        _setRoleAdmin(_TCASH_MINTER, ADMIN);
+        _setRoleAdmin(_TCASH_BURNER, ADMIN);
         for (uint256 i = 0; i < managers.length; ++i) {
             _setupRole(FOUNDATION_MANAGER, managers[i]);
         }
@@ -56,11 +59,12 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
         for (uint256 i = 0; i < crosschainSenders.length; ++i) {
             _setupRole(_CROSSCHAIN_SENDER, crosschainSenders[i]);
         }
-    }
 
-    /*function _contextSuffixLength() internal view virtual override(Context,ContextUpgradeable) returns (uint256) {
-        return ContextUpgradeable._contextSuffixLength();
-    }*/
+        for (uint256 i = 0; i < tcashManagers.length; ++i) {
+            _setupRole(_TCASH_MINTER, tcashManagers[i]);
+            _setupRole(_TCASH_BURNER, tcashManagers[i]);
+        }
+    }
 
     modifier onlyMulSig() {
         require(_msgSender() == _mulSig, "");
@@ -71,7 +75,7 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
     internal
     view
     virtual
-    override(Context, ContextUpgradeable)
+    override
     returns (address)
     {
         return msg.sender;
@@ -81,7 +85,7 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
     internal
     view
     virtual
-    override(Context, ContextUpgradeable)
+    override
     returns (bytes calldata)
     {
         return msg.data;
@@ -89,6 +93,14 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerable, IR
 
     function CROSSCHAIN_SENDER() public pure returns (bytes32) {
         return _CROSSCHAIN_SENDER;
+    }
+
+    function TCASH_MINTER() public pure returns (bytes32) {
+        return _TCASH_MINTER;
+    }
+
+    function TCASH_BURNER() public pure returns (bytes32) {
+        return _TCASH_BURNER;
     }
 
    function getRoleMemberArray(bytes32 role) external view returns (address[] memory) {

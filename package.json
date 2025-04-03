@@ -25,10 +25,11 @@
     "node": "20.x"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^4.9.6",
-    "@openzeppelin/contracts-upgradeable": "^4.9.6",
-    "@openzeppelin/truffle-upgrades": "^1.17.0",
-    "@truffle/hdwallet-provider": "^2.1.2",
+    "@openzeppelin/contracts": "4.7.3",
+    "@openzeppelin/contracts-upgradeable": "4.7.3",
+    "@openzeppelin/truffle-upgrades": "1.17.0",
+    "@openzeppelin/upgrades-core": "1.20.2",
+    "@truffle/hdwallet-provider": "^1.7.0",
     "chai": "^4.3.7",
     "js-sha3": "^0.8.0",
     "prettier": "^2.7.1",

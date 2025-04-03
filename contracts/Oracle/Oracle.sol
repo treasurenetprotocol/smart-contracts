@@ -11,9 +11,11 @@ import "./IOracle.sol";
  *    - Initiating/Canceling Oracle requests
  *    - Uploading Oracle data (Role: Feeder)
  *    - Managing TCASH minting status based on price fluctuations
+ *    - Managing price data for supported tokens/symbols
 */
 contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     bytes32 public constant FEEDER = keccak256("FEEDER");
+    bytes32 public constant FOUNDATION_MANAGER = keccak256("FOUNDATION_MANAGER");
 
     event OracleRequest(
         address requester,
@@ -27,6 +29,13 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     // TCASH铸造状态相关事件
     event TCashMintStatusChanged(bool status, uint256 timestamp);
     event TCashMintLockPriceChanged(uint256 price, uint256 timestamp);
+    
+    // 从TCashOracle整合的事件
+    event PriceUpdated(
+        string indexed symbol,
+        uint256 price,
+        uint256 timestamp
+    );
 
     IRoles private _roleController;
 
@@ -38,6 +47,17 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     // TCASH铸造锁定相关状态
     bool private _tcashMintStatus; // TCASHMS: true=允许铸造, false=禁止铸造
     uint256 private _tcashMintLockPrice; // TCASHMLP: 0=未锁定, >0=锁定价格
+    
+    // 从TCashOracle整合的数据结构和状态变量
+    // 价格结构
+    struct PriceData {
+        uint256 price;
+        uint256 timestamp;
+    }
+    
+    // TCashOracle状态变量
+    mapping(string => PriceData) public prices;
+    mapping(string => bool) public supportedSymbols;
 
     /// @dev Contract initialization
     /// @param _roleContract Address of the role management contract
@@ -48,10 +68,19 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         // 初始化TCASH铸造状态为允许
         _tcashMintStatus = true;
         _tcashMintLockPrice = 0;
+        
+        // 初始化支持的代币（从TCashOracle整合）
+        supportedSymbols["UNIT"] = true;
+        supportedSymbols["TCASH"] = true;
     }
 
     modifier onlyFeeder() {
         require(_roleController.hasRole(FEEDER, _msgSender()), "Only Feeder can push data");
+        _;
+    }
+    
+    modifier onlyFoundationManager() {
+        require(_roleController.hasRole(FOUNDATION_MANAGER, _msgSender()), "Not authorized");
         _;
     }
 
@@ -192,5 +221,76 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
                 emit TCashMintStatusChanged(true, block.timestamp);
             }
         }
+    }
+    
+    // 从TCashOracle整合的函数
+    
+    /// @notice 更新价格
+    /// @dev 更新指定代币符号的价格
+    /// @param symbol 代币符号
+    /// @param price 价格
+    /// @return 操作是否成功
+    function updatePrice(string memory symbol, uint256 price) external onlyFoundationManager returns (bool) {
+        require(supportedSymbols[symbol], "Unsupported symbol");
+        require(price > 0, "Invalid price");
+
+        prices[symbol] = PriceData({
+            price: price,
+            timestamp: block.timestamp
+        });
+
+        emit PriceUpdated(symbol, price, block.timestamp);
+
+        return true;
+    }
+
+    /// @notice 获取价格
+    /// @dev 获取指定代币符号的价格
+    /// @param symbol 代币符号
+    /// @return 价格
+    function getPrice(string memory symbol) external view returns (uint256) {
+        require(supportedSymbols[symbol], "Unsupported symbol");
+        return prices[symbol].price;
+    }
+
+    /// @notice 获取价格和时间戳
+    /// @dev 获取指定代币符号的价格数据（价格和时间戳）
+    /// @param symbol 代币符号
+    /// @return price 价格
+    /// @return timestamp 时间戳
+    function getPriceData(string memory symbol) external view returns (uint256 price, uint256 timestamp) {
+        require(supportedSymbols[symbol], "Unsupported symbol");
+        PriceData memory data = prices[symbol];
+        return (data.price, data.timestamp);
+    }
+
+    /// @notice 添加支持的代币
+    /// @dev 添加一个新的支持的代币符号
+    /// @param symbol 代币符号
+    /// @return 操作是否成功
+    function addSupportedSymbol(string memory symbol) external onlyFoundationManager returns (bool) {
+        require(!supportedSymbols[symbol], "Symbol already supported");
+        
+        supportedSymbols[symbol] = true;
+        return true;
+    }
+
+    /// @notice 移除支持的代币
+    /// @dev 移除一个已支持的代币符号
+    /// @param symbol 代币符号
+    /// @return 操作是否成功
+    function removeSupportedSymbol(string memory symbol) external onlyFoundationManager returns (bool) {
+        require(supportedSymbols[symbol], "Symbol not supported");
+        
+        supportedSymbols[symbol] = false;
+        return true;
+    }
+
+    /// @notice 检查代币是否支持
+    /// @dev 检查指定的代币符号是否被支持
+    /// @param symbol 代币符号
+    /// @return 是否支持
+    function isSupportedSymbol(string memory symbol) external view returns (bool) {
+        return supportedSymbols[symbol];
     }
 }

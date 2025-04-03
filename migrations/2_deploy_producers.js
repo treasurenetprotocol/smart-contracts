@@ -36,6 +36,7 @@ module.exports = async function (deployer, network, accounts) {
         const oracle = await Oracle.deployed();
 
         // 部署资产生产者和资产数据合约
+        console.log('正在部署资产生产者合约...');
         const oilProducer = await deployProxy(OilProducer, { initializer: false }, { deployer });
         const oilData = await deployProxy(OilData, { initializer: false }, { deployer });
         console.log('OilProducer部署成功:', oilProducer.address);
@@ -65,6 +66,7 @@ module.exports = async function (deployer, network, accounts) {
         fs.appendFileSync('contracts.txt', `const BTC_DATA_ADDRESS='${btcData.address}'\n`);
 
         // 部署Governance治理合约
+        console.log('正在部署Governance合约...');
         const gov = await deployProxy(Governance, [
             dao.address,
             mulSig.address,
@@ -78,11 +80,15 @@ module.exports = async function (deployer, network, accounts) {
         fs.appendFileSync('contracts.txt', `const GOVERNANCE_ADDRESS='${gov.address}'\n`);
 
         // 部署TAT代币合约
+        console.log('正在部署TAT代币合约...');
         const tat = await deployProxy(TAT, ['TAT Token', 'TAT', gov.address], { deployer });
         console.log('TAT部署成功:', tat.address);
         fs.appendFileSync('contracts.txt', `const TAT_ADDRESS='${tat.address}'\n`);
 
+    
+
         // 初始化资产生产者和资产数据合约
+        console.log('初始化资产生产者合约...');
         await oilProducer.initialize(mulSig.address, roles.address, 'OIL', oilData.address, [], []);
         await oilData.initialize('OIL', oracle.address, roles.address, parameterInfo.address, oilProducer.address, tat.address);
 

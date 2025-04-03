@@ -70,4 +70,44 @@ interface IOracle {
         uint256 _lockThreshold, 
         uint256 _resetThreshold
     ) external;
+    
+    // 从TCashOracle整合的接口
+    
+    /// @notice 更新价格
+    /// @dev 更新指定代币符号的价格
+    /// @param symbol 代币符号
+    /// @param price 价格
+    /// @return 操作是否成功
+    function updatePrice(string memory symbol, uint256 price) external returns (bool);
+    
+    /// @notice 获取价格
+    /// @dev 获取指定代币符号的价格
+    /// @param symbol 代币符号
+    /// @return 价格
+    function getPrice(string memory symbol) external view returns (uint256);
+    
+    /// @notice 获取价格和时间戳
+    /// @dev 获取指定代币符号的价格数据（价格和时间戳）
+    /// @param symbol 代币符号
+    /// @return price 价格
+    /// @return timestamp 时间戳
+    function getPriceData(string memory symbol) external view returns (uint256 price, uint256 timestamp);
+    
+    /// @notice 添加支持的代币
+    /// @dev 添加一个新的支持的代币符号
+    /// @param symbol 代币符号
+    /// @return 操作是否成功
+    function addSupportedSymbol(string memory symbol) external returns (bool);
+    
+    /// @notice 移除支持的代币
+    /// @dev 移除一个已支持的代币符号
+    /// @param symbol 代币符号
+    /// @return 操作是否成功
+    function removeSupportedSymbol(string memory symbol) external returns (bool);
+    
+    /// @notice 检查代币是否支持
+    /// @dev 检查指定的代币符号是否被支持
+    /// @param symbol 代币符号
+    /// @return 是否支持
+    function isSupportedSymbol(string memory symbol) external view returns (bool);
 }
