@@ -18,6 +18,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
 
     // Locked record structure
     struct LockedRecord {
+        uint256 lockedID;
         bytes planID;
         uint256 amount;
         uint256 claimMethod;
@@ -38,6 +39,8 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     mapping(address => LockedRecord[]) private lockedRecords;
     mapping(bytes => Plan) private plans;
 
+    uint256 private nextRecordId;
+
     // Plan index (upgraded to Upgradeable version)
     EnumerableSetUpgradeable.Bytes32Set private activePlans;
 
@@ -50,7 +53,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     event ManagerRemoved(address indexed manager);
     event SetPlan(bytes indexed planID, string planName, uint256 planAmount, uint256 claimMethod);
     event DelPlan(bytes indexed planID);
-    event SetLockedRecord(bytes indexed planID, address account, uint256 amount, uint256 claimMethod, uint256 time);
+    event SetLockedRecord(uint256 lockedID, bytes indexed planID, address account, uint256 amount, uint256 claimMethod, uint256 time);
     event ClaimToken(address indexed account, uint256 amount);
 
     // Replace constructor with initialization function
@@ -162,8 +165,10 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         plan.allocatedAmount += _amount;
 
         // Add record
+        uint256 recordId = nextRecordId++;
         uint256 recordIndex = lockedRecords[_account].length;
         lockedRecords[_account].push(LockedRecord({
+            lockedID: recordId,
             planID: _planID,
             amount: _amount,
             claimMethod: _claimMethod,
@@ -175,7 +180,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         planAccounts[_planID].add(_account);
         planRecordIndices[_planID][_account].push(recordIndex);
 
-        emit SetLockedRecord(_planID, _account, _amount, _claimMethod, _time);
+        emit SetLockedRecord(recordId,_planID, _account, _amount, _claimMethod, _time);
     }
 
     // Claim tokens
