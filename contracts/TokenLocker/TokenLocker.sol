@@ -55,6 +55,8 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     event DelPlan(bytes indexed planID);
     event SetLockedRecord(uint256 lockedID, bytes indexed planID, address account, uint256 amount, uint256 claimMethod, uint256 time);
     event ClaimToken(address indexed account, uint256 amount);
+    event ClaimLockedRecord(uint256 lockedID);
+    event CancelLockedRecord(uint256 lockedID);
 
     // Replace constructor with initialization function
     function initialize() public initializer {
@@ -137,6 +139,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
                 uint256 idx = indices[j - 1];
                 if (idx < lockedRecords[account].length) {
                     if (lockedRecords[account][idx].isActive) {
+                        emit CancelLockedRecord(lockedRecords[account][idx].lockedID);
                         lockedRecords[account][idx].isActive = false;
                     }
                 }
@@ -196,6 +199,9 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             LockedRecord storage record = records[idx];
 
             if (record.isActive && block.timestamp >= record.time) {
+
+                emit ClaimLockedRecord(record.lockedID);
+
                 totalClaimable += record.amount;
                 record.isActive = false;
                 processed++;
