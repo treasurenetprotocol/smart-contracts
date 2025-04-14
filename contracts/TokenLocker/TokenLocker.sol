@@ -18,8 +18,8 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
 
     // Locked record structure
     struct LockedRecord {
-        bytes lockedID;
-        bytes planID;
+        bytes32 lockedID;
+        bytes32 planID;
         uint256 amount;
         uint256 claimMethod;
         uint256 time;
@@ -37,24 +37,24 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
 
     // Data storage
     mapping(address => LockedRecord[]) private lockedRecords;
-    mapping(bytes => Plan) private plans;
+    mapping(bytes32 => Plan) private plans;
 
     // Plan index (upgraded to Upgradeable version)
     EnumerableSetUpgradeable.Bytes32Set private activePlans;
 
     // Plan-account mapping (upgraded to Upgradeable version)
-    mapping(bytes => EnumerableSetUpgradeable.AddressSet) private planAccounts;
-    mapping(bytes => mapping(address => uint256[])) private planRecordIndices;
+    mapping(bytes32 => EnumerableSetUpgradeable.AddressSet) private planAccounts;
+    mapping(bytes32 => mapping(address => uint256[])) private planRecordIndices;
 
     // Events
     event ManagerAdded(address indexed manager);
     event ManagerRemoved(address indexed manager);
-    event SetPlan(bytes indexed planID, string planName, uint256 planAmount, uint256 claimMethod);
-    event DelPlan(bytes indexed planID);
-    event SetLockedRecord(bytes lockedID, bytes indexed planID, address account, uint256 amount, uint256 claimMethod, uint256 time);
+    event SetPlan(bytes32 indexed planID, string planName, uint256 planAmount, uint256 claimMethod);
+    event DelPlan(bytes32 indexed planID);
+    event SetLockedRecord(bytes32 lockedID, bytes32 indexed planID, address account, uint256 amount, uint256 claimMethod, uint256 time);
     event ClaimToken(address indexed account, uint256 amount);
-    event ClaimLockedRecord(bytes lockedID);
-    event CancelLockedRecord(bytes lockedID);
+    event ClaimLockedRecord(bytes32 lockedID);
+    event CancelLockedRecord(bytes32 lockedID);
 
     // Replace constructor with initialization function
     function initialize() public initializer {
@@ -98,7 +98,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // Add plan
-    function setPlan(bytes calldata _planID, string calldata _planName, uint256 _planAmount, uint256 _claimMethod) external onlyManager {
+    function setPlan(bytes32 calldata _planID, string calldata _planName, uint256 _planAmount, uint256 _claimMethod) external onlyManager {
         require(_planAmount > 0, "Amount must be positive");
         require(_claimMethod <= 1, "Invalid claim method");
         require(plans[_planID].planAmount == 0, "Plan already exists");
@@ -118,7 +118,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // Delete plan and related records
-    function delPlan(bytes calldata _planID) external onlyManager nonReentrant {
+    function delPlan(bytes32 calldata _planID) external onlyManager nonReentrant {
         Plan storage plan = plans[_planID];
         require(plan.planAmount > 0, "Plan not exist");
         uint256 remaining = plan.planAmount - plan.allocatedAmount;
@@ -149,12 +149,12 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // Get plan information
-    function getPlan(bytes calldata _planID) external view returns (Plan memory) {
+    function getPlan(bytes32 calldata _planID) external view returns (Plan memory) {
         return plans[_planID];
     }
 
     // Add LockedRecord
-    function setLockedRecord(bytes calldata _lockedID, bytes calldata _planID, address _account, uint256 _amount, uint256 _claimMethod, uint256 _time) external onlyManager {
+    function setLockedRecord(bytes32 calldata _lockedID, bytes32 calldata _planID, address _account, uint256 _amount, uint256 _claimMethod, uint256 _time) external onlyManager {
         Plan storage plan = plans[_planID];
         require(plan.isActive, "Inactive plan");
         require(_amount > 0, "Amount must be positive");
