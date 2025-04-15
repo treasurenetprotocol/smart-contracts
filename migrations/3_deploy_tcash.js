@@ -82,6 +82,9 @@ module.exports = async function (deployer, network, accounts) {
     // 设置TCash关系
     await tcash.setRoles(roles.address);
     await tcash.setOracle(oracle.address);
+
+    await tcash.setAuctionContract(tcashAuction.address)
+    await tcashLoan.setAuctionContract(tcashAuction.address)
     
     // // 授权TAT管理员
     // const tatInstance = await TAT.at(tat.address);
@@ -89,8 +92,6 @@ module.exports = async function (deployer, network, accounts) {
     
     // 为Oracle设置初始价格
     console.log('初始化Oracle价格数据...');
-    
-   
     
     console.log("TCash相关合约部署完成");
   } catch (error) {

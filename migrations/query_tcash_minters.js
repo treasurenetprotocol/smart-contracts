@@ -32,48 +32,52 @@ module.exports = async function(deployer, network, accounts) {
     //   console.log(`${index + 1}. ${address}`);
     // });
 
-    const parameterInfo = await ParameterInfo.deployed();
-    const oracle = await Oracle.deployed();
+    // const parameterInfo = await ParameterInfo.deployed();
+    // const oracle = await Oracle.deployed();
 
     // await oracle.updatePrice("UNIT", web3.utils.toWei("1.2", "ether")); // 假设1 UNIT = 1 ETH
     // await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // 假设1 TCASH = 0.1 ETH
     // console.log('Oracle价格数据初始化完成');
 
-    const warningRatio = await parameterInfo.getPlatformConfig("TCASHMCT");
-    const liquidationRatio = await parameterInfo.getPlatformConfig("TCASHLT");
-    console.log('warningRatio:', warningRatio.toString());
-    console.log('liquidationRatio:', liquidationRatio.toString());
+    // const warningRatio = await parameterInfo.getPlatformConfig("TCASHMCT");
+    // const liquidationRatio = await parameterInfo.getPlatformConfig("TCASHLT");
+    // console.log('warningRatio:', warningRatio.toString());
+    // console.log('liquidationRatio:', liquidationRatio.toString());
 
-    const unitPrice = await oracle.getPrice("UNIT"); // 假设1 UNIT = 1 ETH
-    const tcashPrice = await oracle.getPrice("TCASH"); // 假设1 TCASH = 0.1 ETH
+    // const unitPrice = await oracle.getPrice("UNIT"); // 假设1 UNIT = 1 ETH
+    // const tcashPrice = await oracle.getPrice("TCASH"); // 假设1 TCASH = 0.1 ETH
 
-    console.log('unitPrice (raw):', unitPrice.toString());
-    console.log('tcashPrice (raw):', tcashPrice.toString());
+    // console.log('unitPrice (raw):', unitPrice.toString());
+    // console.log('tcashPrice (raw):', tcashPrice.toString());
     
-    // 假设价格以wei为单位，转换为ETH单位
-    const unitPriceInEth = web3.utils.fromWei(unitPrice.toString(), 'ether');
-    const tcashPriceInEth = web3.utils.fromWei(tcashPrice.toString(), 'ether');
+    // // 假设价格以wei为单位，转换为ETH单位
+    // const unitPriceInEth = web3.utils.fromWei(unitPrice.toString(), 'ether');
+    // const tcashPriceInEth = web3.utils.fromWei(tcashPrice.toString(), 'ether');
     
-    console.log('unitPrice (ETH):', unitPriceInEth);
-    console.log('tcashPrice (ETH):', tcashPriceInEth);
+    // console.log('unitPrice (ETH):', unitPriceInEth);
+    // console.log('tcashPrice (ETH):', tcashPriceInEth);
 
     
-    const tcashLoan = await TCashLoan.deployed();
-    const loanCollateralRatio = await tcashLoan.getLoanCollateralRatio("4");
-    console.log('loanCollateralRatio:', loanCollateralRatio.toString());
-    // 显示贷款抵押率的百分比形式（如果需要）
-    console.log('loanCollateralRatio (%)', loanCollateralRatio.toString() / 10000);
+
+    // const loanCollateralRatio = await tcashLoan.getLoanCollateralRatio("4");
+    // console.log('loanCollateralRatio:', loanCollateralRatio.toString());
+    // // 显示贷款抵押率的百分比形式（如果需要）
+    // console.log('loanCollateralRatio (%)', loanCollateralRatio.toString() / 10000);
    
 
     const tcashAuction = await TCashAuction.deployed();
-    // const loan = await tcashLoan.setAuctionContract(tcashAuction.address);
+    console.log('tcashAuction:', tcashAuction.address);
+    const tcashLoan = await TCashLoan.deployed();
+    const loan = await tcashLoan.setAuctionContract(tcashAuction.address);
+    console.log('loan:', loan);
 
     const tcash = await TCash.deployed();
-    // const tcashRes = await tcash.setAuctionContract(tcashAuction.address);
+    const tcashRes = await tcash.setAuctionContract(tcashAuction.address);
+    console.log('tcashRes:', tcashRes);
 
     // console.log('loan:', loan);
-    const liquidation = await tcashLoan.startLiquidation("2");
-    console.log('liquidation:', liquidation);
+    // const liquidation = await tcashLoan.startLiquidation("2");
+    // console.log('liquidation:', liquidation);
 
     // 查询所有拍卖项目
     const auctions = await tcashAuction.queryAuctions();
