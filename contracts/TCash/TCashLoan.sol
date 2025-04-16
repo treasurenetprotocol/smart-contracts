@@ -49,7 +49,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 remainingBorrowable
     );
 
-    // 个人参数和系统参数事件
+
     event PersonalLoanDataUpdated(
         address indexed account,
         uint256 NCL,
@@ -60,13 +60,13 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
 
     event SysLoanDataUpdated(uint256 OLB, uint256 RA, uint256 TLD);
 
-    // 风险系数事件
+
     event RiskFactorUpdated(uint256 SRF);
 
-    //AuctionStartFailed
+
     event AuctionStartFailed(uint256 loanID, address account);
 
-    // 贷款记录结构
+
     struct LoanHistory {
         uint256 loanID;
         address account;
@@ -117,11 +117,11 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
     mapping(address => PersonalLoanData) public personalLoanData;
     SysLoanData public sysLoanData;
 
-    // 风险系数相关状态变量
-    uint256 public systemRiskFactor; // 系统风险系数(SRF)
-    uint256 public lastSRFCalculationTime; // 最后一次SRF计算的时间
 
-    // 拍卖相关变量
+    uint256 public systemRiskFactor;
+    uint256 public lastSRFCalculationTime; 
+
+
     address private _tcashAuctionContract;
     event AuctionCompleted(
         address indexed bider,
@@ -130,7 +130,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint principalAmount
     );
 
-    // 设置拍卖合约地址
+
     function setAuctionContract(address _auctionContract) external onlyOwner {
         require(
             _auctionContract != address(0),
@@ -139,7 +139,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         _tcashAuctionContract = _auctionContract;
     }
 
-    // 拍卖合约专用修饰符
+
     modifier onlyTCashAuction() {
         require(
             msg.sender == _tcashAuctionContract,
@@ -470,9 +470,6 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         // 返还UNIT
         payable(msg.sender).transfer(unitAmount);
 
-        // // 触发事件更新
-        // _emitPersonalLoanDataEvent(msg.sender);
-        // _emitSysLoanDataEvent();
 
         // 触发LoanRecord事件
         emit LoanRecord(
@@ -822,27 +819,6 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         return calculateUnitToRelease(loan, repayAmount);
     }
 
-    // 批量处理贷款利息
-    function batchInterestCalculation(
-        uint256[] calldata loanIDs
-    ) external returns (bool) {
-        require(
-            roles.hasRole(FOUNDATION_MANAGER_ROLE, msg.sender),
-            "Not authorized"
-        );
-
-        for (uint256 i = 0; i < loanIDs.length; i++) {
-            // 只处理状态为"进行中"或"预警中"的贷款
-            LoanHistory storage loan = loans[loanIDs[i]];
-            // if (loan.status == 0 || loan.status == 2) {
-                // 内部调用利息计算函数，但不重复权限检查
-                _calculateInterest(loanIDs[i]);
-            // }
-        }
-
-        return true;
-    }
-
     // 内部利息计算函数
     function _calculateInterest(uint256 loanID) internal returns (bool) {
         LoanHistory storage loan = loans[loanID];
@@ -977,42 +953,6 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         return (totalPrincipal, totalInterest);
     }
 
-    // 贷款预测
-    function loanPredict(
-        uint256 collateralAmount
-    )
-        external
-        view
-        returns (
-            uint256 estimatedLoanAmount,
-            uint256 dailyInterestRate,
-            uint256 dailyInterest
-        )
-    {
-        // 获取价格
-        uint256 unitPrice = oracle.getPrice("UNIT");
-        uint256 tcashPrice = oracle.getPrice("TCASH");
-
-        // 使用默认的风险系数(为了避免状态修改)
-        uint256 crf = 10000; // 1.0
-
-        // 计算预计可贷金额 - 使用内部view函数版本
-        estimatedLoanAmount = calculateLoanAmount(
-            collateralAmount,
-            unitPrice,
-            tcashPrice,
-            crf
-        );
-
-        // 获取日利率
-        dailyInterestRate = parameterInfo.getPlatformConfig("TCASHDIR");
-
-        // 计算日利息
-        dailyInterest = (estimatedLoanAmount * dailyInterestRate) / 10000;
-
-        return (estimatedLoanAmount, dailyInterestRate, dailyInterest);
-    }
-
     // 根据预期贷款金额计算所需抵押品
     function collateralPredict(
         uint256 loanAmount
@@ -1068,26 +1008,6 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
 
     // 个人参数相关函数
 
-    // 设置个人贷款数据（内部函数）
-    function _setPersonalLoanData(
-        address account,
-        string memory key,
-        uint256 value
-    ) internal {
-        PersonalLoanData storage userData = personalLoanData[account];
-
-        if (keccak256(bytes(key)) == keccak256(bytes("NCL"))) {
-            userData.NCL = value;
-        } else if (keccak256(bytes(key)) == keccak256(bytes("TNL"))) {
-            userData.TNL = value;
-        } else if (keccak256(bytes(key)) == keccak256(bytes("TLA"))) {
-            userData.TLA = value;
-        } else if (keccak256(bytes(key)) == keccak256(bytes("TRA"))) {
-            userData.TRA = value;
-        }
-
-        _emitPersonalLoanDataEvent(account);
-    }
 
     // 获取个人贷款数据
     function getPersonalLoanData(
@@ -1485,51 +1405,6 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
 
         return tcashAmount;
     }
-
-    // // 计算可贷TCash数量
-    // function calculateTCashAmount(uint256 unitAmount) external view returns (uint256) {
-    //     // 输入校验
-    //     require(unitAmount > 0, "UNIT amount must be greater than 0");
-
-    //     // 获取价格
-    //     uint256 unitPrice = oracle.getPrice("UNIT");
-    //     uint256 tcashPrice = oracle.getPrice("TCASH");
-
-    //     // 校验价格有效性
-    //     require(unitPrice > 0, "Invalid UNIT price");
-    //     require(tcashPrice > 0, "Invalid TCash price");
-
-    //     // 获取综合风险系数(CRF) 10000
-    //     uint256 crf = getCRF(msg.sender);
-
-    //     // 校验风险系数
-    //     require(crf > 0, "Invalid risk factor");
-
-    //     // 计算可贷TCash数量 = (UNIT数量 * UNIT价格 * CRF) / (10000 * TCash价格)
-    //     uint256 tcashAmount = (unitAmount * unitPrice * crf) / (10000 * tcashPrice);
-
-    //     // 获取账户可贷余额(ALB)
-    //     (uint256 PCL, uint256 ALB) = _getPersonalCreditAndAvailable(msg.sender);
-
-    //     // 校验授信额度
-    //     require(PCL > 0, "Invalid personal credit limit");
-
-    //     // 取较小值：计算的TCash数量和可贷余额
-    //     if (tcashAmount > ALB) {
-    //         tcashAmount = ALB;
-    //     }
-
-    //     // 确保最低精度为0.000000001  1000000000000000000
-    //     uint256 minAmount = 1e9;
-    //     if (tcashAmount < minAmount) {
-    //         tcashAmount = minAmount;
-    //     }
-
-    //     // 校验贷款锁定状态
-    //     require(oracle.getTCashMintStatus(), "TCash minting is currently disabled");
-
-    //     return tcashAmount;
-    // }
 
     // 计算所需UNIT抵押数量
     function calculateUnitRequirement(
