@@ -68,8 +68,8 @@ module.exports = async function(deployer, network, accounts) {
     // console.log('loanCollateralRatio (%)', loanCollateralRatio.toString() / 10000);
    
 
-    // const tcashAuction = await TCashAuction.deployed();
-    // console.log('tcashAuction:', tcashAuction.address);
+    const tcashAuction = await TCashAuction.deployed();
+    console.log('tcashAuction:', tcashAuction.address);
     // const tcashLoan = await TCashLoan.deployed();
     // const loan = await tcashLoan.setAuctionContract(tcashAuction.address);
     // console.log('loan:', loan);
