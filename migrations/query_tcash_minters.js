@@ -35,8 +35,8 @@ module.exports = async function(deployer, network, accounts) {
     // const parameterInfo = await ParameterInfo.deployed();
     const oracle = await Oracle.deployed();
 
-    await oracle.updatePrice("UNIT", web3.utils.toWei("0.5", "ether")); // 假设1 UNIT = 1 ETH
-    //await oracle.updatePrice("TCASH", web3.utils.toWei("1.5", "ether")); // 假设1 TCASH = 0.1 ETH
+    //await oracle.updatePrice("UNIT", web3.utils.toWei("0.5", "ether")); // 假设1 UNIT = 1 ETH
+    await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // 假设1 TCASH = 0.1 ETH
     console.log('Oracle价格数据初始化完成');
 
     // 注释掉需要多签权限的操作
