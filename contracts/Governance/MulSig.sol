@@ -374,13 +374,13 @@ function executeProposal(uint256 _proposalId) public onlyFoundationManager retur
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
             _roles.grantRole(FEEDER, pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("ADMIND"))) {
-            _roles.revokeRole(_roles.ADMIN(), pro._add);
+            _roles.revokeRole(_roles.get_ADMIN(), pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("ADMINA"))) {
-            _roles.grantRole(_roles.ADMIN(), pro._add);
+            _roles.grantRole(_roles.get_ADMIN(), pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("AUCTION_MANAGERD"))) {
-            _roles.revokeRole(_roles.AUCTION_MANAGER(), pro._add);
+            _roles.revokeRole(_roles.get_AUCTION_MANAGER(), pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("AUCTION_MANAGERA"))) {
-            _roles.grantRole(_roles.AUCTION_MANAGER(), pro._add);
+            _roles.grantRole(_roles.get_AUCTION_MANAGER(), pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("CROSSCHAIN_SENDERD"))) {
             _roles.revokeRole(_roles.CROSSCHAIN_SENDER(), pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("CROSSCHAIN_SENDERA"))) {

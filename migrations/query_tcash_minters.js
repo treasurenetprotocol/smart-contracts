@@ -39,9 +39,11 @@ module.exports = async function(deployer, network, accounts) {
     // await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // 假设1 TCASH = 0.1 ETH
     // console.log('Oracle价格数据初始化完成');
 
+    // 注释掉需要多签权限的操作
     await parameterInfo.setPlatformConfig("TCASHMCT", 750000);
     await parameterInfo.setPlatformConfig("TCASHLT", 500000);
 
+    // 获取当前参数值
     const warningRatio = await parameterInfo.getPlatformConfig("TCASHMCT");
     const liquidationRatio = await parameterInfo.getPlatformConfig("TCASHLT");
     console.log('warningRatio:', warningRatio.toString());

@@ -91,23 +91,23 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerableUpgr
         return msg.data;
     }
 
-    function CROSSCHAIN_SENDER() public pure returns (bytes32) {
+    function CROSSCHAIN_SENDER() public pure override returns (bytes32) {
         return _CROSSCHAIN_SENDER;
     }
 
-    function ADMIN() public pure returns (bytes32) {
-        return keccak256("ADMIN");
+    function get_ADMIN() public pure override returns (bytes32) {
+        return ADMIN;
     }
 
-    function AUCTION_MANAGER() public pure returns (bytes32) {
-        return keccak256("AUCTION_MANAGER");
+    function get_AUCTION_MANAGER() public pure override returns (bytes32) {
+        return AUCTION_MANAGER;
     }
 
-    function TCASH_MINTER() public pure returns (bytes32) {
+    function TCASH_MINTER() public pure override returns (bytes32) {
         return _TCASH_MINTER;
     }
 
-    function TCASH_BURNER() public pure returns (bytes32) {
+    function TCASH_BURNER() public pure override returns (bytes32) {
         return _TCASH_BURNER;
     }
 
