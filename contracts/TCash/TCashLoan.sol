@@ -811,7 +811,8 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
             for (uint256 i = 0; i < amounts.length; i++) {
                 totalAmount += amounts[i];
             }
-            uint256 averageAmount = totalAmount / amounts.length;
+            // uint256 averageAmount = totalAmount / amounts.length;
+            uint256 averageAmount = totalAmount / 3;
 
             uint256 loanCount = getUserLoanCount(account);
             if (loanCount <= 2) {
