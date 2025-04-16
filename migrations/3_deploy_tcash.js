@@ -53,14 +53,14 @@ module.exports = async function (deployer, network, accounts) {
     fs.appendFileSync('contracts.txt', `const TAT_MANAGER_ADDRESS='${tatManager.address}'\n`);
     
     // 部署TCash借贷合约 - 使用oracle代替tcashOracle
-    const tcashLoan = await deployProxy(TCashLoan, [
-      tcash.address,
-      roles.address,
-      parameterInfo.address,
-      oracle.address,
-      tat.address
-    ], { deployer });
-    // const tcashLoan = await deployProxy(TCashLoan, { initializer: false }, { deployer });
+    // const tcashLoan = await deployProxy(TCashLoan, [
+    //   tcash.address,
+    //   roles.address,
+    //   parameterInfo.address,
+    //   oracle.address,
+    //   tat.address
+    // ], { deployer });
+    const tcashLoan = await deployProxy(TCashLoan, { initializer: false }, { deployer });
     console.log('TCashLoan部署成功:', tcashLoan.address);
     fs.appendFileSync('contracts.txt', `const TCASH_LOAN_ADDRESS='${tcashLoan.address}'\n`);
 
@@ -84,7 +84,7 @@ module.exports = async function (deployer, network, accounts) {
     await tcash.setOracle(oracle.address);
 
     await tcash.setAuctionContract(tcashAuction.address)
-    await tcashLoan.setAuctionContract(tcashAuction.address)
+ 
     
     // // 授权TAT管理员
     // const tatInstance = await TAT.at(tat.address);
