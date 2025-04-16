@@ -299,7 +299,12 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         _emitPersonalLoanDataEvent(account);
         _emitSysLoanDataEvent();
         emit InterestRecord(loanID, account, interest, 0);
-        emit LoanRecord(loanID, account, amounts, prices, getCRF(account), interest, 1, 0);
+
+        // 创建用于事件的正确金额数组（包含利息）
+        uint256[] memory eventAmounts = new uint256[](2);
+        eventAmounts[0] = newLoan.amounts[0];
+        eventAmounts[1] = newLoan.amounts[1];
+        emit LoanRecord(loanID, account, eventAmounts, prices, getCRF(account), interest, 1, 0);
         
         return loanID;
     }
