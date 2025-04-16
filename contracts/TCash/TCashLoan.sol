@@ -268,7 +268,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = collateralAmount;
         amounts[1] = loanAmount;
-        newLoan.amounts = amounts;
+       
         
         uint256[] memory prices = new uint256[](2);
         prices[0] = oracle.getPrice("UNIT");
@@ -279,32 +279,30 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         newLoan.time = block.timestamp;
         uint256 interest = (loanAmount * parameterInfo.getPlatformConfig("TCASHDIR")) / 10000;
         newLoan.interest = interest;
-        newLoan.amounts[1] += interest;
+        amounts[1] += interest; 
+        newLoan.amounts[1] = amounts[1];
         newLoan.IST = 1;
         newLoan.status = 0;
         
         // 更新用户贷款列表和数据
         userLoans[account].push(loanID);
-        userBorrowLimits[account].totalBorrowed += (loanAmount + interest);
+        userBorrowLimits[account].totalBorrowed += amounts[1];
         
         // 更新个人和系统贷款数据
         PersonalLoanData storage userData = personalLoanData[account];
         userData.TNL += 1;
-        userData.TLA += (loanAmount + interest);
+        userData.TLA += amounts[1];
         
-        sysLoanData.OLB += (loanAmount + interest);
-        sysLoanData.TLD += (loanAmount + interest);
+        sysLoanData.OLB += amounts[1];
+        sysLoanData.TLD += amounts[1];
         
         // 触发事件
         _emitPersonalLoanDataEvent(account);
         _emitSysLoanDataEvent();
         emit InterestRecord(loanID, account, interest, 0);
 
-        // 创建用于事件的正确金额数组（包含利息）
-        uint256[] memory eventAmounts = new uint256[](2);
-        eventAmounts[0] = newLoan.amounts[0];
-        eventAmounts[1] = newLoan.amounts[1];
-        emit LoanRecord(loanID, account, eventAmounts, prices, getCRF(account), interest, 1, 0);
+    
+        emit LoanRecord(loanID, account, amounts, prices, getCRF(account), interest, 1, 0);
         
         return loanID;
     }
