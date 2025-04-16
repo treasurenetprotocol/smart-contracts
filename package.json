@@ -16,7 +16,9 @@
     "migrate:ethereum": "truffle migrate --compile-all --network ethereum",
     "lint": "eslint -c './.eslintrc.js' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
-    "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol"
+    "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol",
+    "setup:ganache1": "node scripts/setup-ganache1.js",
+    "setup:ganache2": "node scripts/setup-ganache2.js"
   },
   "keywords": [],
   "author": "",

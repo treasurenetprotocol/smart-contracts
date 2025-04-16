@@ -333,29 +333,37 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         newLoan.prices = prices;
 
         newLoan.time = block.timestamp;
-        newLoan.interest = 0;
-        newLoan.IST = 0;
+        
+        // 计算第一天的利息
+        uint256 dailyRate = parameterInfo.getPlatformConfig("TCASHDIR");
+        uint256 interest = (loanAmount * dailyRate) / 10000;
+        newLoan.interest = interest;
+        newLoan.amounts[1] += interest; // 贷款总额加上利息
+        newLoan.IST = 1; // 设置利息计算次数为1
         newLoan.status = 0; // 进行中
 
         // 添加到用户贷款列表
         userLoans[account].push(loanID);
 
-        // 更新用户已贷出总额
+        // 更新用户已贷出总额（包括本金和利息）
         UserBorrowLimit storage userLimit = userBorrowLimits[account];
-        userLimit.totalBorrowed += loanAmount;
+        userLimit.totalBorrowed += (loanAmount + interest);
 
         // 更新个人贷款数据
         PersonalLoanData storage userData = personalLoanData[account];
         userData.TNL += 1;
-        userData.TLA += loanAmount;
+        userData.TLA += (loanAmount + interest); // 累计总额包括本金和利息
 
         // 更新系统贷款数据
-        sysLoanData.OLB += loanAmount;
-        sysLoanData.TLD += loanAmount;
+        sysLoanData.OLB += (loanAmount + interest);
+        sysLoanData.TLD += (loanAmount + interest);
 
         // 触发事件更新
         _emitPersonalLoanDataEvent(account);
         _emitSysLoanDataEvent();
+
+        // 触发InterestRecord事件
+        emit InterestRecord(loanID, account, interest, newLoan.status);
 
         // 发出贷款记录事件
         uint256 crf = getCRF(account);
@@ -365,8 +373,8 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
             newLoan.amounts,
             newLoan.prices,
             crf,
-            0,
-            0,
+            interest,
+            1,
             0
         );
 
@@ -390,10 +398,10 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 loanAmount = calculateLoanAmount(msg.sender, msg.value);
         require(loanAmount > 0, "Invalid loan amount, below minimum");
 
-        // 记录贷款信息
+        // 记录贷款信息（包含利息计算）
         uint256 loanID = _setRecord(msg.sender, loanAmount, msg.value);
 
-        // 铸造TCash给借款人
+        // 铸造TCash给借款人（只铸造本金部分，不含利息）
         tcash.mint(msg.sender, loanAmount);
 
         return loanID;

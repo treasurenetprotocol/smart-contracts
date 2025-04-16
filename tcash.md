@@ -38,7 +38,7 @@ DAO（Decentralized Autonomous Organization）
 
 综合风险系数(CRF, Comprehensive Risk Factor)
 	综合个人（或企业）内部风险及外部环境风险的多维度评估结果所得的总体风险系数。
-	产品文档中该名称为“综合风险因子”(英文 Risk Factors)
+	产品文档中该名称为"综合风险因子"(英文 Risk Factors)
 
 尚未偿还的贷款总量(含利息)(OLB, Outstanding Loan Balance)
 	截至当前日期，尚未偿还的贷款本金和利息总额。
@@ -240,8 +240,8 @@ branch: main
 2.1.2 参数说明
 参数	参数名称	输入格式	初始值	有效范围	含义和说明
 TCASHDIR	TCash贷款日利率	uint256	5	>0	由实际比例0.05% * 10000得出
-TCASHMCT	预警线	uint256	1,200,000		120% * 10000
-TCASHLT	清算线	uint256	1,100,000		110% * 10000
+TCASHMCT	预警线	uint256	750,000		75% * 10000
+TCASHLT	清算线	uint256	500,000		50% * 10000
 TCASHRC	还款周期	uint256	365		365次清算
 
 2.2 ERC20 标准合约功能
@@ -261,8 +261,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 	对应的最小计量单位为 1e18（即 atto-TCash）。
 
 3 表示规范
-最小单位称为 “atto-TCash”，记作 aTCash；1 TCash = 1e18 aTCash。
-便于记忆和显示，可使用 “K”、“M”、“B” 等常见计量单位（例如：1K = 1,000 aTCash，1M = 1,000,000 aTCash，依此类推），具体可在前端或工具中进行格式化展示。
+最小单位称为 "atto-TCash"，记作 aTCash；1 TCash = 1e18 aTCash。
+便于记忆和显示，可使用 "K"、"M"、"B" 等常见计量单位（例如：1K = 1,000 aTCash，1M = 1,000,000 aTCash，依此类推），具体可在前端或工具中进行格式化展示。
 
 4 初始铸造
 	初始铸造数量：1,000,000 个 TCash。
@@ -367,7 +367,7 @@ Output	NCL	uint256	个人已结清贷款笔数。
 2.5.1.1.2.3 执行身份
 Public
 2.5.1.1.2.4 存储逻辑
-	数据需要以“个人地址”为维度进行存储，即 mapping(address => PersonalLoanData) 之类的结构，用于区分不同用户的数据。
+	数据需要以"个人地址"为维度进行存储，即 mapping(address => PersonalLoanData) 之类的结构，用于区分不同用户的数据。
 
 2.5.2 系统参数
 2.5.2.1 参数说明
@@ -424,7 +424,7 @@ Event	OLB	uint256	尚未偿还的贷款总量（含利息）。
 PRF	Personal Risk Factor	个人风险系数	用于评估个人在信用、负债、还款能力等方面的整体风险水平。
 SRF	Systemic Risk Factor	系统风险系数	衡量外部宏观经济、行业风险、整体市场波动等对系统级别所造成的潜在影响。
 CRF	Comprehensive Risk Factor	综合风险系数	综合了个人（或企业）内部风险及外部环境风险的多维度评估结果所得出的总体风险系数。
-产品文档中该名称为“综合风险因子”,英文为“Risk Factors”
+产品文档中该名称为"综合风险因子",英文为"Risk Factors"
 
 2.6.1 合约接口设计
 2.6.1.1 getPRF
@@ -445,14 +445,14 @@ Public
 2. 特殊情况
 TNL-NCL <= 5  PRF直接等于1 不再计算
 3. 贷款占有率 = TLA / PCL
-根据贷款占有率所在区间，得到相应“贷款占有率系数”：
+根据贷款占有率所在区间，得到相应"贷款占有率系数"：
 范围	贷款占有率系数
 [0,85%]	1
 (85%,95%] 	0.8
 >95%	0.6
 
 4. 正常还款比例 = NCL / TNL
-根据正常还款比例所在区间，得到相应“结清贷款比例系数”：
+根据正常还款比例所在区间，得到相应"结清贷款比例系数"：
 范围	结清贷款比例系数
 0	0.2
 (0,30%] 	0.4
@@ -476,10 +476,10 @@ PRF = 贷款占有率系数 * 结清贷款比例系数
 通过 getSysLoanData 获得 OLB（尚未偿还贷款总额，含利息）、RA（已偿还金额，含利息）、TLD（总计贷出金额，含利息）。
 从 ERC20 标准合约中查询 TotalSupply（TCash 的当前发行量）。
 2. 系统贷出比例 = OLB / TotalSupply
-根据比例区间，得到相应“系统贷出比例系数”：
+根据比例区间，得到相应"系统贷出比例系数"：
 
 3. 系统总还款率 = RA / TLD
-根据还款率区间，得到相应“系统总还款率系数”：
+根据还款率区间，得到相应"系统总还款率系数"：
 
 4. SRF 计算
 SRF	系统总还款率
@@ -740,7 +740,7 @@ Public
 总计贷出的金额 (TLD, 系统含利息)：更新总额
 3. 释放抵押物
 若本次还款后贷款部分偿还，则按比例释放 UNIT。
-若全部结清，则释放所有剩余抵押 UNIT 并更新状态为“已结清”。
+若全部结清，则释放所有剩余抵押 UNIT 并更新状态为"已结清"。
 4. 触发事件
 通过 RepayRecord 事件，记录还款金额、释放抵押数量、时间戳等。
 
@@ -770,7 +770,7 @@ UnitAmount	UnitAmount	大数转换 缩小1e18	解质押 UNIT 数量
 
 2.9 增加贷款抵押品
 2.9.1 功能描述
-	当借款人因风控评估或行情波动导致现有质押率不足时，可额外抵押更多资产（如 UNIT）以提高质押率。“增加贷款抵押品”功能允许用户在当前贷款的基础上追加抵押物，确保其质押率满足或高于预警线，避免进一步的风险操作（如清算）。
+	当借款人因风控评估或行情波动导致现有质押率不足时，可额外抵押更多资产（如 UNIT）以提高质押率。"增加贷款抵押品"功能允许用户在当前贷款的基础上追加抵押物，确保其质押率满足或高于预警线，避免进一步的风险操作（如清算）。
 2.9.2 页面说明
 
 2.9.2.1 页面字段说明
@@ -889,7 +889,7 @@ Modified collateral rate	增加后质押率	/api/v1.0/loanDetail	data.collateral
 2.10.1.2.1.5 Repayment Record
 字段	含义	数据来源	说明
 Time	时间	/api/v1.0/loanDetail	data.repay.date
-事件	事件	固定值 “还款 Repay"	
+事件	事件	固定值 "还款 Repay"	
 TCash数量	TCash数量	/api/v1.0/loanDetail	data.repay.TCashAmount
 Collateral Released	返还UNIT数量	/api/v1.0/loanDetail	data.repay.UnitAmount
 2.10.1.2.1.6 Interest Record
@@ -1301,7 +1301,7 @@ Input	account	String	(required) 用户账户
 CollateralTopUpRecords
 
 2.11 清算
-	每日 UTC 0 点，FoundationManager 通过 FoundationManagerTools 定时调用智能合约，对尚未结清的贷款进行利息计算、预警与清算检查，该过程称为“清算”。
+	每日 UTC 0 点，FoundationManager 通过 FoundationManagerTools 定时调用智能合约，对尚未结清的贷款进行利息计算、预警与清算检查，该过程称为"清算"。
 2.11.1 合约接口设计
 2.11.1.1 流程
 

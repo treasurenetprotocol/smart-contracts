@@ -135,8 +135,18 @@ contract MulSig is Initializable, OwnableUpgradeable {
     /// @param _name: Operation type, including:
     /// - FMD: Revoke FoundationManager permission
     /// - FMA: Add FoundationManager permission
-    /// - FEEDERD: Add FEEDER permission
-    /// - FEEDERA: Revoke FEEDER permission
+    /// - FEEDERD: Revoke FEEDER permission
+    /// - FEEDERA: Add FEEDER permission
+    /// - ADMIND: Revoke ADMIN permission
+    /// - ADMINA: Add ADMIN permission
+    /// - AUCTION_MANAGERD: Revoke AUCTION_MANAGER permission
+    /// - AUCTION_MANAGERA: Add AUCTION_MANAGER permission
+    /// - CROSSCHAIN_SENDERD: Revoke CROSSCHAIN_SENDER permission
+    /// - CROSSCHAIN_SENDERA: Add CROSSCHAIN_SENDER permission
+    /// - TCASH_MINTERD: Revoke TCASH_MINTER permission
+    /// - TCASH_MINTERA: Add TCASH_MINTER permission
+    /// - TCASH_BURNERD: Revoke TCASH_BURNER permission
+    /// - TCASH_BURNERA: Add TCASH_BURNER permission
     /// @param _account Account address
     /// @return bool Whether the proposal is successfully initiated
     function proposeToManagePermission(string memory _name, address _account) public onlyFoundationManager returns (bool) {
@@ -354,17 +364,35 @@ function executeProposal(uint256 _proposalId) public onlyFoundationManager retur
     require(pro.excuteTime <= block.timestamp, "executeTime not meet");
 
     if (pro._type == 1) {
-        // Role management: grant or revoke Foundation Manager role
+        // Role management
         if (keccak256(bytes(pro.name)) == keccak256(bytes("FMD"))) {
             _roles.revokeRole(FOUNDATION_MANAGER, pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FMA"))) {
             _roles.grantRole(FOUNDATION_MANAGER, pro._add);
-        }
-        // Role management: grant or revoke Feeder role
-        if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
             _roles.revokeRole(FEEDER, pro._add);
         } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
             _roles.grantRole(FEEDER, pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("ADMIND"))) {
+            _roles.revokeRole(_roles.ADMIN(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("ADMINA"))) {
+            _roles.grantRole(_roles.ADMIN(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("AUCTION_MANAGERD"))) {
+            _roles.revokeRole(_roles.AUCTION_MANAGER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("AUCTION_MANAGERA"))) {
+            _roles.grantRole(_roles.AUCTION_MANAGER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("CROSSCHAIN_SENDERD"))) {
+            _roles.revokeRole(_roles.CROSSCHAIN_SENDER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("CROSSCHAIN_SENDERA"))) {
+            _roles.grantRole(_roles.CROSSCHAIN_SENDER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_MINTERD"))) {
+            _roles.revokeRole(_roles.TCASH_MINTER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_MINTERA"))) {
+            _roles.grantRole(_roles.TCASH_MINTER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_BURNERD"))) {
+            _roles.revokeRole(_roles.TCASH_BURNER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_BURNERA"))) {
+            _roles.grantRole(_roles.TCASH_BURNER(), pro._add);
         }
     } else if (pro._type == 2) {
         // Treasury management: add a new treasure

@@ -32,17 +32,20 @@ module.exports = async function(deployer, network, accounts) {
     //   console.log(`${index + 1}. ${address}`);
     // });
 
-    // const parameterInfo = await ParameterInfo.deployed();
+    const parameterInfo = await ParameterInfo.deployed();
     // const oracle = await Oracle.deployed();
 
     // await oracle.updatePrice("UNIT", web3.utils.toWei("1.2", "ether")); // 假设1 UNIT = 1 ETH
     // await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // 假设1 TCASH = 0.1 ETH
     // console.log('Oracle价格数据初始化完成');
 
-    // const warningRatio = await parameterInfo.getPlatformConfig("TCASHMCT");
-    // const liquidationRatio = await parameterInfo.getPlatformConfig("TCASHLT");
-    // console.log('warningRatio:', warningRatio.toString());
-    // console.log('liquidationRatio:', liquidationRatio.toString());
+    parameterInfo.setPlatformConfig("TCASHMCT", 750000);
+    parameterInfo.setPlatformConfig("TCASHLT", 500000);
+
+    const warningRatio = await parameterInfo.getPlatformConfig("TCASHMCT");
+    const liquidationRatio = await parameterInfo.getPlatformConfig("TCASHLT");
+    console.log('warningRatio:', warningRatio.toString());
+    console.log('liquidationRatio:', liquidationRatio.toString());
 
     // const unitPrice = await oracle.getPrice("UNIT"); // 假设1 UNIT = 1 ETH
     // const tcashPrice = await oracle.getPrice("TCASH"); // 假设1 TCASH = 0.1 ETH
@@ -65,15 +68,15 @@ module.exports = async function(deployer, network, accounts) {
     // console.log('loanCollateralRatio (%)', loanCollateralRatio.toString() / 10000);
    
 
-    const tcashAuction = await TCashAuction.deployed();
-    console.log('tcashAuction:', tcashAuction.address);
-    const tcashLoan = await TCashLoan.deployed();
-    const loan = await tcashLoan.setAuctionContract(tcashAuction.address);
-    console.log('loan:', loan);
+    // const tcashAuction = await TCashAuction.deployed();
+    // console.log('tcashAuction:', tcashAuction.address);
+    // const tcashLoan = await TCashLoan.deployed();
+    // const loan = await tcashLoan.setAuctionContract(tcashAuction.address);
+    // console.log('loan:', loan);
 
-    const tcash = await TCash.deployed();
-    const tcashRes = await tcash.setAuctionContract(tcashAuction.address);
-    console.log('tcashRes:', tcashRes);
+    // const tcash = await TCash.deployed();
+    // const tcashRes = await tcash.setAuctionContract(tcashAuction.address);
+    // console.log('tcashRes:', tcashRes);
 
     // console.log('loan:', loan);
     // const liquidation = await tcashLoan.startLiquidation("2");

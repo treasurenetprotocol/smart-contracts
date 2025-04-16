@@ -95,6 +95,14 @@ contract Roles is Initializable, OwnableUpgradeable, AccessControlEnumerableUpgr
         return _CROSSCHAIN_SENDER;
     }
 
+    function ADMIN() public pure returns (bytes32) {
+        return keccak256("ADMIN");
+    }
+
+    function AUCTION_MANAGER() public pure returns (bytes32) {
+        return keccak256("AUCTION_MANAGER");
+    }
+
     function TCASH_MINTER() public pure returns (bytes32) {
         return _TCASH_MINTER;
     }
