@@ -81,15 +81,22 @@ module.exports = async function (deployer, network, accounts) {
         let proposalDetails = await mulSig.transactionDetails(proposalId);
         console.log(`提案执行时间: ${proposalDetails.executeTime}`);
 
-        // 如果在测试网络中，我们可能需要快进时间
+        // 等待确认期过后执行提案
         // 在真实网络中，这需要等待确认期
-        if (network === 'development') {
-            console.log('等待确认期...');
-            // 在测试环境中，我们可以手动增加时间（如果使用ganache）
-            // 在真实网络中，这需要等待
+
+        console.log('在测试环境中，等待确认期...');
+
+        // 获取当前时间戳
+        const currentTime = Math.floor(Date.now() / 1000);
+        const executeTime = proposalDetails.executeTime.toNumber();
+
+        // 如果执行时间还未到达，需要等待
+        if (executeTime > currentTime) {
+            console.log(`当前时间: ${currentTime}, 提案执行时间: ${executeTime}`);
+            console.log(`需要等待 ${executeTime - currentTime} 秒`);
         }
 
-        // 等待确认期过后执行提案
+
         console.log('执行提案...');
         await mulSig.executeProposal(proposalId, txOptions);
         console.log('提案已成功执行');
