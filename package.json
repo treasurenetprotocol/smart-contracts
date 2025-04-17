@@ -16,6 +16,7 @@
     "migrate:treasurenetonlymigrate": "truffle migrate --network treasurenet",
     "migrate:ethereum": "truffle migrate --compile-all --network ethereum",
     "upgrade:tcashloan:treasurenet": "truffle migrate -f 6 --to 6 --network treasurenet",
+    "addRole": "truffle migrate -f 7 --to 7 --network treasurenet",
     "lint": "eslint -c './.eslintrc.js' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
     "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol",
