@@ -694,6 +694,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
 
         if (loan.status == 3) {
             personalLoanData[loan.account].TLA -= loan.amounts[1];
+            userBorrowLimits[loan.account].totalBorrowed -= loan.amounts[1];
         }
 
         emit InterestRecord(loanID, loan.account, interest, loan.status);
