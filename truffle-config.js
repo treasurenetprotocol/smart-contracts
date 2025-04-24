@@ -22,6 +22,17 @@ module.exports = {
             }),
             network_id: 6666
         },
+        tn_mainnet: {
+            provider: () => new HDWalletProvider({
+                privateKeys: process.env.PRIVATEKEY_MAINNET,
+                /*providerOrUrl: "http://124.70.23.119:8555",*/
+                providerOrUrl: 'https://rpc.treasurenet.io',
+                pollingInterval: 30000,
+                networkCheckTimeout: 1000000000,
+                timeoutBlocks: 200000
+            }),
+            network_id: 5005
+        },
         ethereum: {
             provider: () => new HDWalletProvider({
                 privateKeys: [process.env.EPRIVATE_KEY],
