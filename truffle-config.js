@@ -24,7 +24,7 @@ module.exports = {
         },
         tn_mainnet: {
             provider: () => new HDWalletProvider({
-                privateKeys: process.env.PRIVATEKEY_MAINNET,
+                privateKeys: [process.env.PRIVATEKEY_MAINNET],
                 /*providerOrUrl: "http://124.70.23.119:8555",*/
                 providerOrUrl: 'https://rpc.treasurenet.io',
                 pollingInterval: 30000,
