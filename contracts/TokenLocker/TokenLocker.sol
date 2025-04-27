@@ -103,8 +103,14 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         if (_amount < totalAvailableAmount) {
             totalAvailableAmount -= _amount;
         }
+        else{
+            totalAvailableAmount = 0;
+        }
         if (_amount < totalLockedAmount) {
             totalLockedAmount -= _amount;
+        }
+        else{
+            totalLockedAmount = 0;
         }
         payable(msg.sender).transfer(_amount);
     }
