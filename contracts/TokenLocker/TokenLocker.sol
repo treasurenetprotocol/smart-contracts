@@ -97,6 +97,18 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         totalAvailableAmount += msg.value;
     }
 
+    // Withdraw locked tokens
+    function withdrawLockedToken(uint256 _amount) external onlyManager {
+        require(_amount > 0, "Amount must be positive");
+        if (_amount < totalAvailableAmount) {
+            totalAvailableAmount -= _amount;
+        }
+        if (_amount < totalLockedAmount) {
+            totalLockedAmount -= _amount;
+        }
+        payable(msg.sender).transfer(_amount);
+    }
+
     // Add plan
     function setPlan(bytes calldata _planID, string calldata _planName, uint256 _planAmount, uint256 _claimMethod) external onlyManager {
         require(_planAmount > 0, "Amount must be positive");
