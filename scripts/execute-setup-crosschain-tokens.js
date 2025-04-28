@@ -4,38 +4,42 @@ const { setupCrosschainTokens } = require('./setup-crosschain-tokens');
 const config = {
     // Ganache1 network configuration
     treasurenet: {
-        rpcUrl: 'https://rpc.treasurenet.io',
+        rpcUrl: 'https://dev.testnet.treasurenet.io',
         sourceNetworkName: 'treasurenet',
-        sourceChainId: 1337,
+        sourceChainId: 6666,
         sourceChain: {
-            unit: '0x5FbDB2315678afecb367f032d93F642f64180aa3', // UNIT token address
-            bridge: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'  // Bridge contract address
+            unit: '0x0000000000000000000000000000000000000000', // UNIT token address
+            bridge: '0xe501CD75BA83798ECB408900034FF9BAC4926d5E', // Bridge contract address
+            tcash: '0x09ca1ea264eE5751b88860A4e8788D18835647d5' // TCash token address
         },
         targetChain: {
-            unit: '0x5FbDB2315678afecb367f032d93F642f64180aa3', // WUNIT token address
-            bridge: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'  // Bridge contract address
+            unit: '0x749145576124fde7770Ea6E2aB28A22Feac2b7Db', // WUNIT token address
+            bridge: '0x74A8a0089D88e23435dBd2B8BB7Ba54060cd9903', // Bridge contract address
+            tcash: '0x90141734C8e770dFb4ABFbaCFfe384114f48025f' // wTCash token address
         },
-        targetChainId: 1338,
-        mulSig: '0xCf7Ed3TestAde236D1f0b1101', // MultiSig contract address
-        roles: '0xDc64a140Aa3E981100a9becA4E685f962f0211', // Roles contract address
-        crosschainTokens: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' // CrosschainTokens contract address
+        targetChainId: 6566,
+        mulSig: '0xF8808B377b264408f31C6aaFA122DD7992A2ec42', // MultiSig contract address
+        roles: '0x4aD6427eD31Fc7eF5A142260CAc3592604882C1d', // Roles contract address
+        crosschainTokens: '0xDdbe4c5E8633383B42b0CF2045eB744e469F044b' // CrosschainTokens contract address
     },
     ethereum: {
-        rpcUrl: 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID',
+        rpcUrl: 'https://dev2.testnet.treasurenet.io',
         sourceNetworkName: 'ethereum',
-        sourceChainId: 1,
+        sourceChainId: 6566,
         sourceChain: {
-            unit: '0x5FbDB2315678afecb367f032d93F642f64180aa3', // UNIT token address
-            bridge: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'  // Bridge contract address
+            unit: '0x749145576124fde7770Ea6E2aB28A22Feac2b7Db', // UNIT token address
+            bridge: '0x74A8a0089D88e23435dBd2B8BB7Ba54060cd9903', // Bridge contract address
+            tcash: '0x90141734C8e770dFb4ABFbaCFfe384114f48025f' // wTCash token address
         },
         targetChain: {
-            unit: '0x5FbDB2315678afecb367f032d93F642f64180aa3', // WUNIT token address
-            bridge: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'  // Bridge contract address
+            unit: '0x0000000000000000000000000000000000000000', // WUNIT token address
+            bridge: '0xe501CD75BA83798ECB408900034FF9BAC4926d5E', // Bridge contract address
+            tcash: '0x09ca1ea264eE5751b88860A4e8788D18835647d5' // TCash token address
         },
-        targetChainId: 1,
-        mulSig: '0xCf7Ed3TestAde236D1f0b1101', // MultiSig contract address
-        roles: '0xDc64a140Aa3E981100a9becA4E685f962f0211', // Roles contract address
-        crosschainTokens: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' // CrosschainTokens contract address
+        targetChainId: 6666,
+        mulSig: '0xb0c8A661D75E03335aC1837F09105423B308B34b', // MultiSig contract address
+        roles: '0x6795357619dfD5663b3DCa34889F18cDB4342d45', // Roles contract address
+        crosschainTokens: '0x8Fc8d557D73a718ee3485ed82d19a46B7912a6CF' // CrosschainTokens contract address
     }
     // Add more network configurations here if needed
 };
@@ -58,8 +62,8 @@ async function main() {
         // Execute the setup
         await setupCrosschainTokens(networkConfig);
 
-        const networkConfig2 = config.ethereum; // Change this to select different network
-        await setupCrosschainTokens(networkConfig2);
+        const networkConfigEthereum = config.ethereum; // Change this to select different network
+        await setupCrosschainTokens(networkConfigEthereum);
         
         console.log('Crosschain token setup completed successfully!');
     } catch (error) {
