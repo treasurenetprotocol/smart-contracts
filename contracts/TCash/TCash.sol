@@ -27,7 +27,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     }
 
     function initialize(address initialReceiver) public initializer {
-        __ERC20_init("tcash token", "TCash");
+        __ERC20_init("TCash", "TCash");
         __Ownable_init();
         
         // 初始铸造1,000,000个TCash到指定账户

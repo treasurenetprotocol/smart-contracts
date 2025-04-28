@@ -81,8 +81,8 @@ module.exports = async function (deployer, network, accounts) {
 
         // 部署TAT代币合约
         console.log('正在部署TAT代币合约...');
-        const tat = await deployProxy(TAT, ['TAT Token', 'TAT', gov.address], { deployer });
-        console.log('TAT部署成功:', tat.address);
+        const tat = await deployProxy(TAT, ['Rep', 'REP', gov.address], { deployer });
+        console.log('TAT(REP)部署成功:', tat.address);
         fs.appendFileSync('contracts.txt', `const TAT_ADDRESS='${tat.address}'\n`);
 
     
