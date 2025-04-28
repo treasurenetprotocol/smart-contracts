@@ -1,6 +1,4 @@
 const TCash = artifacts.require('TCash');
-const WTCASH = artifacts.require('WTCASH');
-const WUNIT = artifacts.require('WUNIT');
 const TCashLoan = artifacts.require('TCashLoan');
 const TCashAuction = artifacts.require('TCashAuction');
 const TATManager = artifacts.require('TATManager');
@@ -16,8 +14,6 @@ const fs = require("fs");
 /**
  * 部署TCash相关合约
  * - TCash: 主要稳定币合约
- * - WTCASH: 包装版TCash
- * - WUNIT: 包装版UNIT
  * - TCashLoan: TCash借贷合约
  * - TCashAuction: TCash拍卖合约
  * - TATManager: TAT管理合约
@@ -39,13 +35,13 @@ module.exports = async function (deployer, network, accounts) {
     fs.appendFileSync('contracts.txt', `const TCASH_ADDRESS='${tcash.address}'\n`);
     
     // 部署包装版代币 (检查WTCASH和WUNIT的初始化函数具体要求)
-    const wtcash = await deployProxy(WTCASH, [], { deployer });
-    console.log('WTCASH部署成功:', wtcash.address);
-    fs.appendFileSync('contracts.txt', `const WTCASH_ADDRESS='${wtcash.address}'\n`);
-    
-    const wunit = await deployProxy(WUNIT, [], { deployer });
-    console.log('WUNIT部署成功:', wunit.address);
-    fs.appendFileSync('contracts.txt', `const WUNIT_ADDRESS='${wunit.address}'\n`);
+      // const wtcash = await deployProxy(WTCASH, [], { deployer });
+      // console.log('WTCASH部署成功:', wtcash.address);
+      // fs.appendFileSync('contracts.txt', `const WTCASH_ADDRESS='${wtcash.address}'\n`);
+      
+    // const wunit = await deployProxy(WUNIT, [], { deployer });
+    // console.log('WUNIT部署成功:', wunit.address);
+    // fs.appendFileSync('contracts.txt', `const WUNIT_ADDRESS='${wunit.address}'\n`);
     
     // 部署TAT管理合约 - 只需要一个roles参数
     const tatManager = await deployProxy(TATManager, [roles.address], { deployer });
