@@ -49,9 +49,21 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     // Events
     event ManagerAdded(address manager);
     event ManagerRemoved(address manager);
-    event SetPlan(bytes planID, string planName, uint256 planAmount, uint256 claimMethod);
+    event SetPlan(
+        bytes planID,
+        string planName,
+        uint256 planAmount,
+        uint256 claimMethod
+    );
     event DelPlan(bytes planID);
-    event SetLockedRecord(bytes lockedID, bytes planID, address account, uint256 amount, uint256 claimMethod, uint256 time);
+    event SetLockedRecord(
+        bytes lockedID,
+        bytes planID,
+        address account,
+        uint256 amount,
+        uint256 claimMethod,
+        uint256 time
+    );
     event ClaimToken(address account, uint256 amount);
     event ClaimLockedRecord(bytes lockedID);
     event CancelLockedRecord(bytes lockedID);
@@ -80,7 +92,9 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // Check manager
-    function checkManagerAccount(address _account) external view returns (bool) {
+    function checkManagerAccount(
+        address _account
+    ) external view returns (bool) {
         return managers.contains(_account);
     }
 
@@ -102,25 +116,31 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         require(_amount > 0, "Amount must be positive");
         if (_amount < totalAvailableAmount) {
             totalAvailableAmount -= _amount;
-        }
-        else{
+        } else {
             totalAvailableAmount = 0;
         }
         if (_amount < totalLockedAmount) {
             totalLockedAmount -= _amount;
-        }
-        else{
+        } else {
             totalLockedAmount = 0;
         }
         payable(msg.sender).transfer(_amount);
     }
 
     // Add plan
-    function setPlan(bytes calldata _planID, string calldata _planName, uint256 _planAmount, uint256 _claimMethod) external onlyManager {
+    function setPlan(
+        bytes calldata _planID,
+        string calldata _planName,
+        uint256 _planAmount,
+        uint256 _claimMethod
+    ) external onlyManager {
         require(_planAmount > 0, "Amount must be positive");
         require(_claimMethod <= 1, "Invalid claim method");
         require(plans[_planID].planAmount == 0, "Plan already exists");
-        require(totalAvailableAmount >= _planAmount, "Not enough available amount");
+        require(
+            totalAvailableAmount >= _planAmount,
+            "Not enough available amount"
+        );
 
         plans[_planID] = Plan({
             planName: _planName,
@@ -155,9 +175,12 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
                 uint256 idx = indices[j - 1];
                 if (idx < lockedRecords[account].length) {
                     if (lockedRecords[account][idx].isActive) {
-                        emit CancelLockedRecord(lockedRecords[account][idx].lockedID);
+                        emit CancelLockedRecord(
+                            lockedRecords[account][idx].lockedID
+                        );
                         lockedRecords[account][idx].isActive = false;
-                        totalAvailableAmount += lockedRecords[account][idx].amount;
+                        totalAvailableAmount += lockedRecords[account][idx]
+                            .amount;
                     }
                 }
             }
@@ -168,52 +191,76 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // Get plan information
-    function getPlan(bytes calldata _planID) external view returns (Plan memory) {
+    function getPlan(
+        bytes calldata _planID
+    ) external view returns (Plan memory) {
         return plans[_planID];
     }
 
     // Add LockedRecord
-    function setLockedRecord(bytes calldata _lockedID, bytes calldata _planID, address _account, uint256 _amount, uint256 _claimMethod, uint256 _time) external onlyManager {
+    function setLockedRecord(
+        bytes calldata _lockedID,
+        bytes calldata _planID,
+        address _account,
+        uint256 _amount,
+        uint256 _claimMethod,
+        uint256 _time
+    ) external onlyManager {
         Plan storage plan = plans[_planID];
         require(plan.isActive, "Inactive plan");
         require(_amount > 0, "Amount must be positive");
         require(_claimMethod == plan.claimMethod, "Claim method mismatch");
         require(_time > block.timestamp, "Invalid unlock time");
-        require(plan.allocatedAmount + _amount <= plan.planAmount, "Exceeds plan amount");
+        require(
+            plan.allocatedAmount + _amount <= plan.planAmount,
+            "Exceeds plan amount"
+        );
 
         // Update allocated amount
         plan.allocatedAmount += _amount;
 
         // Add record
         uint256 recordIndex = lockedRecords[_account].length;
-        lockedRecords[_account].push(LockedRecord({
-            lockedID: _lockedID,
-            planID: _planID,
-            amount: _amount,
-            claimMethod: _claimMethod,
-            time: _time,
-            isActive: true
-        }));
+        lockedRecords[_account].push(
+            LockedRecord({
+                lockedID: _lockedID,
+                planID: _planID,
+                amount: _amount,
+                claimMethod: _claimMethod,
+                time: _time,
+                isActive: true
+            })
+        );
 
         // Update index
         planAccounts[_planID].add(_account);
         planRecordIndices[_planID][_account].push(recordIndex);
 
-        emit SetLockedRecord(_lockedID, _planID, _account, _amount, _claimMethod, _time);
+        emit SetLockedRecord(
+            _lockedID,
+            _planID,
+            _account,
+            _amount,
+            _claimMethod,
+            _time
+        );
     }
 
     // Claim tokens
     function claimToken(address account) external nonReentrant {
-        require(msg.sender == account || managers.contains(msg.sender), "Unauthorized");
+        require(
+            msg.sender == account || managers.contains(msg.sender),
+            "Unauthorized"
+        );
         uint256 totalClaimable;
         LockedRecord[] storage records = lockedRecords[account];
-        
-        // 确定当前操作的claimMethod
+
+        // 管理员0，非管理员1
         uint256 currentClaimMethod;
         if (managers.contains(msg.sender)) {
-            currentClaimMethod = 0; // 管理员对应claimMethod=0
+            currentClaimMethod = 0;
         } else {
-            currentClaimMethod = 1; // 非管理员对应claimMethod=1
+            currentClaimMethod = 1;
         }
 
         // Process from end to avoid array shifting (optimization)
@@ -223,7 +270,11 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             LockedRecord storage record = records[idx];
 
             // 只处理对应claimMethod的记录
-            if (record.isActive && block.timestamp >= record.time && record.claimMethod == currentClaimMethod) {
+            if (
+                record.isActive &&
+                block.timestamp >= record.time &&
+                record.claimMethod == currentClaimMethod
+            ) {
                 emit ClaimLockedRecord(record.lockedID);
 
                 totalClaimable += record.amount;
@@ -238,7 +289,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             }
         }
         require(totalClaimable > 0, "No claimable amount");
-        (bool success,) = account.call{value: totalClaimable}("");
+        (bool success, ) = account.call{value: totalClaimable}("");
         require(success, "Transfer failed");
         emit ClaimToken(account, totalClaimable);
     }
