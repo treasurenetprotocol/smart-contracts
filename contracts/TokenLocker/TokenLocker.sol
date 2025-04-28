@@ -257,7 +257,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
 
         // 管理员0，非管理员1
         uint256 currentClaimMethod;
-        if (managers.contains(account)) {
+        if (managers.contains(msg.sender)) {
             currentClaimMethod = 0;
         } else {
             currentClaimMethod = 1;
