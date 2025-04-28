@@ -130,10 +130,11 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
 
-    // Reduce balance - 只有拥有TCASH_BURNER角色的地址可以减少余额
+    // Reduce balance - 减少余额
     function reduceBalance(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
-        require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to reduce balance");
+        //暂时注释
+        // require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to reduce balance");
         require(amount > 0, "Amount must be greater than zero");
         require(balanceOf(account) >= amount, "Insufficient balance");
         _burn(account, amount);
