@@ -157,6 +157,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
                     if (lockedRecords[account][idx].isActive) {
                         emit CancelLockedRecord(lockedRecords[account][idx].lockedID);
                         lockedRecords[account][idx].isActive = false;
+                        totalAvailableAmount += lockedRecords[account][idx].amount;
                     }
                 }
             }
@@ -206,6 +207,14 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         require(msg.sender == account || managers.contains(msg.sender), "Unauthorized");
         uint256 totalClaimable;
         LockedRecord[] storage records = lockedRecords[account];
+        
+        // 确定当前操作的claimMethod
+        uint256 currentClaimMethod;
+        if (managers.contains(account)) {
+            currentClaimMethod = 0; // 管理员对应claimMethod=0
+        } else {
+            currentClaimMethod = 1; // 非管理员对应claimMethod=1
+        }
 
         // Process from end to avoid array shifting (optimization)
         uint256 processed;
@@ -213,8 +222,8 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             uint256 idx = i - 1;
             LockedRecord storage record = records[idx];
 
-            if (record.isActive && block.timestamp >= record.time) {
-
+            // 只处理对应claimMethod的记录
+            if (record.isActive && block.timestamp >= record.time && record.claimMethod == currentClaimMethod) {
                 emit ClaimLockedRecord(record.lockedID);
 
                 totalClaimable += record.amount;
