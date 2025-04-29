@@ -5,10 +5,6 @@ const Roles = artifacts.require("Roles");
 const Governance = artifacts.require("Governance");
 const Oracle = artifacts.require("Oracle");
 const ParameterInfo = artifacts.require("ParameterInfo");
-const TCashLoan = artifacts.require("TCashLoan");
-const TCash = artifacts.require("TCash");
-const TAT = artifacts.require("TAT");
-const TCashAuction = artifacts.require("TCashAuction");
 //dao
 const DAO = artifacts.require("DAO");
 const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
@@ -30,10 +26,6 @@ module.exports = async function (deployer, network, accounts) {
     const oracle = await Oracle.deployed();
     const parameterInfo = await ParameterInfo.deployed();
     const dao = await DAO.deployed();
-    const tcash = await TCash.deployed();
-    const tcashLoan = await TCashLoan.deployed();
-    const tcashAuction = await TCashAuction.deployed();
-    const tat = await TAT.deployed();
     // 部署CrosschainTokens代币管理合约
     const crosschainTokens = await deployProxy(
       CrosschainTokens,
@@ -101,27 +93,25 @@ module.exports = async function (deployer, network, accounts) {
     await roles.initialize(
       mulSig.address,
       [
-        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
+        "0x7ec62BC5062FA1d94F27775d211a3585Ca4048AE",
         "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
-        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
+        "0x7ec62BC5062FA1d94F27775d211a3585Ca4048AE",
         "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
         oracle.address,
-        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
+        "0x7ec62BC5062FA1d94F27775d211a3585Ca4048AE",
         "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
         crosschainBridge.address,
-        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
+        "0x7ec62BC5062FA1d94F27775d211a3585Ca4048AE",
         "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
-        tcash.address,
-        tcashLoan.address,
-        tcashAuction.address,
+        '0x7ec62BC5062FA1d94F27775d211a3585Ca4048AE',
         "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
         crosschainBridge.address,
         crosschainTokens.address,
@@ -129,14 +119,6 @@ module.exports = async function (deployer, network, accounts) {
     );
     console.log("Roles初始化成功");
 
-    await tcashLoan.initialize(
-      tcash.address,
-      roles.address,
-      parameterInfo.address,
-      oracle.address,
-      tat.address
-    );
-    await tcashLoan.setAuctionContract(tcashAuction.address);
 
     // 给部署账户授予FOUNDATION_MANAGER角色以设置价格
     // 假设accounts[0]已经有ADMIN角色，可以授予其他角色
