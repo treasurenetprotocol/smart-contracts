@@ -53,7 +53,7 @@ module.exports = {
     ethereum2:{
       provider: function(){
         return new HDWalletProvider(
-          [privateKeysMainnet],"https://mainnet.infura.io/v3/b48b6730598247c889a8dd841d941e3b"
+          privateKeysMainnet,"https://mainnet.infura.io/v3/b48b6730598247c889a8dd841d941e3b"
         )
       },
       gas: 5000000,
