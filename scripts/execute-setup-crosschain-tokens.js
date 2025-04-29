@@ -4,9 +4,10 @@ const { setupCrosschainTokens } = require('./setup-crosschain-tokens');
 const config = {
     // Ganache1 network configuration
     treasurenet: {
-        rpcUrl: 'https://dev.testnet.treasurenet.io',
+        // rpcUrl: 'https://dev.testnet.treasurenet.io',
+        rpcUrl: 'https://rpc.treasurenet.io',
         sourceNetworkName: 'treasurenet',
-        sourceChainId: 6666,
+        sourceChainId: 5570,
         sourceChain: {
             unit: '0x0000000000000000000000000000000000000000', // UNIT token address
             bridge: '0xe501CD75BA83798ECB408900034FF9BAC4926d5E', // Bridge contract address
@@ -36,7 +37,7 @@ const config = {
             bridge: '0xe501CD75BA83798ECB408900034FF9BAC4926d5E', // Bridge contract address
             tcash: '0x09ca1ea264eE5751b88860A4e8788D18835647d5' // TCash token address
         },
-        targetChainId: 6666,
+        targetChainId: 5570,
         mulSig: '0xb0c8A661D75E03335aC1837F09105423B308B34b', // MultiSig contract address
         roles: '0x6795357619dfD5663b3DCa34889F18cDB4342d45', // Roles contract address
         crosschainTokens: '0x8Fc8d557D73a718ee3485ed82d19a46B7912a6CF' // CrosschainTokens contract address

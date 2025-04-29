@@ -12,7 +12,6 @@
     "test:debug": "truffle test --network ganache --debug",
     "compile": "truffle compile --all",
     "migrate": "truffle migrate --network ganache",
-    "migrate:treasurenet": "truffle migrate --network treasurenet",
     "migrate:tn-mainnet": "truffle migrate -f 1 --to 5 --network tn_mainnet",
     "migrate:tn-mainnet-tokenlocker": "truffle migrate -f 6 --to 6 --network tn_mainnet",
     "migrate:treasurenet-tokenlocker": "truffle migrate -f 6 --to 6 --network treasurenet",
@@ -22,7 +21,7 @@
     "migrate:ethereum-wunit-wtcash": "truffle migrate -f 7 --to 7 --network ethereum",
     "upgrade:tcashloan:treasurenet": "truffle migrate -f 6 --to 6 --network treasurenet",
     "upgrade:tcash:treasurenet": "truffle migrate -f 14 --to 14 --network treasurenet",
-    "addRole": "truffle migrate -f 7 --to 7 --network treasurenet",
+    "upgrade:tcash:tn-mainnet": "truffle migrate -f 14 --to 14 --network tn_mainnet",
     "lint": "eslint -c './.eslintrc.js' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
     "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol"
