@@ -43,7 +43,7 @@ module.exports = {
       provider: () =>
         new HDWalletProvider({
           privateKeys: privateKeysMainnet,
-          providerOrUrl: "wss://fluent-sparkling-brook.quiknode.pro/92c65096cefab8227cb8801c3226778e73fdd03f/",
+          providerOrUrl: "https://mainnet.infura.io/v3/b48b6730598247c889a8dd841d941e3b",
           pollingInterval: 1800000,
           networkCheckTimeout: 1000000000,
           timeoutBlocks: 200000,
