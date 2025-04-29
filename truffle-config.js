@@ -5,7 +5,7 @@ const privateKeys = [
 ];
 
 const privateKeysMainnet = [
-  "72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2",
+  "dfe85efff760bb70e1c4b2e20886ab65753ecebbbb30bb90ae5dc62615b64470",
 ];
 
 module.exports = {
