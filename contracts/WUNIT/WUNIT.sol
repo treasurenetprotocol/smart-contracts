@@ -11,7 +11,7 @@ contract WUNIT is Initializable, ERC20Upgradeable {
     }
 
     function initialize() public initializer {
-        __ERC20_init("wrapped unit token", "WUNIT");
+        __ERC20_init("wrapped unit token", "wUnit");
     }
 
     // 铸造代币

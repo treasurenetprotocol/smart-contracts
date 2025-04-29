@@ -11,7 +11,7 @@ contract WTCASH is Initializable, ERC20Upgradeable {
     }
 
     function initialize() public initializer {
-        __ERC20_init("wrapped tcash token", "WTCash");
+        __ERC20_init("wrapped tcash token", "wTCash");
     }
 
     // 铸造代币
