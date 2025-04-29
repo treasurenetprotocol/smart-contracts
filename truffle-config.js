@@ -43,7 +43,7 @@ module.exports = {
       provider: () =>
         new HDWalletProvider({
           privateKeys: privateKeysMainnet,
-          providerOrUrl: "https://mainnet.infura.io/v3/d7abe3b34faf49e98e142f3c57225a4e",
+          providerOrUrl: "https://mainnet.infura.io/v3/b48b6730598247c889a8dd841d941e3b",
           pollingInterval: 30000,
           networkCheckTimeout: 1000000000,
           timeoutBlocks: 200000,
