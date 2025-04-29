@@ -61,7 +61,6 @@ module.exports = async function (deployer, network, accounts) {
     fs.appendFileSync('contracts.txt', `const TCASH_LOAN_ADDRESS='${tcashLoan.address}'\n`);
 
     
-    
     // 部署TCash拍卖合约 - 只需要两个参数
     const tcashAuction = await deployProxy(TCashAuction, [
       roles.address,

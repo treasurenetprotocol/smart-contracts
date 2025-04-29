@@ -102,27 +102,27 @@ module.exports = async function (deployer, network, accounts) {
       mulSig.address,
       [
         "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
-        "0x09eda46ffcec4656235391dd298875b82aa458a9",
+        "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
         "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
-        "0x09eda46ffcec4656235391dd298875b82aa458a9",
+        "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
         oracle.address,
         "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
-        "0x09eda46ffcec4656235391dd298875b82aa458a9",
+        "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
         crosschainBridge.address,
         "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
-        "0x09eda46ffcec4656235391dd298875b82aa458a9",
+        "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
       ],
       [
         tcash.address,
         tcashLoan.address,
         tcashAuction.address,
-        "0x09eda46ffcec4656235391dd298875b82aa458a9",
+        "0x9038e6adaa51239e10c8954fae1fa870ea69f6ea",
         crosschainBridge.address,
         crosschainTokens.address,
       ]
