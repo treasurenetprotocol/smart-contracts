@@ -101,21 +101,21 @@ module.exports = async function (deployer, network, accounts) {
     await roles.initialize(
       mulSig.address,
       [
-        "0x6A79824E6be14b7e5Cb389527A02140935a76cD5",
+        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
         "0x09eda46ffcec4656235391dd298875b82aa458a9",
       ],
       [
-        "0x6A79824E6be14b7e5Cb389527A02140935a76cD5",
+        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
         "0x09eda46ffcec4656235391dd298875b82aa458a9",
       ],
       [
         oracle.address,
-        "0x6A79824E6be14b7e5Cb389527A02140935a76cD5",
+        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
         "0x09eda46ffcec4656235391dd298875b82aa458a9",
       ],
       [
         crosschainBridge.address,
-        "0x6A79824E6be14b7e5Cb389527A02140935a76cD5",
+        "0xd6cAdb2E5150e4114e5E321CE195db209f1882ac",
         "0x09eda46ffcec4656235391dd298875b82aa458a9",
       ],
       [
@@ -127,7 +127,7 @@ module.exports = async function (deployer, network, accounts) {
         crosschainTokens.address,
       ]
     );
-    // console.log('Roles初始化成功');
+    console.log("Roles初始化成功");
 
     await tcashLoan.initialize(
       tcash.address,
@@ -141,6 +141,10 @@ module.exports = async function (deployer, network, accounts) {
     // 给部署账户授予FOUNDATION_MANAGER角色以设置价格
     // 假设accounts[0]已经有ADMIN角色，可以授予其他角色
     const FOUNDATION_MANAGER_ROLE = web3.utils.keccak256("FOUNDATION_MANAGER");
+    console.log(
+      "是否有账户权限",
+      !(await roles.hasRole(FOUNDATION_MANAGER_ROLE, accounts[0]))
+    );
     if (!(await roles.hasRole(FOUNDATION_MANAGER_ROLE, accounts[0]))) {
       await roles.grantRole(FOUNDATION_MANAGER_ROLE, accounts[0]);
       console.log(`授予账户 ${accounts[0]} FOUNDATION_MANAGER角色`);
