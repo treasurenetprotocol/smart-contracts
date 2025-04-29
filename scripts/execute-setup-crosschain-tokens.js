@@ -10,37 +10,37 @@ const config = {
         sourceChainId: 5570,
         sourceChain: {
             unit: '0x0000000000000000000000000000000000000000', // UNIT token address
-            bridge: '0xe501CD75BA83798ECB408900034FF9BAC4926d5E', // Bridge contract address
-            tcash: '0x09ca1ea264eE5751b88860A4e8788D18835647d5' // TCash token address
+            bridge: '0xd7867407B63fF97103E31683a0fF5945a7041649', // Bridge contract address
+            tcash: '0xD25Eb7D9e1ff9E74b57a599EC85688854c81B0Aa' // TCash token address
         },
         targetChain: {
-            unit: '0x749145576124fde7770Ea6E2aB28A22Feac2b7Db', // WUNIT token address
-            bridge: '0x74A8a0089D88e23435dBd2B8BB7Ba54060cd9903', // Bridge contract address
-            tcash: '0x90141734C8e770dFb4ABFbaCFfe384114f48025f' // wTCash token address
+            unit: '0x7EB551DB5C42A4d96f3E5Fe819f831D45FC409cF', // WUNIT token address
+            bridge: '0x5dD2A3F881aD634415B371aE3B31F70DAC2538Cc', // Bridge contract address
+            tcash: '0x7C858943f2BCCe86f56aF146e28881eD32fC5030' // wTCash token address
         },
-        targetChainId: 6566,
-        mulSig: '0xF8808B377b264408f31C6aaFA122DD7992A2ec42', // MultiSig contract address
-        roles: '0x4aD6427eD31Fc7eF5A142260CAc3592604882C1d', // Roles contract address
-        crosschainTokens: '0xDdbe4c5E8633383B42b0CF2045eB744e469F044b' // CrosschainTokens contract address
+        targetChainId: 1,
+        mulSig: '0xb73eCa559c2606A37365eA8f66CC6157D344Ffe5', // MultiSig contract address
+        roles: '0x5dD2A3F881aD634415B371aE3B31F70DAC2538Cc', // Roles contract address
+        crosschainTokens: '0x57a823F89907b27ca141197e9e0Ec44B446E6C65' // CrosschainTokens contract address
     },
     ethereum: {
-        rpcUrl: 'https://dev2.testnet.treasurenet.io',
+        rpcUrl: 'https://mainnet.infura.io/v3/b48b6730598247c889a8dd841d941e3b',
         sourceNetworkName: 'ethereum',
-        sourceChainId: 6566,
+        sourceChainId: 1,
         sourceChain: {
-            unit: '0x749145576124fde7770Ea6E2aB28A22Feac2b7Db', // UNIT token address
-            bridge: '0x74A8a0089D88e23435dBd2B8BB7Ba54060cd9903', // Bridge contract address
-            tcash: '0x90141734C8e770dFb4ABFbaCFfe384114f48025f' // wTCash token address
+            unit: '0x7EB551DB5C42A4d96f3E5Fe819f831D45FC409cF', // UNIT token address
+            bridge: '0x5dD2A3F881aD634415B371aE3B31F70DAC2538Cc', // Bridge contract address
+            tcash: '0x7C858943f2BCCe86f56aF146e28881eD32fC5030' // wTCash token address
         },
         targetChain: {
             unit: '0x0000000000000000000000000000000000000000', // WUNIT token address
-            bridge: '0xe501CD75BA83798ECB408900034FF9BAC4926d5E', // Bridge contract address
-            tcash: '0x09ca1ea264eE5751b88860A4e8788D18835647d5' // TCash token address
+            bridge: '0xd7867407B63fF97103E31683a0fF5945a7041649', // Bridge contract address
+            tcash: '0xD25Eb7D9e1ff9E74b57a599EC85688854c81B0Aa' // TCash token address
         },
         targetChainId: 5570,
-        mulSig: '0xb0c8A661D75E03335aC1837F09105423B308B34b', // MultiSig contract address
-        roles: '0x6795357619dfD5663b3DCa34889F18cDB4342d45', // Roles contract address
-        crosschainTokens: '0x8Fc8d557D73a718ee3485ed82d19a46B7912a6CF' // CrosschainTokens contract address
+        mulSig: '0xABaF45c363D9156AD04D8c5a139BDFB1FB168B96', // MultiSig contract address
+        roles: '0x32375a14E0a93888B8442f1230A9E8df41362743', // Roles contract address
+        crosschainTokens: '0x72F3476736dE03ad799B9c23C6C9B236B0Ad6380' // CrosschainTokens contract address
     }
     // Add more network configurations here if needed
 };

@@ -167,7 +167,7 @@ async function setupCrosschainTokens(addresses) {
 
     // 添加私钥
     const privateKey =
-      "0x72949b647ad8db021f3e346f27cd768f2d900ce7211809af06a7e94a4cb3eed2";
+      "";
     await web3.eth.accounts.wallet.add(privateKey);
 
     // 创建合约实例
