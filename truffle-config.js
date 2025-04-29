@@ -42,13 +42,13 @@ module.exports = {
     ethereum: {
       provider: () =>
         new HDWalletProvider({
-          privateKeys: [process.env.EPRIVATE_KEY],
-          providerOrUrl: "http://127.0.0.1:8545",
+          privateKeys: privateKeysMainnet,
+          providerOrUrl: "https://mainnet.infura.io/v3/d7abe3b34faf49e98e142f3c57225a4e",
           pollingInterval: 30000,
           networkCheckTimeout: 1000000000,
           timeoutBlocks: 200000,
         }),
-      network_id: 6566,
+      network_id: 1,
     },
   },
 
