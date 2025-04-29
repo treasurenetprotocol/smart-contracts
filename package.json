@@ -18,7 +18,7 @@
     "migrate:treasurenetonlymigrate": "truffle migrate -f 1 --to 5 --network treasurenet",
     "migrate:ethereumonlymigrate": "truffle migrate -f 1 --to 5 --network ethereum",
     "migrate:ethereum-tokenlocker": "truffle migrate -f 6 --to 6 --network ethereum",
-    "migrate:ethereum-wunit-wtcash": "truffle migrate -f 7 --to 7 --network ethereum2",
+    "migrate:ethereum-wunit-wtcash": "truffle migrate -f 7 --to 7 --network ethereum",
     "upgrade:tcashloan:treasurenet": "truffle migrate -f 6 --to 6 --network treasurenet",
     "upgrade:tcash:treasurenet": "truffle migrate -f 14 --to 14 --network treasurenet",
     "upgrade:tcash:tn-mainnet": "truffle migrate -f 14 --to 14 --network tn_mainnet",
