@@ -44,24 +44,11 @@ module.exports = {
         new HDWalletProvider({
           privateKeys: privateKeysMainnet,
           providerOrUrl: "https://mainnet.infura.io/v3/b48b6730598247c889a8dd841d941e3b",
-          pollingInterval: 30000,
+          pollingInterval: 1800000,
           networkCheckTimeout: 1000000000,
           timeoutBlocks: 200000,
         }),
       network_id: 1,
-    },
-    ethereum2:{
-      provider: function(){
-        return new HDWalletProvider(
-          privateKeysMainnet,"https://mainnet.infura.io/v3/b48b6730598247c889a8dd841d941e3b"
-        )
-      },
-      gas: 5000000,
-      gasPrice:5000000000,
-      network_id: 1,
-      skipDryRun: true,
-      pollingInterval: 1800000,
-      disableConfirmationListener: true
     }
   },
 
