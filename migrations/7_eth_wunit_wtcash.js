@@ -9,6 +9,7 @@ const retry = async (fn, retries = 3, delay = 1000) => {
   try {
     return await fn();
   } catch (error) {
+    console.dir(error);
     if (retries > 0 && error.message.includes('Too Many Requests')) {
       await new Promise(resolve => setTimeout(resolve, delay));
       return retry(fn, retries - 1, delay * 2); // 指数退避
