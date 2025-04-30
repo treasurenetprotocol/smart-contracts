@@ -9,7 +9,6 @@ const fs = require('fs');
 module.exports = async function (deployer, network, accounts) {
   try {
     console.log('开始升级TCashLoan合约...');
-    
     // 获取当前已部署的TCashLoan合约地址
     let tcashLoanAddress;
     
@@ -37,7 +36,7 @@ module.exports = async function (deployer, network, accounts) {
       return;
     }
     
-    console.log(` ，网络: ${network}，当前地址: ${tcashLoanAddress}`);
+    console.log(`网络: ${network}，当前地址: ${tcashLoanAddress}`);
     
     // 确保网络已正确设置
     if (!network) {

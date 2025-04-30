@@ -58,8 +58,6 @@ async function main() {
             targetChainId: networkConfig.targetChainId
         });
 
-
-
         // Execute the setup
         await setupCrosschainTokens(networkConfig);
 

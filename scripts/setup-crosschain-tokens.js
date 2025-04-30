@@ -62,7 +62,7 @@ async function proposeCrosschainToken(
       .send({
         from: sender,
         gas: 500000,
-        gasPrice: gasPrice,
+        gasPrice: '400000000', // 0.4 gwei
       });
     console.log("Proposal created successfully:", tx.transactionHash);
   } catch (error) {
@@ -124,7 +124,7 @@ async function proposeCrosschainToken(
       const result = await mulSig.methods.executeProposal(proposalId).send({
         from: sender,
         gas: 500000,
-        gasPrice: gasPrice,
+        gasPrice: '400000000', // 0.4 gwei
       });
       console.log("Proposal executed successfully:", result.transactionHash);
 

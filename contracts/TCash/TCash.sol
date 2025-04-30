@@ -89,7 +89,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     // Mint tokens - 只有拥有TCASH_MINTER角色的地址可以铸造代币
     function mint(address to, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
-        // require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to mint");
+        require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to mint");
         
         // 检查Oracle是否设置及TCASH铸造状态
         if (address(oracle) != address(0)) {
@@ -109,7 +109,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     // BurnFrom tokens - 允许授权合约销毁指定地址的代币
     function burnFrom(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
-        // require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to burn");
+        require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to burn");
         require(amount > 0, "Amount must be greater than zero");
         require(balanceOf(account) >= amount, "Insufficient balance");
         _burn(account, amount);
@@ -119,7 +119,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     // Add balance - 只有拥有TCASH_MINTER角色的地址可以增加余额
     function addBalance(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
-        // require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to add balance");
+        require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to add balance");
         
         // 检查Oracle是否设置及TCASH铸造状态
         if (address(oracle) != address(0)) {
@@ -133,8 +133,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     // Reduce balance - 减少余额
     function reduceBalance(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
-        //暂时注释
-        // require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to reduce balance");
+        require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to reduce balance");
         require(amount > 0, "Amount must be greater than zero");
         require(balanceOf(account) >= amount, "Insufficient balance");
         _burn(account, amount);
