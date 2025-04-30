@@ -166,7 +166,7 @@ async function setupCrosschainTokens(addresses) {
     const web3 = new Web3(addresses.rpcUrl);
 
     // 添加私钥
-    const privateKey =
+    const privateKey = ""
       "";
     await web3.eth.accounts.wallet.add(privateKey);
 
