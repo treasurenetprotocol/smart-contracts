@@ -30,22 +30,28 @@ module.exports = async function (deployer, network, accounts) {
 
         // 部署DAO合约(不初始化)
         const dao = await deployProxy(DAO, { initializer: false }, { deployer });
+        // const dao = await DAO.deployed();
         console.log('DAO部署成功:', dao.address);
         fs.appendFileSync('contracts.txt', `const DAO_ADDRESS='${dao.address}'\n`);
 
         // 部署MulSig多重签名合约(不初始化)
         const mulSig = await deployProxy(MulSig, { initializer: false }, { deployer });
+        // const mulSig = await MulSig.deployed();
         console.log('MulSig部署成功:', mulSig.address);
         fs.appendFileSync('contracts.txt', `const MULSIG_ADDRESS='${mulSig.address}'\n`);
 
         // 部署Roles权限管理合约(不初始化)
         const roles = await deployProxy(Roles, { initializer: false }, { deployer });
+        // const roles = await Roles.deployed();
         console.log('Roles部署成功:', roles.address);
         fs.appendFileSync('contracts.txt', `const ROLES_ADDRESS='${roles.address}'\n`);
 
         // 部署ParameterInfo参数合约(不初始化)
         const parameterInfo = await deployProxy(ParameterInfo, { initializer: false }, { deployer });
+        // const parameterInfo = await ParameterInfo.deployed();
         console.log('ParameterInfo部署成功:', parameterInfo.address);
+
+
         fs.appendFileSync('contracts.txt', `const PARAMETER_INFO_ADDRESS='${parameterInfo.address}'\n`);
 
         // 部署Oracle预言机合约(不初始化)
