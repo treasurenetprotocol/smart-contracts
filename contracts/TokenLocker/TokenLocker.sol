@@ -294,6 +294,73 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         emit ClaimToken(account, totalClaimable);
     }
 
+    /**
+     * @dev 获取指定计划下的所有锁定记录
+     * @param _planID 计划ID
+     * @return records 该计划下的所有锁定记录数组
+     * @return accounts 对应锁定记录的账户地址数组
+     */
+    function getPlanLockedRecords(bytes calldata _planID) 
+        external 
+        view 
+        returns (LockedRecord[] memory records, address[] memory accounts) 
+    {
+        // 确保计划存在
+        require(plans[_planID].planAmount > 0, "Plan not exist");
+        
+        // 获取该计划下的所有账户
+        address[] memory planAccountsList = planAccounts[_planID].values();
+        
+        // 计算该计划下的总记录数
+        uint256 totalRecords = 0;
+        for (uint256 i = 0; i < planAccountsList.length; i++) {
+            address account = planAccountsList[i];
+            uint256[] memory indices = planRecordIndices[_planID][account];
+            totalRecords += indices.length;
+        }
+        
+        // 初始化返回数组
+        records = new LockedRecord[](totalRecords);
+        accounts = new address[](totalRecords);
+        
+        // 填充返回数组
+        uint256 currentIndex = 0;
+        for (uint256 i = 0; i < planAccountsList.length; i++) {
+            address account = planAccountsList[i];
+            uint256[] memory indices = planRecordIndices[_planID][account];
+            
+            for (uint256 j = 0; j < indices.length; j++) {
+                uint256 recordIndex = indices[j];
+                if (recordIndex < lockedRecords[account].length) {
+                    LockedRecord memory record = lockedRecords[account][recordIndex];
+                    // 只返回属于该计划且仍然激活的记录
+                    if (keccak256(record.planID) == keccak256(_planID) && record.isActive) {
+                        records[currentIndex] = record;
+                        accounts[currentIndex] = account;
+                        currentIndex++;
+                    }
+                }
+            }
+        }
+        
+        // 如果实际记录数少于预期的总记录数，调整数组大小
+        if (currentIndex < totalRecords) {
+            // 创建新的数组，仅包含有效记录
+            LockedRecord[] memory adjustedRecords = new LockedRecord[](currentIndex);
+            address[] memory adjustedAccounts = new address[](currentIndex);
+            
+            for (uint256 i = 0; i < currentIndex; i++) {
+                adjustedRecords[i] = records[i];
+                adjustedAccounts[i] = accounts[i];
+            }
+            
+            records = adjustedRecords;
+            accounts = adjustedAccounts;
+        }
+        
+        return (records, accounts);
+    }
+
     function getTotalLockedAmount() external view returns (uint256) {
         return totalLockedAmount;
     }
