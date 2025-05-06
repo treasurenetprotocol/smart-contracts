@@ -369,6 +369,119 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         return totalAvailableAmount;
     }
 
+    /**
+     * @dev 获取指定用户的所有锁定记录
+     * @param _account 用户地址
+     * @return records 该用户的所有锁定记录数组
+     */
+    function getUserLockedRecords(address _account) 
+        external 
+        view 
+        returns (LockedRecord[] memory) 
+    {
+        // 获取用户所有记录
+        LockedRecord[] storage userRecords = lockedRecords[_account];
+        
+        // 计算激活的记录数量
+        uint256 activeCount = 0;
+        for (uint256 i = 0; i < userRecords.length; i++) {
+            if (userRecords[i].isActive) {
+                activeCount++;
+            }
+        }
+        
+        // 创建返回数组，只包含激活的记录
+        LockedRecord[] memory activeRecords = new LockedRecord[](activeCount);
+        uint256 currentIndex = 0;
+        
+        for (uint256 i = 0; i < userRecords.length; i++) {
+            if (userRecords[i].isActive) {
+                activeRecords[currentIndex] = userRecords[i];
+                currentIndex++;
+            }
+        }
+        
+        return activeRecords;
+    }
+
+    /**
+     * @dev 根据锁定ID、计划ID和账户地址删除指定的锁定记录
+     * @param _lockedID 需要删除的锁定记录ID
+     * @param _planID 锁定记录所属的计划ID
+     * @param _account 锁定记录所属的账户地址
+     * @return 操作是否成功 
+     * (如果有重复的只会删除一个！！！)
+     */
+    function deleteLockedRecord(
+        bytes calldata _lockedID, 
+        bytes calldata _planID, 
+        address _account
+    ) external onlyManager nonReentrant returns (bool) {
+        // 检查计划是否存在
+        require(plans[_planID].planAmount > 0, "Plan not exist");
+        // 检查账户是否在该计划下
+        require(planAccounts[_planID].contains(_account), "Account not in plan");
+        
+        bool found = false;
+        LockedRecord[] storage records = lockedRecords[_account];
+        
+        // 直接遍历指定账户的所有记录
+        for (uint256 j = 0; j < records.length; j++) {
+            if (keccak256(records[j].lockedID) == keccak256(_lockedID) && 
+                keccak256(records[j].planID) == keccak256(_planID) && 
+                records[j].isActive) {
+                found = true;
+                
+                // 获取记录金额，用于后续处理
+                uint256 recordAmount = records[j].amount;
+                
+                // 1. 将金额返还到可用余额
+                totalAvailableAmount += recordAmount;
+                
+                // 2. 更新计划分配的金额
+                Plan storage plan = plans[_planID];
+                if (plan.allocatedAmount >= recordAmount) {
+                    plan.allocatedAmount -= recordAmount;
+                } else {
+                    plan.allocatedAmount = 0;
+                }
+                
+                // 3. 标记记录为非活跃
+                records[j].isActive = false;
+                
+                // 4. 优化：如果是数组最后一个元素，直接移除
+                if (j != records.length - 1) {
+                    records[j] = records[records.length - 1];
+                }
+                records.pop();
+                
+                // 5. 更新计划记录索引映射
+                uint256[] storage indices = planRecordIndices[_planID][_account];
+                for (uint256 k = 0; k < indices.length; k++) {
+                    if (indices[k] == j) {
+                        // 优化：移除该索引（通过替换并弹出）
+                        if (k != indices.length - 1) {
+                            indices[k] = indices[indices.length - 1];
+                        }
+                        indices.pop();
+                        break;
+                    }
+                }
+                
+                // 6. 若该账户在该计划下没有其他记录，则从计划账户列表中移除
+                if (indices.length == 0) {
+                    planAccounts[_planID].remove(_account);
+                }
+                           
+                // 已找到并处理，可以返回
+                return true;
+            }
+        }
+        
+        require(found, "LockedID not found or not active");
+        return found;
+    }
+
     // Temporary function
     function getTimestamp() external view returns (uint256) {
         return block.timestamp;
