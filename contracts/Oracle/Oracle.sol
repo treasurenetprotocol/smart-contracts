@@ -143,7 +143,7 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     }
 
     // UNIT Value 
-    function setCurrencyValue(bytes32 _currencyKind,uint256 _currencyValue) public override onlyFeeder {
+    function setCurrencyValue(bytes32 _currencyKind, uint256 _currencyValue) public override onlyFeeder {
         _currencyValues[_currencyKind] = _currencyValue;
     }
 
@@ -180,7 +180,7 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         _tcashMintLockPrice = _price;
         emit TCashMintLockPriceChanged(_price, block.timestamp);
     }
-    
+
     /// @notice 检查并更新TCASH铸造状态
     /// @dev 由Feeder调用，检查价格波动并更新TCASH铸造状态
     /// @param _currentPrice 当前TCASH价格
@@ -216,7 +216,6 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
             if (_currentPrice >= resetPrice) {
                 _tcashMintLockPrice = 0;
                 _tcashMintStatus = true;
-                
                 emit TCashMintLockPriceChanged(0, block.timestamp);
                 emit TCashMintStatusChanged(true, block.timestamp);
             }
@@ -224,44 +223,31 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     }
     
     // 从TCashOracle整合的函数
-    
-    /// @notice 更新价格
-    /// @dev 更新指定代币符号的价格
-    /// @param symbol 代币符号
-    /// @param price 价格
-    /// @return 操作是否成功
     function updatePrice(string memory symbol, uint256 price) external onlyFoundationManager returns (bool) {
         require(supportedSymbols[symbol], "Unsupported symbol");
         require(price > 0, "Invalid price");
-
+        bytes32 symbolHash = keccak256(bytes(symbol));
+        _currencyValues[symbolHash] = price;
         prices[symbol] = PriceData({
             price: price,
             timestamp: block.timestamp
         });
-
         emit PriceUpdated(symbol, price, block.timestamp);
-
         return true;
     }
 
-    /// @notice 获取价格
-    /// @dev 获取指定代币符号的价格
-    /// @param symbol 代币符号
-    /// @return 价格
     function getPrice(string memory symbol) external view returns (uint256) {
         require(supportedSymbols[symbol], "Unsupported symbol");
-        return prices[symbol].price;
+        bytes32 symbolHash = keccak256(bytes(symbol));
+        return _currencyValues[symbolHash];
     }
 
-    /// @notice 获取价格和时间戳
-    /// @dev 获取指定代币符号的价格数据（价格和时间戳）
-    /// @param symbol 代币符号
-    /// @return price 价格
-    /// @return timestamp 时间戳
     function getPriceData(string memory symbol) external view returns (uint256 price, uint256 timestamp) {
         require(supportedSymbols[symbol], "Unsupported symbol");
-        PriceData memory data = prices[symbol];
-        return (data.price, data.timestamp);
+        bytes32 symbolHash = keccak256(bytes(symbol));
+        price = _currencyValues[symbolHash];
+        timestamp = prices[symbol].timestamp;
+        return (price, timestamp);
     }
 
     /// @notice 添加支持的代币

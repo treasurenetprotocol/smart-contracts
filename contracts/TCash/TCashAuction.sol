@@ -35,6 +35,7 @@ contract TCashAuction is Initializable, OwnableUpgradeable {
         uint _status
     );
     event personalAuction(address _user, uint n, uint _sales);
+    event bidDurationUpdated(uint oldDuration, uint newDuration, uint timestamp);
 
     struct auctions {
         uint sales;
@@ -88,7 +89,7 @@ contract TCashAuction is Initializable, OwnableUpgradeable {
         TCashLoanget = TCashLoanInterface(_tcashLoan);
         _tcashLoanContract = _tcashLoan;
 
-        bidDuration = 10 minutes;
+        bidDuration = 1 days;
     }
 
     modifier onlyTCashLoan() {
@@ -111,6 +112,23 @@ contract TCashAuction is Initializable, OwnableUpgradeable {
         address manager = _roles.getRoleMember(AUCTION_MANAGER, 0);
         require(manager != address(0), "no auction manager set yet");
         return manager;
+    }
+
+    // Query the current bid duration setting
+    function queryBidDuration() public view returns (uint) {
+        return bidDuration;
+    }
+
+    // Update the bid duration setting, only FoundationManager can call
+    function updateBidDuration(uint newDuration) public onlyFoundationManager returns (bool) {
+        require(newDuration > 0, "TCashAuction: duration must be greater than 0");
+        require(newDuration <= 30 days, "TCashAuction: duration too long");
+        
+        uint oldDuration = bidDuration;
+        bidDuration = newDuration;
+        
+        emit bidDurationUpdated(oldDuration, newDuration, block.timestamp);
+        return true;
     }
 
     //Auction listing operation, triggered by TCashLoan contract
