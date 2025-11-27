@@ -1,0 +1,30 @@
+{
+  "name": "treasurenet-foundry",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "fmt": "forge fmt",
+    "deploy:tn-mainnet": "bash script/run_with_env.sh .env.mainnet TN_MAINNET_RPC full",
+    "deploy:tn-mainnet-tokenlocker": "bash script/run_with_env.sh .env.mainnet TN_MAINNET_RPC script/DeployTokenLocker.s.sol:DeployTokenLocker",
+    "deploy:tn-mainnet-bid": "bash script/run_with_env.sh .env.mainnet TN_MAINNET_RPC script/DeployBid.s.sol:DeployBid",
+    "deploy:dev": "bash script/run_with_env.sh .env.dev DEV_RPC full --resume --slow",
+    "deploy:dev-tokenlocker": "bash script/run_with_env.sh .env.dev DEV_RPC script/DeployTokenLocker.s.sol:DeployTokenLocker --resume --slow",
+    "deploy:dev-bid": "bash script/run_with_env.sh .env.dev DEV_RPC script/DeployBid.s.sol:DeployBid --resume --slow",
+    "deploy:testnet": "bash script/run_with_env.sh .env.testnet TESTNET_RPC full",
+    "deploy:testnet-tokenlocker": "bash script/run_with_env.sh .env.testnet TESTNET_RPC script/DeployTokenLocker.s.sol:DeployTokenLocker",
+    "deploy:testnet-bid": "bash script/run_with_env.sh .env.testnet TESTNET_RPC script/DeployBid.s.sol:DeployBid",
+    "deploy:ethereum": "bash script/run_with_env.sh .env.ethereum ETHEREUM_RPC full",
+    "deploy:ethereum-wunit-wtcash": "echo \"TODO: add DeployWrapped script for WUNIT/WTCASH\"",
+    "deploy:dev-steps": "bash script/run_with_env.sh .env.dev DEV_RPC full",
+    "deploy:tn-mainnet-steps": "bash script/run_with_env.sh .env.mainnet TN_MAINNET_RPC full",
+    "upgrade:tcashloan:dev": "bash script/run_with_env.sh .env.dev DEV_RPC script/UpgradeTCashLoan.s.sol:UpgradeTCashLoan",
+    "upgrade:tcash:dev": "bash script/run_with_env.sh .env.dev DEV_RPC script/UpgradeTCash.s.sol:UpgradeTCash",
+    "upgrade:tcashauction:dev": "bash script/run_with_env.sh .env.dev DEV_RPC script/UpgradeTCashAuction.s.sol:UpgradeTCashAuction",
+    "upgrade:producers:dev": "bash script/run_with_env.sh .env.dev DEV_RPC script/UpgradeProducers.s.sol:UpgradeProducers",
+    "upgrade:tcash:tn-mainnet": "bash script/run_with_env.sh .env.mainnet TN_MAINNET_RPC script/UpgradeTCash.s.sol:UpgradeTCash",
+    "upgrade:producers:tn-mainnet": "bash script/run_with_env.sh .env.mainnet TN_MAINNET_RPC script/UpgradeProducers.s.sol:UpgradeProducers",
+    "upgrade:wtcash:test_eth": "bash script/run_with_env.sh .env.test_eth TEST_ETH_RPC script/UpgradeWTCASH.s.sol:UpgradeWTCASH"
+  }
+}

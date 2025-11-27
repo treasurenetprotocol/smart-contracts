@@ -12,5 +12,11 @@ remappings = [
     "forge-std/=lib/forge-std/src/",
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
-    "contracts/=contracts/"
+    "Governance/=./contracts/Governance/",
+    "Oracle/=./contracts/Oracle/",
+    "TAT/=./contracts/TAT/",
+    "Treasure/=./contracts/Treasure/",
+    "TCash/=./contracts/TCash/",
+    "Crosschain/=./contracts/Crosschain/",
+    "TokenLocker/=./contracts/TokenLocker/"
 ]

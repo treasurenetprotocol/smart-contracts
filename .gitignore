@@ -8,3 +8,4 @@ package-lock.json
 out/
 cache/
 broadcast/
+*.env

@@ -8,7 +8,7 @@ import "forge-std/Script.sol";
 contract RecordAddresses is Script {
     function run() external {
         uint256 chainId = block.chainid;
-        string memory file = string.concat("deployments/", vm.toString(chainId), ".json");
+        string memory file = string(abi.encodePacked("deployments/", vm.toString(chainId), ".json"));
         string memory root = "addresses";
 
         // Core
@@ -54,7 +54,7 @@ contract RecordAddresses is Script {
         console2.log("Addresses written to:", file);
     }
 
-    function _sa(string memory root, string memory key, address value) internal view {
+    function _sa(string memory root, string memory key, address value) internal {
         vm.serializeAddress(root, key, value);
     }
 }

@@ -4,10 +4,10 @@ pragma solidity ^0.8.10;
 import "forge-std/Script.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../contracts/Governance/DAO.sol";
-import "../contracts/Governance/MulSig.sol";
-import "../contracts/Governance/Roles.sol";
-import "../contracts/Governance/ParameterInfo.sol";
+import "Governance/DAO/DAO.sol";
+import "Governance/MulSig.sol";
+import "Governance/Roles.sol";
+import "Governance/ParameterInfo.sol";
 import "../contracts/Oracle/Oracle.sol";
 
 /// @notice Deploy core components: DAO, MulSig, Roles, ParameterInfo, Oracle
