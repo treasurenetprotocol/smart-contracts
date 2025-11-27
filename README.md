@@ -31,23 +31,23 @@ This contains almost all contracts officially developed and maintained by Treasu
 ```bash
 git clone https://github.com/treasurenetprotocol/treasurenet-contracts.git
 cd treasurenet-contracts/smart-contracts
-# 安装 Foundry（已安装可跳过）
+# Install Foundry (skip if already installed)
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
-# 拉取依赖
+# Fetch dependencies
 forge install
 ```
 
 ## Usage
 
 ```bash
-# 编译
+# Build
 forge build
-# 运行测试
+# Run tests
 forge test
 ```
 
-请在提交前确保所有 forge 测试通过。
+Please ensure all forge tests pass before submitting.
 
 ## Introduction and APIs
 
