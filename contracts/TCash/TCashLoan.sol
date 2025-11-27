@@ -258,18 +258,18 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 loanAmount,
         uint256 collateralAmount
     ) internal returns (uint256) {
-        // 创建贷款ID和记录
+        // Create loan ID and record
         uint256 loanID = nextLoanID++;
         LoanHistory storage newLoan = loans[loanID];
         newLoan.loanID = loanID;
         newLoan.account = account;
 
-        // 设置金额和价格
+        // Set amounts and prices
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = collateralAmount;
         amounts[1] = loanAmount;
 
-        // 先将amounts分配给newLoan.amounts
+        // Assign amounts to the loan record
         newLoan.amounts = amounts;
 
         uint256[] memory prices = new uint256[](2);
@@ -277,7 +277,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         prices[1] = oracle.getPrice("TCASH");
         newLoan.prices = prices;
 
-        // 设置时间和计算利息
+        // Set timestamp and compute interest
         newLoan.time = block.timestamp;
         uint256 interest = (loanAmount * parameterInfo.getPlatformConfig("TCASHDIR")) / 10000;
         newLoan.interest = interest;
@@ -285,11 +285,11 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         newLoan.IST = 1;
         newLoan.status = 0;
 
-        // 更新用户贷款列表和数据
+        // Update user loan list and aggregates
         userLoans[account].push(loanID);
         userBorrowLimits[account].totalBorrowed += newLoan.amounts[1];
 
-        // 更新个人和系统贷款数据
+        // Update personal and system loan data
         PersonalLoanData storage userData = personalLoanData[account];
         userData.TNL += 1;
         userData.TLA += newLoan.amounts[1];
@@ -297,7 +297,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         sysLoanData.OLB += newLoan.amounts[1];
         sysLoanData.TLD += newLoan.amounts[1];
 
-        // 触发事件
+        // Emit events
         _emitPersonalLoanDataEvent(account);
         _emitSysLoanDataEvent();
         emit InterestRecord(loanID, account, interest, 0);
@@ -332,45 +332,45 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         require(amount > 0, "Invalid repay amount");
         require(amount <= loan.amounts[1], "Repay amount exceeds loan");
 
-        // 更新价格
+        // Refresh prices
         loan.prices[0] = oracle.getPrice("UNIT");
         loan.prices[1] = oracle.getPrice("TCASH");
 
-        // 计算返还UNIT数量
+        // Calculate UNIT to return
         uint256 unitAmount = calculateUnitToRelease(loan, amount);
         tcash.burnFrom(msg.sender, amount);
 
-        // 更新贷款记录
-        // 优先偿还利息部分
+        // Update loan record
+        // Prioritize paying interest first
         if (amount <= loan.interest) {
             loan.interest -= amount;
-            loan.amounts[1] -= amount; // 更新总额
+            loan.amounts[1] -= amount; // Update total
         } else {
-            // 先偿还利息，剩余部分偿还本金
+            // Repay interest first, remainder goes to principal
             uint256 remainingAmount = amount - loan.interest;
             loan.interest = 0;
-            loan.amounts[1] -= amount; // 更新总额，包括利息和本金
+            loan.amounts[1] -= amount; // Update total (interest + principal)
         }
 
-        // 更新抵押品数量
+        // Update collateral amount
         loan.amounts[0] -= unitAmount;
 
-        // 更新状态数据
+        // Update aggregate states
         userBorrowLimits[msg.sender].totalBorrowed -= amount;
         personalLoanData[msg.sender].TRA += amount;
         sysLoanData.OLB -= amount;
         sysLoanData.RA += amount;
 
-        // 检查是否已结清
+        // Check if fully repaid
         if (loan.amounts[1] == 0) {
-            loan.status = 1; // 已结清
+            loan.status = 1; // Cleared
             personalLoanData[msg.sender].NCL += 1;
         }
 
-        // 转移抵押品
+        // Transfer collateral back
         payable(msg.sender).transfer(unitAmount);
 
-        // 触发事件
+        // Emit event
         emit LoanRecord(
             loanID,
             msg.sender,
@@ -603,17 +603,17 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 activeCount = 0;
         uint256 clearedCount = 0;
 
-        // 计数活跃和已结清贷款
+        // Count active and cleared loans
         for (uint256 i = 0; i < userLoanIds.length; i++) {
             if (loans[userLoanIds[i]].status != 1) activeCount++;
             else clearedCount++;
         }
 
-        // 分配结果数组
+        // Allocate result arrays
         activeLoans = new LoanHistory[](activeCount);
         clearedLoans = new LoanHistory[](clearedCount);
 
-        // 填充结果数组
+        // Populate result arrays
         uint256 activeIdx = 0;
         uint256 clearedIdx = 0;
         for (uint256 i = 0; i < userLoanIds.length; i++) {
@@ -655,13 +655,13 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         LoanHistory storage loan = loans[loanID];
         require(loan.status != 1 && loan.status != 3, "Invalid loan status");
 
-        // 更新价格并计算利息
+        // Update prices and calculate interest
         loan.prices[0] = oracle.getPrice("UNIT");
         loan.prices[1] = oracle.getPrice("TCASH");
 
         uint256 interest = (loan.amounts[1] * parameterInfo.getPlatformConfig("TCASHDIR")) / 10000;
 
-        // 更新贷款和用户数据
+        // Update loan and user data
         loan.interest += interest;
         loan.amounts[1] += interest;
         loan.IST++;
@@ -672,12 +672,12 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         sysLoanData.OLB += interest;
         sysLoanData.TLD += interest;
 
-        // 检查抵押率和还款周期
+        // Check collateral ratio and repayment cycles
         uint256 collateralRatio = calculateCollateralRatio(loan);
         uint256 warningRatio = parameterInfo.getPlatformConfig("TCASHMCT");
         uint256 liquidationRatio = parameterInfo.getPlatformConfig("TCASHLT");
 
-        // 更新状态并检查是否需要清算
+        // Update status and determine if liquidation is needed
         bool needsLiquidation = false;
 
         if (collateralRatio <= liquidationRatio) {
@@ -699,7 +699,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
 
         emit InterestRecord(loanID, loan.account, interest, loan.status);
 
-        // 如果需要清算，启动拍卖
+        // Start auction if liquidation is needed
         if (needsLiquidation && loan.status == 3 && _tcashAuctionContract != address(0)) {
             (bool success, ) = _tcashAuctionContract.call(
                 abi.encodeWithSignature(
@@ -925,7 +925,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 systemLoanRatio = (OLB * 10000) / totalSupply;
         uint256 systemRepaymentRate = (RA * 10000) / TLD;
 
-        // 简化SRF表的逻辑
+        // Simplified SRF lookup logic
         uint256 loanRatioIdx = systemLoanRatio < 6000 ? 0 :
                            systemLoanRatio < 7000 ? 1 :
                            systemLoanRatio < 8000 ? 2 :
@@ -936,7 +936,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
                           systemRepaymentRate > 1000 ? 2 :
                           systemRepaymentRate > 500 ? 3 : 4;
 
-        // 使用硬编码值代替二维数组
+        // Use hard-coded values instead of a 2D table
         uint256[25] memory srf1D = [
             uint256(10000), uint256(9000), uint256(7000), uint256(5000), uint256(3000), // [0,60%）
             uint256(9000), uint256(8000), uint256(7000), uint256(4000), uint256(2000),  // [60%,70%)
@@ -946,7 +946,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         ];
 
         uint256 idx = loanRatioIdx * 5 + repayRateIdx;
-        uint256 SRF = idx < 25 ? srf1D[idx] : 1000; // 安全检查
+        uint256 SRF = idx < 25 ? srf1D[idx] : 1000; // Safety check
 
         systemRiskFactor = SRF;
         lastSRFCalculationTime = block.timestamp;
@@ -974,7 +974,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
     ) public returns (uint256) {
         require(unitAmount > 0, "UNIT amount must be greater than 0");
 
-        // 获取价格和风险系数
+        // Get prices and risk factor
         uint256 unitPrice = oracle.getPrice("UNIT");
         uint256 tcashPrice = oracle.getPrice("TCASH");
         require(unitPrice > 0 && tcashPrice > 0, "Invalid prices");
@@ -982,21 +982,21 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 crf = getCRF(account);
         require(crf > 0, "Invalid risk factor");
 
-        // 计算可贷金额
+        // Calculate borrowable amount
         uint256 tcashAmount = (unitAmount * unitPrice * crf) / (10000 * tcashPrice);
 
-        // 检查授信额度
+        // Check credit limit
         (uint256 PCL, uint256 ALB) = _getPersonalCreditAndAvailable(account);
         require(PCL > 0, "Invalid personal credit limit");
 
-        // 取较小值
+        // Use the smaller of calculated amount and available limit
         if (tcashAmount > ALB) tcashAmount = ALB;
 
-        // 保证最小精度
+        // Enforce minimum precision
         uint256 minAmount = 1e9;
         if (tcashAmount < minAmount) tcashAmount = minAmount;
 
-        // 检查铸造锁定状态
+        // Ensure minting is not locked
         require(oracle.getTCashMintStatus(), "TCash minting disabled");
 
         return tcashAmount;

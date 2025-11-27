@@ -331,16 +331,13 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         uint256 total;
         require(accounts.length == amounts.length, "accounts and amounts must have same length");
         
-        // 获取uniqueId对应的owner
+        // Get the owner mapped to this uniqueId
         IProducer.ProducerCore memory producer = _getProducer(uniqueId);
         address owner = producer.owner;
         
         for (uint256 i = 0; i < accounts.length; i++) {
             _tat.mint(TREASURE_KIND, uniqueId, accounts[i], amounts[i]);
-            // 只有当owner和accounts[i]一致时才记录TAT铸造记录
-            if (owner == accounts[i]) {
-                _tat.setTATRecord(accounts[i], amounts[i]);
-            }
+            _tat.setTATRecord(accounts[i], amounts[i]);
             total = total + amounts[i];
         }
         return total;
@@ -353,31 +350,31 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
 
 
     /**
-     * @dev 获取当前年月，格式YYYYMM
-     * @return 当前年月，例如202407表示2024年7月
+     * @dev Get current year and month in YYYYMM format
+     * @return Current year-month, e.g., 202407 means July 2024
      */
     function getCurrentYearMonth() internal view returns (uint256) {
-        // 获取当前时间戳
+        // Get current timestamp
         uint256 timestamp = block.timestamp;
         
-        // 转换为日期（简化实现）
-        uint256 secondsInDay = 86400; // 24小时 * 60分钟 * 60秒
-        uint256 secondsInYear = secondsInDay * 365; // 简化，不考虑闰年
+        // Convert to date (simplified)
+        uint256 secondsInDay = 86400; // 24 hours * 60 minutes * 60 seconds
+        uint256 secondsInYear = secondsInDay * 365; // Simplified, ignores leap years
         
         uint256 yearsSince1970 = timestamp / secondsInYear;
         uint256 year = 1970 + yearsSince1970;
         
-        // 计算月份
+        // Calculate month
         uint256 secondsRemainingInYear = timestamp % secondsInYear;
         uint256 daysRemainingInYear = secondsRemainingInYear / secondsInDay;
         
-        // 简化实现，大约估算月份
+        // Approximate month (simplified)
         uint256 month = (daysRemainingInYear * 12) / 365 + 1;
         
-        // 限制月份范围
+        // Constrain to 1-12
         if (month > 12) month = 12;
         
-        // 组合成YYYYMM格式
+        // Combine into YYYYMM
         return year * 100 + month;
     }
 }

@@ -28,37 +28,26 @@ This contains almost all contracts officially developed and maintained by Treasu
 
 ## Installation
 
-To install and set up the project contract for development, follow these steps:
-
 ```bash
-# Clone the repository
 git clone https://github.com/treasurenetprotocol/treasurenet-contracts.git
-
-# Navigate to the project directory
-cd treasurenetprotocol
-
-# Install the dependencies
-npm install
-npm install truffle -g
+cd treasurenet-contracts/smart-contracts
+# 安装 Foundry（已安装可跳过）
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+# 拉取依赖
+forge install
 ```
 
 ## Usage
 
-To run the tests for this project,use the following command:
-
-### run a ganache test network
-
-```shell
-npm run ganache
+```bash
+# 编译
+forge build
+# 运行测试
+forge test
 ```
 
-### run tests
-
-```shell
-npm run test
-```
-
-Make sure all tests pass before submitting a pull request.
+请在提交前确保所有 forge 测试通过。
 
 ## Introduction and APIs
 

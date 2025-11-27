@@ -5,3 +5,6 @@ build/*
 .idea
 package-lock.json
 .env
+out/
+cache/
+broadcast/

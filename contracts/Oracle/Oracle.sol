@@ -26,11 +26,11 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
 
     event CancelOracleRequest(address requester, bytes32 requestid);
     
-    // TCASH铸造状态相关事件
+    // TCASH minting state events
     event TCashMintStatusChanged(bool status, uint256 timestamp);
     event TCashMintLockPriceChanged(uint256 price, uint256 timestamp);
     
-    // 从TCashOracle整合的事件
+    // Events unified from TCashOracle
     event PriceUpdated(
         string indexed symbol,
         uint256 price,
@@ -44,18 +44,18 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     // requestid -> commitment id
     mapping(bytes32 => bytes32) private _commitments;
     
-    // TCASH铸造锁定相关状态
-    bool private _tcashMintStatus; // TCASHMS: true=允许铸造, false=禁止铸造
-    uint256 private _tcashMintLockPrice; // TCASHMLP: 0=未锁定, >0=锁定价格
+    // TCASH mint lock state
+    bool private _tcashMintStatus; // TCASHMS: true=allow minting, false=disallow minting
+    uint256 private _tcashMintLockPrice; // TCASHMLP: 0=unlocked, >0=lock price
     
-    // 从TCashOracle整合的数据结构和状态变量
-    // 价格结构
+    // Data structures and state from TCashOracle
+    // Price structure
     struct PriceData {
         uint256 price;
         uint256 timestamp;
     }
     
-    // TCashOracle状态变量
+    // TCashOracle state
     mapping(string => PriceData) public prices;
     mapping(string => bool) public supportedSymbols;
 
@@ -65,11 +65,11 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         __Ownable_init();
         _roleController = IRoles(_roleContract);
         
-        // 初始化TCASH铸造状态为允许
+        // Initialize TCASH mint status to allowed
         _tcashMintStatus = true;
         _tcashMintLockPrice = 0;
         
-        // 初始化支持的代币（从TCashOracle整合）
+        // Initialize supported symbols (aligned with TCashOracle)
         supportedSymbols["UNIT"] = true;
         supportedSymbols["TCASH"] = true;
     }
@@ -151,55 +151,55 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         return _currencyValues[_currencyKind];
     }
     
-    /// @notice 获取TCASH铸造状态
-    /// @dev 返回当前TCASH是否允许铸造
-    /// @return 当前TCASH铸造状态(true:允许, false:禁止)
+    /// @notice Get TCASH mint status
+    /// @dev Returns whether TCASH minting is currently allowed
+    /// @return Current TCASH mint status (true: allowed, false: blocked)
     function getTCashMintStatus() public view override returns(bool) {
         return _tcashMintStatus;
     }
     
-    /// @notice 设置TCASH铸造状态
-    /// @dev 仅限Feeder角色调用，用于设置TCASH铸造状态
-    /// @param _status TCASH铸造状态(true:允许, false:禁止)
+    /// @notice Set TCASH mint status
+    /// @dev Feeder-only; toggles whether TCASH minting is allowed
+    /// @param _status TCASH mint status (true: allow, false: block)
     function setTCashMintStatus(bool _status) public override onlyFeeder {
         _tcashMintStatus = _status;
         emit TCashMintStatusChanged(_status, block.timestamp);
     }
     
-    /// @notice 获取TCASH铸造锁定价格
-    /// @dev 返回当前TCASH铸造锁定价格，0表示未锁定
-    /// @return TCASH铸造锁定价格
+    /// @notice Get TCASH mint lock price
+    /// @dev Returns current TCASH lock price; 0 means unlocked
+    /// @return TCASH mint lock price
     function getTCashMintLockPrice() public view override returns(uint256) {
         return _tcashMintLockPrice;
     }
     
-    /// @notice 设置TCASH铸造锁定价格
-    /// @dev 仅限Feeder角色调用，用于设置TCASH铸造锁定价格
-    /// @param _price TCASH铸造锁定价格(0:未锁定)
+    /// @notice Set TCASH mint lock price
+    /// @dev Feeder-only; sets TCASH mint lock price
+    /// @param _price TCASH lock price (0: unlocked)
     function setTCashMintLockPrice(uint256 _price) public override onlyFeeder {
         _tcashMintLockPrice = _price;
         emit TCashMintLockPriceChanged(_price, block.timestamp);
     }
     
-    /// @notice 检查并更新TCASH铸造状态
-    /// @dev 由Feeder调用，检查价格波动并更新TCASH铸造状态
-    /// @param _currentPrice 当前TCASH价格
-    /// @param _previousPrice 先前记录的TCASH价格(一小时前)
-    /// @param _lockThreshold 锁定阈值(如3000表示30%)
-    /// @param _resetThreshold 恢复阈值(如11000表示110%)
+    /// @notice Check and update TCASH mint status
+    /// @dev Feeder-only; compares price movement to lock/reset thresholds
+    /// @param _currentPrice Current TCASH price
+    /// @param _previousPrice TCASH price an hour ago
+    /// @param _lockThreshold Lock threshold (e.g., 3000 means 30%)
+    /// @param _resetThreshold Reset threshold (e.g., 11000 means 110%)
     function checkAndUpdateTCashMintStatus(
         uint256 _currentPrice, 
         uint256 _previousPrice, 
         uint256 _lockThreshold, 
         uint256 _resetThreshold
     ) public override onlyFeeder {
-        // 检查当前铸造锁定价格是否为0(表示目前处于"可铸造"状态)
+        // If unlocked, check whether we should lock
         if (_tcashMintLockPrice == 0) {
-            // 计算过去一小时内价格波动是否超过阈值
+            // Calculate price drop over the past hour
             if (_previousPrice > 0) {
                 uint256 priceChange = (_previousPrice - _currentPrice) * 10000 / _previousPrice;
                 
-                // 如果价格下跌超过阈值，则锁定铸造
+                // Lock minting if drop exceeds threshold
                 if (priceChange >= _lockThreshold) {
                     _tcashMintLockPrice = _currentPrice;
                     _tcashMintStatus = false;
@@ -209,10 +209,10 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
                 }
             }
         } else {
-            // 已锁定状态，判断当前价格是否达到重置阈值
+            // If locked, check whether price has recovered enough to reset
             uint256 resetPrice = _tcashMintLockPrice * _resetThreshold / 10000;
             
-            // 如果当前价格达到或超过重置阈值，则解除锁定
+            // Unlock when reset threshold is reached or exceeded
             if (_currentPrice >= resetPrice) {
                 _tcashMintLockPrice = 0;
                 _tcashMintStatus = true;
@@ -223,13 +223,13 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         }
     }
     
-    // 从TCashOracle整合的函数
+    // Functions unified from TCashOracle
     
-    /// @notice 更新价格
-    /// @dev 更新指定代币符号的价格
-    /// @param symbol 代币符号
-    /// @param price 价格
-    /// @return 操作是否成功
+    /// @notice Update price
+    /// @dev Update the price for a supported token symbol
+    /// @param symbol Token symbol
+    /// @param price Price
+    /// @return Whether the operation succeeded
     function updatePrice(string memory symbol, uint256 price) external onlyFoundationManager returns (bool) {
         require(supportedSymbols[symbol], "Unsupported symbol");
         require(price > 0, "Invalid price");
@@ -244,30 +244,30 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         return true;
     }
 
-    /// @notice 获取价格
-    /// @dev 获取指定代币符号的价格
-    /// @param symbol 代币符号
-    /// @return 价格
+    /// @notice Get price
+    /// @dev Fetch price for a supported symbol
+    /// @param symbol Token symbol
+    /// @return Price
     function getPrice(string memory symbol) external view returns (uint256) {
         require(supportedSymbols[symbol], "Unsupported symbol");
         return prices[symbol].price;
     }
 
-    /// @notice 获取价格和时间戳
-    /// @dev 获取指定代币符号的价格数据（价格和时间戳）
-    /// @param symbol 代币符号
-    /// @return price 价格
-    /// @return timestamp 时间戳
+    /// @notice Get price and timestamp
+    /// @dev Returns price data (price and timestamp) for a supported symbol
+    /// @param symbol Token symbol
+    /// @return price Price
+    /// @return timestamp Timestamp
     function getPriceData(string memory symbol) external view returns (uint256 price, uint256 timestamp) {
         require(supportedSymbols[symbol], "Unsupported symbol");
         PriceData memory data = prices[symbol];
         return (data.price, data.timestamp);
     }
 
-    /// @notice 添加支持的代币
-    /// @dev 添加一个新的支持的代币符号
-    /// @param symbol 代币符号
-    /// @return 操作是否成功
+    /// @notice Add a supported token
+    /// @dev Add a new supported token symbol
+    /// @param symbol Token symbol
+    /// @return Whether the operation succeeded
     function addSupportedSymbol(string memory symbol) external onlyFoundationManager returns (bool) {
         require(!supportedSymbols[symbol], "Symbol already supported");
         
@@ -275,10 +275,10 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         return true;
     }
 
-    /// @notice 移除支持的代币
-    /// @dev 移除一个已支持的代币符号
-    /// @param symbol 代币符号
-    /// @return 操作是否成功
+    /// @notice Remove a supported token
+    /// @dev Remove an already-supported token symbol
+    /// @param symbol Token symbol
+    /// @return Whether the operation succeeded
     function removeSupportedSymbol(string memory symbol) external onlyFoundationManager returns (bool) {
         require(supportedSymbols[symbol], "Symbol not supported");
         
@@ -286,10 +286,10 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         return true;
     }
 
-    /// @notice 检查代币是否支持
-    /// @dev 检查指定的代币符号是否被支持
-    /// @param symbol 代币符号
-    /// @return 是否支持
+    /// @notice Check whether a token is supported
+    /// @dev Returns true if the symbol is supported
+    /// @param symbol Token symbol
+    /// @return Whether supported
     function isSupportedSymbol(string memory symbol) external view returns (bool) {
         return supportedSymbols[symbol];
     }

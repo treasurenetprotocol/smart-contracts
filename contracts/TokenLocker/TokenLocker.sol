@@ -255,7 +255,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         uint256 totalClaimable;
         LockedRecord[] storage records = lockedRecords[account];
 
-        // 管理员0，非管理员1
+        // Claim method: 0 for manager, 1 for non-manager
         uint256 currentClaimMethod;
         if (managers.contains(msg.sender)) {
             currentClaimMethod = 0;
@@ -269,7 +269,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             uint256 idx = i - 1;
             LockedRecord storage record = records[idx];
 
-            // 只处理对应claimMethod的记录
+            // Only process records matching the caller's claimMethod
             if (
                 record.isActive &&
                 block.timestamp >= record.time &&

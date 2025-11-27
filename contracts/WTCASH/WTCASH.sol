@@ -17,34 +17,34 @@ contract WTCASH is Initializable, ERC20Upgradeable, AccessControlUpgradeable {
         __ERC20_init("wrapped tcash token", "wTCash");
         __AccessControl_init();
         
-        // 设置默认管理员角色
+        // Set default admin role
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         
-        // 为所有操作员授予OPERATOR_ROLE权限
+        // Grant operator role to all provided operators
         for (uint256 i = 0; i < operators.length; i++) {
             _grantRole(OPERATOR_ROLE, operators[i]);
         }
     }
 
-    // 铸造代币
+    // Mint tokens
     function mint(address to, uint256 amount) external onlyRole(OPERATOR_ROLE) returns (bool) {
         _mint(to, amount);
         return true;
     }
 
-    // 销毁代币
+    // Burn tokens
     function burn(uint256 amount) external onlyRole(OPERATOR_ROLE) returns (bool) {
         _burn(msg.sender, amount);
         return true;
     }
 
-    // 增加余额
+    // Increase balance
     function addBalance(address account, uint256 amount) external onlyRole(OPERATOR_ROLE) returns (bool) {
         _mint(account, amount);
         return true;
     }
 
-    // 减少余额
+    // Decrease balance
     function reduceBalance(address account, uint256 amount) external onlyRole(OPERATOR_ROLE) returns (bool) {
         require(amount > 0, "Amount must be greater than zero");
         require(balanceOf(account) >= amount, "Insufficient balance");
@@ -52,12 +52,12 @@ contract WTCASH is Initializable, ERC20Upgradeable, AccessControlUpgradeable {
         return true;
     }
     
-    // 添加新的操作员
+    // Add a new operator
     function addOperator(address operator) external onlyRole(DEFAULT_ADMIN_ROLE) {
         grantRole(OPERATOR_ROLE, operator);
     }
     
-    // 移除操作员
+    // Remove an operator
     function removeOperator(address operator) external onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(OPERATOR_ROLE, operator);
     }

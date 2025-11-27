@@ -25,21 +25,21 @@ Stakeable
 {
     IGovernance private _governance;
     
-    // TAT铸造记录结构
+    // TAT mint record structure
     struct TATRecord {
-        uint256[3] months;  // 年月记录，格式：YYYYMM
-        uint256[3] amounts; // 对应的铸造数量
-        uint8 currentIndex; // 当前记录的索引位置，循环使用0-2
+        uint256[3] months;  // Year and month in YYYYMM format
+        uint256[3] amounts; // Minted amount for each recorded month
+        uint8 currentIndex; // Current index position, cycles through 0-2
     }
     
-    // 用户地址 => 铸造记录
+    // User address => mint record
     mapping(address => TATRecord) private _tatRecords;
     
-    // // 只有ProductionData合约可以调用
+    // // Only the ProductionData contract can call
     // modifier onlyProductionData() {
-    //     // 从治理合约获取ProductionData地址
+    //     // Fetch the ProductionData address from the governance contract
     //     bool isProductionData = false;
-    //     for (uint i = 0; i < 10; i++) { // 假设最多有10种treasure类型
+    //     for (uint i = 0; i < 10; i++) { // Assume up to 10 treasure types
     //         string memory treasureKind = getKindByIndex(i);
     //         if (bytes(treasureKind).length == 0) break;
             
@@ -53,10 +53,9 @@ Stakeable
     //     _;
     // }
     
-    // 辅助函数 - 获取指定索引的treasure类型，具体实现需要根据实际情况调整
+    // Helper to get the treasure type by index; actual implementation should match governance
     function getKindByIndex(uint256 index) internal view returns (string memory) {
-        // 这里需要根据实际情况从治理合约获取种类信息
-        // 此处为简化实现，实际应该从_governance合约获取
+        // Should fetch from governance in a real implementation
         return "";
     }
 
@@ -105,48 +104,48 @@ Stakeable
     ) public onlyProductionDataContract(_treasureKind) {
         require(to != address(0), "Zero address");
         
-        // // 获取当前年月，格式YYYYMM
+        // // Get current year and month in YYYYMM format
         // uint256 currentMonth = getCurrentYearMonth();
         
-        // // 记录用户铸造历史
+        // // Record user mint history
         // setTATRecord(to, amount, currentMonth);
         
-        // 铸造代币
+        // Mint tokens
         _mint(to, amount);
         
-        // 发出事件
+        // Emit event
         emit TATHistory(_treasureKind, _uniqueId, msg.sender, to, amount);
     }
     
     /**
-     * @dev 获取当前年月，格式YYYYMM
-     * @return 当前年月，例如202407表示2024年7月
+     * @dev Get current year and month in YYYYMM format
+     * @return The current year and month (e.g., 202407 means July 2024)
      */
     function getCurrentYearMonth() internal view returns (uint256) {
-        // 获取当前时间戳
+        // Get the current timestamp
         uint256 timestamp = block.timestamp;
         
-        // 转换为日期（简化实现）
-        // 这是一个简化的计算，实际应用中可能需要更精确的日期计算方法
+        // Convert to a date (simplified calculation)
+        // This is approximate; a production implementation should use a precise date calc
         
-        // 计算年份: 基于1970年1月1日开始
-        uint256 secondsInDay = 86400; // 24小时 * 60分钟 * 60秒
-        uint256 secondsInYear = secondsInDay * 365; // 简化，不考虑闰年
+        // Calculate year since January 1, 1970
+        uint256 secondsInDay = 86400; // 24h * 60m * 60s
+        uint256 secondsInYear = secondsInDay * 365; // Simplified, ignores leap years
         
         uint256 yearsSince1970 = timestamp / secondsInYear;
         uint256 year = 1970 + yearsSince1970;
         
-        // 计算月份
+        // Calculate month
         uint256 secondsRemainingInYear = timestamp % secondsInYear;
         uint256 daysRemainingInYear = secondsRemainingInYear / secondsInDay;
         
-        // 简化实现，大约估算月份
+        // Rough month estimate (simplified)
         uint256 month = (daysRemainingInYear * 12) / 365 + 1;
         
-        // 限制月份范围
+        // Constrain to valid month range
         if (month > 12) month = 12;
         
-        // 组合成YYYYMM格式
+        // Combine into YYYYMM format
         return year * 100 + month;
     }
 
@@ -154,10 +153,10 @@ Stakeable
     function faucet(address user, uint256 amount) public {
         require(user != address(0), "Zero address");
     
-        // 记录用户铸造历史
+        // Record user mint history
         setTATRecord(user, amount);
         
-        // 铸造代币
+        // Mint tokens
         _mint(user, amount);
     }
 
@@ -182,9 +181,9 @@ Stakeable
     }
 
     /**
-     * @dev 设置用户TAT铸造记录
-     * @param account 用户地址
-     * @param amount 铸造代币数量
+     * @dev Set the TAT minting record for a user
+     * @param account User address
+     * @param amount Amount of tokens minted
      */
     function setTATRecord(
         address account,
@@ -195,29 +194,29 @@ Stakeable
         
         TATRecord storage record = _tatRecords[account];
         
-        // 如果还未初始化，设置currentIndex为0
+        // If uninitialized, set currentIndex to 0
         if (record.months[0] == 0 && record.months[1] == 0 && record.months[2] == 0) {
             record.currentIndex = 0;
         } else {
-            // 否则更新到下一个位置（循环使用0-2）
+            // Otherwise advance to the next position (cycle 0-2)
             record.currentIndex = (record.currentIndex + 1) % 3;
         }
         
-        // 更新记录
+        // Update record
         record.months[record.currentIndex] = getCurrentYearMonth();
         record.amounts[record.currentIndex] = amount;
     }
     
     /**
-     * @dev 获取用户TAT铸造记录
-     * @param account 用户地址
-     * @return months 记录的年月数组
-     * @return amounts 对应的铸造金额数组
+     * @dev Get a user's TAT minting records
+     * @param account User address
+     * @return months Array of recorded year-month values
+     * @return amounts Array of corresponding minted amounts
      */
     function getTATRecord(address account) public view returns (uint256[] memory months, uint256[] memory amounts) {
         TATRecord storage record = _tatRecords[account];
         
-        // 计算有效记录数量
+        // Count valid entries
         uint8 validCount = 0;
         for (uint8 i = 0; i < 3; i++) {
             if (record.months[i] != 0) {
@@ -225,11 +224,11 @@ Stakeable
             }
         }
         
-        // 创建返回数组
+        // Create return arrays
         months = new uint256[](validCount);
         amounts = new uint256[](validCount);
         
-        // 填充数组
+        // Populate arrays
         uint8 index = 0;
         for (uint8 i = 0; i < 3; i++) {
             if (record.months[i] != 0) {

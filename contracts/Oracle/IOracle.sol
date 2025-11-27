@@ -38,32 +38,32 @@ interface IOracle {
     /// @return uint256 The value of the currency
     function getCurrencyValue(bytes32 _currencyKind) external view returns(uint256);
     
-    /// @notice 获取TCASH铸造状态
-    /// @dev 返回当前TCASH是否允许铸造
-    /// @return bool 当前TCASH铸造状态(true:允许, false:禁止)
+    /// @notice Get TCASH mint status
+    /// @dev Returns whether TCASH minting is currently allowed
+    /// @return bool Current TCASH mint status (true: allowed, false: blocked)
     function getTCashMintStatus() external view returns(bool);
     
-    /// @notice 设置TCASH铸造状态
-    /// @dev 仅限Feeder角色调用，用于设置TCASH铸造状态
-    /// @param _status TCASH铸造状态(true:允许, false:禁止)
+    /// @notice Set TCASH mint status
+    /// @dev Feeder-only; sets whether TCASH can be minted
+    /// @param _status TCASH mint status (true: allow, false: block)
     function setTCashMintStatus(bool _status) external;
     
-    /// @notice 获取TCASH铸造锁定价格
-    /// @dev 返回当前TCASH铸造锁定价格，0表示未锁定
-    /// @return uint256 TCASH铸造锁定价格
+    /// @notice Get TCASH mint lock price
+    /// @dev Returns the current lock price; 0 means unlocked
+    /// @return uint256 TCASH mint lock price
     function getTCashMintLockPrice() external view returns(uint256);
     
-    /// @notice 设置TCASH铸造锁定价格
-    /// @dev 仅限Feeder角色调用，用于设置TCASH铸造锁定价格
-    /// @param _price TCASH铸造锁定价格(0:未锁定)
+    /// @notice Set TCASH mint lock price
+    /// @dev Feeder-only; sets the lock price
+    /// @param _price TCASH mint lock price (0: unlocked)
     function setTCashMintLockPrice(uint256 _price) external;
     
-    /// @notice 检查并更新TCASH铸造状态
-    /// @dev 由Feeder调用，检查价格波动并更新TCASH铸造状态
-    /// @param _currentPrice 当前TCASH价格
-    /// @param _previousPrice 先前记录的TCASH价格(一小时前)
-    /// @param _lockThreshold 锁定阈值(如3000表示30%)
-    /// @param _resetThreshold 恢复阈值(如11000表示110%)
+    /// @notice Check and update TCASH mint status
+    /// @dev Feeder-only; compares price moves to lock/reset thresholds
+    /// @param _currentPrice Current TCASH price
+    /// @param _previousPrice TCASH price from one hour ago
+    /// @param _lockThreshold Lock threshold (e.g., 3000 represents 30%)
+    /// @param _resetThreshold Reset threshold (e.g., 11000 represents 110%)
     function checkAndUpdateTCashMintStatus(
         uint256 _currentPrice, 
         uint256 _previousPrice, 
@@ -71,43 +71,43 @@ interface IOracle {
         uint256 _resetThreshold
     ) external;
     
-    // 从TCashOracle整合的接口
+    // Interfaces unified from TCashOracle
     
-    /// @notice 更新价格
-    /// @dev 更新指定代币符号的价格
-    /// @param symbol 代币符号
-    /// @param price 价格
-    /// @return 操作是否成功
+    /// @notice Update price
+    /// @dev Update the price for a token symbol
+    /// @param symbol Token symbol
+    /// @param price Price
+    /// @return Whether the operation succeeded
     function updatePrice(string memory symbol, uint256 price) external returns (bool);
     
-    /// @notice 获取价格
-    /// @dev 获取指定代币符号的价格
-    /// @param symbol 代币符号
-    /// @return 价格
+    /// @notice Get price
+    /// @dev Fetch price for a token symbol
+    /// @param symbol Token symbol
+    /// @return Price
     function getPrice(string memory symbol) external view returns (uint256);
     
-    /// @notice 获取价格和时间戳
-    /// @dev 获取指定代币符号的价格数据（价格和时间戳）
-    /// @param symbol 代币符号
-    /// @return price 价格
-    /// @return timestamp 时间戳
+    /// @notice Get price and timestamp
+    /// @dev Fetch price data (price and timestamp) for a token symbol
+    /// @param symbol Token symbol
+    /// @return price Price
+    /// @return timestamp Timestamp
     function getPriceData(string memory symbol) external view returns (uint256 price, uint256 timestamp);
     
-    /// @notice 添加支持的代币
-    /// @dev 添加一个新的支持的代币符号
-    /// @param symbol 代币符号
-    /// @return 操作是否成功
+    /// @notice Add a supported token
+    /// @dev Add a new token symbol to the supported list
+    /// @param symbol Token symbol
+    /// @return Whether the operation succeeded
     function addSupportedSymbol(string memory symbol) external returns (bool);
     
-    /// @notice 移除支持的代币
-    /// @dev 移除一个已支持的代币符号
-    /// @param symbol 代币符号
-    /// @return 操作是否成功
+    /// @notice Remove a supported token
+    /// @dev Remove a token symbol from the supported list
+    /// @param symbol Token symbol
+    /// @return Whether the operation succeeded
     function removeSupportedSymbol(string memory symbol) external returns (bool);
     
-    /// @notice 检查代币是否支持
-    /// @dev 检查指定的代币符号是否被支持
-    /// @param symbol 代币符号
-    /// @return 是否支持
+    /// @notice Check whether a token is supported
+    /// @dev Returns true if the symbol is supported
+    /// @param symbol Token symbol
+    /// @return Whether supported
     function isSupportedSymbol(string memory symbol) external view returns (bool);
 }

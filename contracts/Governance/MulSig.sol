@@ -91,13 +91,13 @@ contract MulSig is Initializable, OwnableUpgradeable {
         _crosschainTokens = ICrosschainTokens(_crosschainTokensContract);
     }
 
-    /// @dev 获取当前初始化参数值
-    /// @return daoAddress DAO合约地址
-    /// @return governanceAddress 治理合约地址
-    /// @return rolesAddress 角色管理合约地址
-    /// @return parameterInfoAddress 参数信息合约地址
-    /// @return crosschainTokensAddress 跨链代币合约地址
-    /// @return _confirmDuration 确认时间(秒)
+    /// @dev Get the current initialization parameters
+    /// @return daoAddress DAO contract address
+    /// @return governanceAddress Governance contract address
+    /// @return rolesAddress Roles contract address
+    /// @return parameterInfoAddress ParameterInfo contract address
+    /// @return crosschainTokensAddress CrosschainTokens contract address
+    /// @return _confirmDuration Confirmation duration (seconds)
     function getCurrentValues() public view returns (
         address daoAddress,
         address governanceAddress,
@@ -417,10 +417,10 @@ function executeProposal(uint256 _proposalId) public onlyFoundationManager retur
         IProducer _producer = IProducer(producerAddr);
         _producer.registerDAppConnect(pro.name, pro.payee);
     } else if (pro._type == PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN) {
-        // 检查 _crosschainTokens 是否已初始化
+        // Ensure _crosschainTokens is initialized
         require(address(_crosschainTokens) != address(0), "CrosschainTokens not initialized");
         
-        // 调用 CrosschainTokens 合约的 setCrosschainToken 函数
+        // Call CrosschainTokens.setCrosschainToken
         _crosschainTokens.setCrosschainToken(
             pro.token,
             pro.sourceERC20,
