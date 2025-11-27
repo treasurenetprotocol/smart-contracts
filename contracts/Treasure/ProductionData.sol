@@ -331,7 +331,7 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         uint256 total;
         require(accounts.length == amounts.length, "accounts and amounts must have same length");
         
-        // Get the owner mapped to this uniqueId
+        // Fetch producer for uniqueId (owner retained for future use if needed)
         IProducer.ProducerCore memory producer = _getProducer(uniqueId);
         address owner = producer.owner;
         
@@ -350,28 +350,28 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
 
 
     /**
-     * @dev Get current year and month in YYYYMM format
-     * @return Current year-month, e.g., 202407 means July 2024
+     * @dev Get current year-month in YYYYMM format
+     * @return Current year-month, e.g. 202407 for July 2024
      */
     function getCurrentYearMonth() internal view returns (uint256) {
-        // Get current timestamp
+        // Current timestamp
         uint256 timestamp = block.timestamp;
         
-        // Convert to date (simplified)
-        uint256 secondsInDay = 86400; // 24 hours * 60 minutes * 60 seconds
-        uint256 secondsInYear = secondsInDay * 365; // Simplified, ignores leap years
+        // Simplified date conversion
+        uint256 secondsInDay = 86400; // 24 * 60 * 60
+        uint256 secondsInYear = secondsInDay * 365; // No leap year handling
         
         uint256 yearsSince1970 = timestamp / secondsInYear;
         uint256 year = 1970 + yearsSince1970;
         
-        // Calculate month
+        // Calculate month (approx)
         uint256 secondsRemainingInYear = timestamp % secondsInYear;
         uint256 daysRemainingInYear = secondsRemainingInYear / secondsInDay;
         
-        // Approximate month (simplified)
+        // Approximate month
         uint256 month = (daysRemainingInYear * 12) / 365 + 1;
         
-        // Constrain to 1-12
+        // Clamp to 1-12
         if (month > 12) month = 12;
         
         // Combine into YYYYMM

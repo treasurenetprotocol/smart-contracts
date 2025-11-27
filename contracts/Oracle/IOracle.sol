@@ -39,31 +39,31 @@ interface IOracle {
     function getCurrencyValue(bytes32 _currencyKind) external view returns(uint256);
     
     /// @notice Get TCASH mint status
-    /// @dev Returns whether TCASH minting is currently allowed
-    /// @return bool Current TCASH mint status (true: allowed, false: blocked)
+    /// @dev Returns whether TCASH minting is allowed
+    /// @return bool Current TCASH mint status (true allowed, false blocked)
     function getTCashMintStatus() external view returns(bool);
     
     /// @notice Set TCASH mint status
-    /// @dev Feeder-only; sets whether TCASH can be minted
-    /// @param _status TCASH mint status (true: allow, false: block)
+    /// @dev Feeder-only, toggles mint status
+    /// @param _status TCASH mint status (true allow, false block)
     function setTCashMintStatus(bool _status) external;
     
     /// @notice Get TCASH mint lock price
-    /// @dev Returns the current lock price; 0 means unlocked
-    /// @return uint256 TCASH mint lock price
+    /// @dev Returns current lock price (0 means unlocked)
+    /// @return uint256 Lock price
     function getTCashMintLockPrice() external view returns(uint256);
     
     /// @notice Set TCASH mint lock price
-    /// @dev Feeder-only; sets the lock price
-    /// @param _price TCASH mint lock price (0: unlocked)
+    /// @dev Feeder-only
+    /// @param _price Lock price (0: unlocked)
     function setTCashMintLockPrice(uint256 _price) external;
     
     /// @notice Check and update TCASH mint status
-    /// @dev Feeder-only; compares price moves to lock/reset thresholds
+    /// @dev Feeder-only; compares price move to lock/reset thresholds
     /// @param _currentPrice Current TCASH price
-    /// @param _previousPrice TCASH price from one hour ago
-    /// @param _lockThreshold Lock threshold (e.g., 3000 represents 30%)
-    /// @param _resetThreshold Reset threshold (e.g., 11000 represents 110%)
+    /// @param _previousPrice TCASH price one hour ago
+    /// @param _lockThreshold Lock threshold (e.g. 3000 = 30%)
+    /// @param _resetThreshold Reset threshold (e.g. 11000 = 110%)
     function checkAndUpdateTCashMintStatus(
         uint256 _currentPrice, 
         uint256 _previousPrice, 
@@ -71,42 +71,42 @@ interface IOracle {
         uint256 _resetThreshold
     ) external;
     
-    // Interfaces unified from TCashOracle
+    // Unified from TCashOracle
     
     /// @notice Update price
-    /// @dev Update the price for a token symbol
+    /// @dev Update price for a symbol
     /// @param symbol Token symbol
     /// @param price Price
-    /// @return Whether the operation succeeded
+    /// @return Whether succeeded
     function updatePrice(string memory symbol, uint256 price) external returns (bool);
     
     /// @notice Get price
-    /// @dev Fetch price for a token symbol
+    /// @dev Get price for a symbol
     /// @param symbol Token symbol
     /// @return Price
     function getPrice(string memory symbol) external view returns (uint256);
     
     /// @notice Get price and timestamp
-    /// @dev Fetch price data (price and timestamp) for a token symbol
+    /// @dev Get price data for a symbol
     /// @param symbol Token symbol
     /// @return price Price
     /// @return timestamp Timestamp
     function getPriceData(string memory symbol) external view returns (uint256 price, uint256 timestamp);
     
-    /// @notice Add a supported token
-    /// @dev Add a new token symbol to the supported list
+    /// @notice Add supported token
+    /// @dev Add a new supported symbol
     /// @param symbol Token symbol
-    /// @return Whether the operation succeeded
+    /// @return Whether succeeded
     function addSupportedSymbol(string memory symbol) external returns (bool);
     
-    /// @notice Remove a supported token
-    /// @dev Remove a token symbol from the supported list
+    /// @notice Remove supported token
+    /// @dev Remove a supported symbol
     /// @param symbol Token symbol
-    /// @return Whether the operation succeeded
+    /// @return Whether succeeded
     function removeSupportedSymbol(string memory symbol) external returns (bool);
     
-    /// @notice Check whether a token is supported
-    /// @dev Returns true if the symbol is supported
+    /// @notice Check if token is supported
+    /// @dev Returns true if symbol supported
     /// @param symbol Token symbol
     /// @return Whether supported
     function isSupportedSymbol(string memory symbol) external view returns (bool);

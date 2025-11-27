@@ -16,9 +16,9 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     // TCash decimals
     uint8 private constant _decimals = 18;
 
-    // Track TCash locked for auctions
+    // Locked TCash in auctions
     mapping(address => uint256) private _lockedBalances;
-    // Auction contract allowed to call bidCost and bidBack
+    // Auction contract allowed to call bidCost/bidBack
     address public tcashAuction;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -30,11 +30,11 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         __ERC20_init("TCash", "TCash");
         __Ownable_init();
         
-        // Initially mint 1,000,000 TCash to the specified account
+        // Initial mint of 1,000,000 TCash to receiver
         _mint(initialReceiver, 1_000_000 * 10**_decimals);
     }
     
-    // Return token decimals
+    // Return decimals
     function decimals() public pure override returns (uint8) {
         return _decimals;
     }
@@ -49,49 +49,49 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         oracle = IOracle(_oracle);
     }
     
-    // Set auction contract address
+    // Set auction contract
     function setAuctionContract(address _tcashAuction) external onlyOwner {
         tcashAuction = _tcashAuction;
     }
 
-    // Lock user TCash for an auction bid
+    // Lock user TCash for auction bid
     function bidCost(address user, uint256 amount) external returns (bool) {
         require(msg.sender == tcashAuction, "Only auction contract can call");
         require(balanceOf(user) >= amount, "Insufficient balance");
         
-        // Lock user TCash
+        // Lock TCash
         _lockedBalances[user] += amount;
         
         return true;
     }
     
-    // Return locked TCash after failed auction
+    // Refund locked TCash after failed auction
     function bidBack(address user, uint256 amount) external returns (bool) {
         require(msg.sender == tcashAuction, "Only auction contract can call");
         require(_lockedBalances[user] >= amount, "Insufficient locked balance");
         
-        // Unlock user TCash
+        // Unlock TCash
         _lockedBalances[user] -= amount;
         
         return true;
     }
     
-    // Query locked TCash balance for a user
+    // Get locked balance
     function getLockedBalance(address user) external view returns (uint256) {
         return _lockedBalances[user];
     }
     
-    // Compute transferable balance excluding locked amount
+    // Transferable balance excludes locked amount
     function transferableBalanceOf(address account) public view returns (uint256) {
         return balanceOf(account) - _lockedBalances[account];
     }
 
-    // Mint tokens - only addresses with TCASH_MINTER can mint
+    // Mint tokens - only TCASH_MINTER can mint
     function mint(address to, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to mint");
         
-        // Check oracle configuration and minting status
+        // Check oracle mint status
         if (address(oracle) != address(0)) {
             require(oracle.getTCashMintStatus(), "TCash minting is currently disabled");
         }
@@ -100,13 +100,13 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
 
-    // Burn tokens - users burn their own tokens
+    // Burn tokens - user burns own tokens
     function burn(uint256 amount) external returns (bool) {
         _burn(msg.sender, amount);
         return true;
     }
 
-    // BurnFrom tokens - allow authorized contracts to burn from a given address
+    // BurnFrom tokens - authorized contract burns from account
     function burnFrom(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to burn");
@@ -121,7 +121,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to add balance");
         
-        // Check oracle configuration and minting status
+        // Check oracle mint status
         if (address(oracle) != address(0)) {
             require(oracle.getTCashMintStatus(), "TCash minting is currently disabled");
         }
@@ -140,13 +140,13 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
     
-    // Override transfer to block moving locked balance
+    // Override transfer to block moving locked amount
     function transfer(address to, uint256 amount) public override returns (bool) {
         require(amount <= transferableBalanceOf(msg.sender), "Transfer amount exceeds unlocked balance");
         return super.transfer(to, amount);
     }
     
-    // Override transferFrom to block moving locked balance
+    // Override transferFrom to block moving locked amount
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
         require(amount <= transferableBalanceOf(from), "Transfer amount exceeds unlocked balance");
         return super.transferFrom(from, to, amount);

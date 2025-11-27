@@ -41,7 +41,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     mapping(uint256 => AssetValue) private _assetMappedValues;
     AssetValue[] private _assetValues;
 
-    // TCASH historical price records
+    // TCASH historical prices
     mapping(uint256 => uint256) private _tcashHistoricalPrices;
     uint256 private _lastTCashPriceTimestamp;
     uint256 private _lastTCashPrice;
@@ -156,7 +156,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     /**
-     * @dev Set the TCASH price and check whether minting should be locked
+     * @dev Set TCASH price and check mint-lock condition
      * @param _price Current TCASH price
      */
     function setTCashPrice(uint256 _price) public onlyFeeder {
@@ -170,13 +170,13 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
         uint256 hourAgo = block.timestamp.sub(1 hours);
         uint256 previousHourPrice = _tcashHistoricalPrices[hourAgo];
 
-        // Update current price record
+        // Update latest price
         _tcashHistoricalPrices[block.timestamp] = _price;
         _lastTCashPrice = _price;
         _lastTCashPriceTimestamp = block.timestamp;
 
-        // Invoke Oracle contract to check and update TCASH mint status
-        // Send an oracle request
+        // Ask Oracle to check and update TCASH mint status
+        // Send oracle request
         uint256 nonce = _nextNonce();
         bytes4 callbackSelector = this.receiveTCashMintStatus.selector;
 
@@ -186,7 +186,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
             nonce
         );
 
-        // Fetch Oracle contract reference and call the check function
+        // Call Oracle check
         IOracle oracleContract = IOracle(_oracleContract());
         oracleContract.checkAndUpdateTCashMintStatus(
             _price,
@@ -197,10 +197,10 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     /**
-     * @dev Callback for TCASH mint status updates
+     * @dev Callback for TCASH mint status change
      * @param _requestId Request ID
      * @param _status Current TCASH mint status
-     * @param _lockPrice Lock price (if any)
+     * @param _lockPrice Lock price
      */
     function receiveTCashMintStatus(
         bytes32 _requestId,
@@ -216,9 +216,9 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     /**
-     * @dev Get the latest TCASH price
-     * @return price TCASH price
-     * @return timestamp Timestamp of the price
+     * @dev Get latest TCASH price
+     * @return price Price
+     * @return timestamp Timestamp
      */
     function getLatestTCashPrice()
         public
@@ -231,7 +231,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     /**
      * @dev Get historical TCASH price
      * @param _timestamp Timestamp to query
-     * @return Price at the given timestamp
+     * @return Price at that timestamp
      */
     function getHistoricalTCashPrice(
         uint256 _timestamp

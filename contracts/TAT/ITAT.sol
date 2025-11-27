@@ -27,9 +27,9 @@ interface ITAT is IERC20Upgradeable,IStake {
     ) external;
 
     /**
-     * @dev Set the minting record for a user
+     * @dev Set TAT mint record for a user
      * @param account User address
-     * @param amount Amount of tokens minted
+     * @param amount Mint amount
      */
     function setTATRecord(
         address account,
@@ -37,10 +37,10 @@ interface ITAT is IERC20Upgradeable,IStake {
     ) external;
     
     /**
-     * @dev Get the minting records for a user
+     * @dev Get TAT mint records of a user
      * @param account User address
-     * @return months Array of recorded year-month values
-     * @return amounts Array of corresponding minted amounts
+     * @return months Recorded year-month array
+     * @return amounts Corresponding mint amounts
      */
     function getTATRecord(address account) external view returns (uint256[] memory months, uint256[] memory amounts);
 

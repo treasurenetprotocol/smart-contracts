@@ -91,7 +91,7 @@ contract MulSig is Initializable, OwnableUpgradeable {
         _crosschainTokens = ICrosschainTokens(_crosschainTokensContract);
     }
 
-    /// @dev Get the current initialization parameters
+    /// @dev Get current initialization parameters
     /// @return daoAddress DAO contract address
     /// @return governanceAddress Governance contract address
     /// @return rolesAddress Roles contract address

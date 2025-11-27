@@ -35,11 +35,11 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         
         // TCash parameter defaults
         _platformConfig["TCASHDIR"] = 5;         // TCash daily interest rate (0.05%)
-        _platformConfig["TCASHMCT"] = 750000;    // TCash margin-call threshold (75%)
-        _platformConfig["TCASHLT"] = 500000;     // TCash liquidation threshold (50%)
+        _platformConfig["TCASHMCT"] = 750000;    // TCash warning line (75%)
+        _platformConfig["TCASHLT"] = 500000;     // TCash liquidation line (50%)
         _platformConfig["TCASHRC"] = 365;        // TCash repayment cycles (365)
-        _platformConfig["TCASHMLT"] = 3000;      // TCASH mint lock threshold (30%)
-        _platformConfig["TCASHMRST"] = 11000;    // TCASH mint reset threshold (110%)
+        _platformConfig["TCASHMLT"] = 3000;      // TCash mint lock threshold (30%)
+        _platformConfig["TCASHMRST"] = 11000;    // TCash mint reset threshold (110%)
 
         _priceDiscountConfig.API = 3110;
         _priceDiscountConfig.sulphur = 500;
@@ -79,8 +79,8 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     ///    - loanPledgeRate
     ///    - liquidationRatio
     ///    - TCASHDIR (TCash daily interest rate)
-    ///    - TCASHMCT (TCash margin-call threshold)
-    ///    - TCASHLT (TCash liquidation threshold)
+    ///    - TCASHMCT (TCash warning line)
+    ///    - TCASHLT (TCash liquidation line)
     ///    - TCASHRC (TCash repayment cycles)
     ///    - TCASHMLT (TCASH mint lock threshold)
     ///    - TCASHMRST (TCASH mint reset threshold)

@@ -269,7 +269,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         amounts[0] = collateralAmount;
         amounts[1] = loanAmount;
 
-        // Assign amounts to the loan record
+        // Assign amounts
         newLoan.amounts = amounts;
 
         uint256[] memory prices = new uint256[](2);
@@ -285,11 +285,11 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         newLoan.IST = 1;
         newLoan.status = 0;
 
-        // Update user loan list and aggregates
+        // Update user loan list and totals
         userLoans[account].push(loanID);
         userBorrowLimits[account].totalBorrowed += newLoan.amounts[1];
 
-        // Update personal and system loan data
+        // Update personal/system stats
         PersonalLoanData storage userData = personalLoanData[account];
         userData.TNL += 1;
         userData.TLA += newLoan.amounts[1];
@@ -336,38 +336,37 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         loan.prices[0] = oracle.getPrice("UNIT");
         loan.prices[1] = oracle.getPrice("TCASH");
 
-        // Calculate UNIT to return
+        // Calculate UNIT to release
         uint256 unitAmount = calculateUnitToRelease(loan, amount);
         tcash.burnFrom(msg.sender, amount);
 
-        // Update loan record
-        // Prioritize paying interest first
+        // Update loan record; pay interest first
         if (amount <= loan.interest) {
             loan.interest -= amount;
             loan.amounts[1] -= amount; // Update total
         } else {
-            // Repay interest first, remainder goes to principal
+            // Pay interest then principal
             uint256 remainingAmount = amount - loan.interest;
             loan.interest = 0;
-            loan.amounts[1] -= amount; // Update total (interest + principal)
+            loan.amounts[1] -= amount; // Update total
         }
 
         // Update collateral amount
         loan.amounts[0] -= unitAmount;
 
-        // Update aggregate states
+        // Update aggregates
         userBorrowLimits[msg.sender].totalBorrowed -= amount;
         personalLoanData[msg.sender].TRA += amount;
         sysLoanData.OLB -= amount;
         sysLoanData.RA += amount;
 
-        // Check if fully repaid
+        // If fully repaid
         if (loan.amounts[1] == 0) {
             loan.status = 1; // Cleared
             personalLoanData[msg.sender].NCL += 1;
         }
 
-        // Transfer collateral back
+        // Send collateral back
         payable(msg.sender).transfer(unitAmount);
 
         // Emit event
@@ -613,7 +612,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         activeLoans = new LoanHistory[](activeCount);
         clearedLoans = new LoanHistory[](clearedCount);
 
-        // Populate result arrays
+        // Fill result arrays
         uint256 activeIdx = 0;
         uint256 clearedIdx = 0;
         for (uint256 i = 0; i < userLoanIds.length; i++) {
@@ -655,7 +654,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         LoanHistory storage loan = loans[loanID];
         require(loan.status != 1 && loan.status != 3, "Invalid loan status");
 
-        // Update prices and calculate interest
+        // Refresh prices and compute interest
         loan.prices[0] = oracle.getPrice("UNIT");
         loan.prices[1] = oracle.getPrice("TCASH");
 
@@ -677,7 +676,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 warningRatio = parameterInfo.getPlatformConfig("TCASHMCT");
         uint256 liquidationRatio = parameterInfo.getPlatformConfig("TCASHLT");
 
-        // Update status and determine if liquidation is needed
+        // Update status and determine liquidation
         bool needsLiquidation = false;
 
         if (collateralRatio <= liquidationRatio) {
@@ -699,7 +698,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
 
         emit InterestRecord(loanID, loan.account, interest, loan.status);
 
-        // Start auction if liquidation is needed
+        // Start auction if liquidation needed
         if (needsLiquidation && loan.status == 3 && _tcashAuctionContract != address(0)) {
             (bool success, ) = _tcashAuctionContract.call(
                 abi.encodeWithSignature(
@@ -891,7 +890,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
 
     function getPRF(address account) public view returns (uint256) {
         PersonalLoanData storage userData = personalLoanData[account];
-        if (userData.TNL == 0 || userData.TNL - userData.NCL <= 5) return 10000;
+        if (userData.TNL == 0 || userData.TNL - userData.NCL <= 2) return 10000;
 
         (uint256 PCL, ) = _getPersonalCreditAndAvailable(account);
         if (PCL == 0) return 10000;
@@ -925,7 +924,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 systemLoanRatio = (OLB * 10000) / totalSupply;
         uint256 systemRepaymentRate = (RA * 10000) / TLD;
 
-        // Simplified SRF lookup logic
+        // Simplified SRF lookup
         uint256 loanRatioIdx = systemLoanRatio < 6000 ? 0 :
                            systemLoanRatio < 7000 ? 1 :
                            systemLoanRatio < 8000 ? 2 :
@@ -936,7 +935,7 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
                           systemRepaymentRate > 1000 ? 2 :
                           systemRepaymentRate > 500 ? 3 : 4;
 
-        // Use hard-coded values instead of a 2D table
+        // Hard-coded values instead of 2D table
         uint256[25] memory srf1D = [
             uint256(10000), uint256(9000), uint256(7000), uint256(5000), uint256(3000), // [0,60%）
             uint256(9000), uint256(8000), uint256(7000), uint256(4000), uint256(2000),  // [60%,70%)
@@ -982,21 +981,21 @@ contract TCashLoan is Initializable, OwnableUpgradeable {
         uint256 crf = getCRF(account);
         require(crf > 0, "Invalid risk factor");
 
-        // Calculate borrowable amount
+        // Calculate loanable amount
         uint256 tcashAmount = (unitAmount * unitPrice * crf) / (10000 * tcashPrice);
 
         // Check credit limit
         (uint256 PCL, uint256 ALB) = _getPersonalCreditAndAvailable(account);
         require(PCL > 0, "Invalid personal credit limit");
 
-        // Use the smaller of calculated amount and available limit
+        // Cap by available limit
         if (tcashAmount > ALB) tcashAmount = ALB;
 
         // Enforce minimum precision
         uint256 minAmount = 1e9;
         if (tcashAmount < minAmount) tcashAmount = minAmount;
 
-        // Ensure minting is not locked
+        // Ensure minting not locked
         require(oracle.getTCashMintStatus(), "TCash minting disabled");
 
         return tcashAmount;

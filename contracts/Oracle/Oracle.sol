@@ -26,7 +26,7 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
 
     event CancelOracleRequest(address requester, bytes32 requestid);
     
-    // TCASH minting state events
+    // TCASH mint state events
     event TCashMintStatusChanged(bool status, uint256 timestamp);
     event TCashMintLockPriceChanged(uint256 price, uint256 timestamp);
     
@@ -45,10 +45,10 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     mapping(bytes32 => bytes32) private _commitments;
     
     // TCASH mint lock state
-    bool private _tcashMintStatus; // TCASHMS: true=allow minting, false=disallow minting
+    bool private _tcashMintStatus; // TCASHMS: true=allow minting, false=forbid
     uint256 private _tcashMintLockPrice; // TCASHMLP: 0=unlocked, >0=lock price
     
-    // Data structures and state from TCashOracle
+    // Data structures unified from TCashOracle
     // Price structure
     struct PriceData {
         uint256 price;
@@ -65,11 +65,11 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         __Ownable_init();
         _roleController = IRoles(_roleContract);
         
-        // Initialize TCASH mint status to allowed
+        // Initialize TCASH mint status as allowed
         _tcashMintStatus = true;
         _tcashMintLockPrice = 0;
         
-        // Initialize supported symbols (aligned with TCashOracle)
+        // Initialize supported symbols (from TCashOracle)
         supportedSymbols["UNIT"] = true;
         supportedSymbols["TCASH"] = true;
     }
@@ -143,7 +143,7 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     }
 
     // UNIT Value 
-    function setCurrencyValue(bytes32 _currencyKind,uint256 _currencyValue) public override onlyFeeder {
+    function setCurrencyValue(bytes32 _currencyKind, uint256 _currencyValue) public override onlyFeeder {
         _currencyValues[_currencyKind] = _currencyValue;
     }
 
@@ -152,54 +152,54 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
     }
     
     /// @notice Get TCASH mint status
-    /// @dev Returns whether TCASH minting is currently allowed
+    /// @dev Returns whether TCASH minting is allowed
     /// @return Current TCASH mint status (true: allowed, false: blocked)
     function getTCashMintStatus() public view override returns(bool) {
         return _tcashMintStatus;
     }
     
     /// @notice Set TCASH mint status
-    /// @dev Feeder-only; toggles whether TCASH minting is allowed
-    /// @param _status TCASH mint status (true: allow, false: block)
+    /// @dev Feeder-only
+    /// @param _status TCASH mint status (true allow, false block)
     function setTCashMintStatus(bool _status) public override onlyFeeder {
         _tcashMintStatus = _status;
         emit TCashMintStatusChanged(_status, block.timestamp);
     }
     
     /// @notice Get TCASH mint lock price
-    /// @dev Returns current TCASH lock price; 0 means unlocked
+    /// @dev Returns current lock price; 0 means unlocked
     /// @return TCASH mint lock price
     function getTCashMintLockPrice() public view override returns(uint256) {
         return _tcashMintLockPrice;
     }
     
     /// @notice Set TCASH mint lock price
-    /// @dev Feeder-only; sets TCASH mint lock price
+    /// @dev Feeder-only
     /// @param _price TCASH lock price (0: unlocked)
     function setTCashMintLockPrice(uint256 _price) public override onlyFeeder {
         _tcashMintLockPrice = _price;
         emit TCashMintLockPriceChanged(_price, block.timestamp);
     }
-    
+
     /// @notice Check and update TCASH mint status
-    /// @dev Feeder-only; compares price movement to lock/reset thresholds
+    /// @dev Feeder-only; compares price swing to lock/reset thresholds
     /// @param _currentPrice Current TCASH price
-    /// @param _previousPrice TCASH price an hour ago
-    /// @param _lockThreshold Lock threshold (e.g., 3000 means 30%)
-    /// @param _resetThreshold Reset threshold (e.g., 11000 means 110%)
+    /// @param _previousPrice TCASH price one hour ago
+    /// @param _lockThreshold Lock threshold (e.g. 3000 = 30%)
+    /// @param _resetThreshold Reset threshold (e.g. 11000 = 110%)
     function checkAndUpdateTCashMintStatus(
         uint256 _currentPrice, 
         uint256 _previousPrice, 
         uint256 _lockThreshold, 
         uint256 _resetThreshold
     ) public override onlyFeeder {
-        // If unlocked, check whether we should lock
+        // If unlocked, check whether to lock
         if (_tcashMintLockPrice == 0) {
-            // Calculate price drop over the past hour
+            // Calculate last-hour drop
             if (_previousPrice > 0) {
                 uint256 priceChange = (_previousPrice - _currentPrice) * 10000 / _previousPrice;
                 
-                // Lock minting if drop exceeds threshold
+                // Lock when drop exceeds threshold
                 if (priceChange >= _lockThreshold) {
                     _tcashMintLockPrice = _currentPrice;
                     _tcashMintStatus = false;
@@ -209,65 +209,51 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
                 }
             }
         } else {
-            // If locked, check whether price has recovered enough to reset
+            // If locked, check whether to reset
             uint256 resetPrice = _tcashMintLockPrice * _resetThreshold / 10000;
             
-            // Unlock when reset threshold is reached or exceeded
+            // Unlock when price recovers
             if (_currentPrice >= resetPrice) {
                 _tcashMintLockPrice = 0;
                 _tcashMintStatus = true;
-                
                 emit TCashMintLockPriceChanged(0, block.timestamp);
                 emit TCashMintStatusChanged(true, block.timestamp);
             }
         }
     }
     
-    // Functions unified from TCashOracle
-    
-    /// @notice Update price
-    /// @dev Update the price for a supported token symbol
-    /// @param symbol Token symbol
-    /// @param price Price
-    /// @return Whether the operation succeeded
+    // Unified from TCashOracle
     function updatePrice(string memory symbol, uint256 price) external onlyFoundationManager returns (bool) {
         require(supportedSymbols[symbol], "Unsupported symbol");
         require(price > 0, "Invalid price");
-
+        bytes32 symbolHash = keccak256(bytes(symbol));
+        _currencyValues[symbolHash] = price;
         prices[symbol] = PriceData({
             price: price,
             timestamp: block.timestamp
         });
-
         emit PriceUpdated(symbol, price, block.timestamp);
-
         return true;
     }
 
-    /// @notice Get price
-    /// @dev Fetch price for a supported symbol
-    /// @param symbol Token symbol
-    /// @return Price
     function getPrice(string memory symbol) external view returns (uint256) {
         require(supportedSymbols[symbol], "Unsupported symbol");
-        return prices[symbol].price;
+        bytes32 symbolHash = keccak256(bytes(symbol));
+        return _currencyValues[symbolHash];
     }
 
-    /// @notice Get price and timestamp
-    /// @dev Returns price data (price and timestamp) for a supported symbol
-    /// @param symbol Token symbol
-    /// @return price Price
-    /// @return timestamp Timestamp
     function getPriceData(string memory symbol) external view returns (uint256 price, uint256 timestamp) {
         require(supportedSymbols[symbol], "Unsupported symbol");
-        PriceData memory data = prices[symbol];
-        return (data.price, data.timestamp);
+        bytes32 symbolHash = keccak256(bytes(symbol));
+        price = _currencyValues[symbolHash];
+        timestamp = prices[symbol].timestamp;
+        return (price, timestamp);
     }
 
-    /// @notice Add a supported token
-    /// @dev Add a new supported token symbol
+    /// @notice Add supported token
+    /// @dev Add a new token symbol
     /// @param symbol Token symbol
-    /// @return Whether the operation succeeded
+    /// @return Whether succeeded
     function addSupportedSymbol(string memory symbol) external onlyFoundationManager returns (bool) {
         require(!supportedSymbols[symbol], "Symbol already supported");
         
@@ -275,10 +261,10 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         return true;
     }
 
-    /// @notice Remove a supported token
-    /// @dev Remove an already-supported token symbol
+    /// @notice Remove supported token
+    /// @dev Remove an existing supported symbol
     /// @param symbol Token symbol
-    /// @return Whether the operation succeeded
+    /// @return Whether succeeded
     function removeSupportedSymbol(string memory symbol) external onlyFoundationManager returns (bool) {
         require(supportedSymbols[symbol], "Symbol not supported");
         
@@ -286,8 +272,8 @@ contract Oracle is Initializable, OwnableUpgradeable, IOracle {
         return true;
     }
 
-    /// @notice Check whether a token is supported
-    /// @dev Returns true if the symbol is supported
+    /// @notice Check if a token is supported
+    /// @dev Returns true if symbol supported
     /// @param symbol Token symbol
     /// @return Whether supported
     function isSupportedSymbol(string memory symbol) external view returns (bool) {

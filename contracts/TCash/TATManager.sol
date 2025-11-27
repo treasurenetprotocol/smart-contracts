@@ -13,8 +13,8 @@ contract TATManager is Initializable, OwnableUpgradeable {
     // User TAT mint records
     struct TATMintRecord {
         uint256 mintCount;              // Number of mints
-        uint256 unusedTATAverage;       // 3-month average of unutilized TAT
-        uint256 lastUpdateTime;         // Last updated timestamp
+        uint256 unusedTATAverage;       // 3-month average of unused TAT
+        uint256 lastUpdateTime;         // Last update timestamp
     }
     
     mapping(address => TATMintRecord) public tatMintRecords;
@@ -25,14 +25,14 @@ contract TATManager is Initializable, OwnableUpgradeable {
         roles = IRoles(_roles);
     }
     
-    // Set user mint count (admin only)
+    // Set user mint count (admin)
     function setMintCount(address account, uint256 count) external {
         require(roles.hasRole(FOUNDATION_MANAGER_ROLE, msg.sender), "Not authorized");
         tatMintRecords[account].mintCount = count;
         tatMintRecords[account].lastUpdateTime = block.timestamp;
     }
     
-    // Set 3-month average of unused TAT (admin only)
+    // Set 3-month average of unused TAT (admin)
     function setUnusedTATAverage(address account, uint256 average) external {
         require(roles.hasRole(FOUNDATION_MANAGER_ROLE, msg.sender), "Not authorized");
         tatMintRecords[account].unusedTATAverage = average;
@@ -44,17 +44,17 @@ contract TATManager is Initializable, OwnableUpgradeable {
         return tatMintRecords[account].mintCount;
     }
     
-    // Get 3-month average of unused TAT for a user
+    // Get 3-month average of unused TAT
     function getUnusedTATAverage(address account) external view returns (uint256) {
         return tatMintRecords[account].unusedTATAverage;
     }
     
-    // Get last update time for a user
+    // Get last update time
     function getLastUpdateTime(address account) external view returns (uint256) {
         return tatMintRecords[account].lastUpdateTime;
     }
     
-    // Get full TAT mint record for a user
+    // Get full TAT mint record
     function getTATMintRecord(address account) external view returns (TATMintRecord memory) {
         return tatMintRecords[account];
     }

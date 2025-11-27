@@ -27,17 +27,17 @@ Stakeable
     
     // TAT mint record structure
     struct TATRecord {
-        uint256[3] months;  // Year and month in YYYYMM format
-        uint256[3] amounts; // Minted amount for each recorded month
-        uint8 currentIndex; // Current index position, cycles through 0-2
+        uint256[3] months;  // Year-month format YYYYMM
+        uint256[3] amounts; // Minted amount per record
+        uint8 currentIndex; // Current slot (cycles 0-2)
     }
     
-    // User address => mint record
+    // User address => mint records
     mapping(address => TATRecord) private _tatRecords;
     
-    // // Only the ProductionData contract can call
+    // // Only ProductionData contract can call
     // modifier onlyProductionData() {
-    //     // Fetch the ProductionData address from the governance contract
+    //     // Fetch ProductionData addresses from governance
     //     bool isProductionData = false;
     //     for (uint i = 0; i < 10; i++) { // Assume up to 10 treasure types
     //         string memory treasureKind = getKindByIndex(i);
@@ -53,9 +53,9 @@ Stakeable
     //     _;
     // }
     
-    // Helper to get the treasure type by index; actual implementation should match governance
+    // Helper: get treasure type by index; actual impl should pull from governance
     function getKindByIndex(uint256 index) internal view returns (string memory) {
-        // Should fetch from governance in a real implementation
+        // Placeholder: should read from governance
         return "";
     }
 
@@ -104,7 +104,7 @@ Stakeable
     ) public onlyProductionDataContract(_treasureKind) {
         require(to != address(0), "Zero address");
         
-        // // Get current year and month in YYYYMM format
+        // // Get current year-month YYYYMM
         // uint256 currentMonth = getCurrentYearMonth();
         
         // // Record user mint history
@@ -118,34 +118,33 @@ Stakeable
     }
     
     /**
-     * @dev Get current year and month in YYYYMM format
-     * @return The current year and month (e.g., 202407 means July 2024)
+     * @dev Get current year-month in YYYYMM
+     * @return Current year-month (e.g., 202407 for July 2024)
      */
     function getCurrentYearMonth() internal view returns (uint256) {
-        // Get the current timestamp
+        // Current timestamp
         uint256 timestamp = block.timestamp;
         
-        // Convert to a date (simplified calculation)
-        // This is approximate; a production implementation should use a precise date calc
+        // Simplified date conversion (approximate)
         
-        // Calculate year since January 1, 1970
+        // Years since 1970-01-01
         uint256 secondsInDay = 86400; // 24h * 60m * 60s
-        uint256 secondsInYear = secondsInDay * 365; // Simplified, ignores leap years
+        uint256 secondsInYear = secondsInDay * 365; // Simplified (no leap years)
         
         uint256 yearsSince1970 = timestamp / secondsInYear;
         uint256 year = 1970 + yearsSince1970;
         
-        // Calculate month
+        // Month estimate
         uint256 secondsRemainingInYear = timestamp % secondsInYear;
         uint256 daysRemainingInYear = secondsRemainingInYear / secondsInDay;
         
-        // Rough month estimate (simplified)
+        // Approximate month
         uint256 month = (daysRemainingInYear * 12) / 365 + 1;
         
-        // Constrain to valid month range
+        // Clamp to 1-12
         if (month > 12) month = 12;
         
-        // Combine into YYYYMM format
+        // Combine to YYYYMM
         return year * 100 + month;
     }
 
@@ -153,7 +152,7 @@ Stakeable
     function faucet(address user, uint256 amount) public {
         require(user != address(0), "Zero address");
     
-        // Record user mint history
+        // Record mint history
         setTATRecord(user, amount);
         
         // Mint tokens
@@ -181,9 +180,9 @@ Stakeable
     }
 
     /**
-     * @dev Set the TAT minting record for a user
+     * @dev Set TAT mint record for a user
      * @param account User address
-     * @param amount Amount of tokens minted
+     * @param amount Mint amount
      */
     function setTATRecord(
         address account,
@@ -194,11 +193,11 @@ Stakeable
         
         TATRecord storage record = _tatRecords[account];
         
-        // If uninitialized, set currentIndex to 0
+        // If not initialized, start at index 0
         if (record.months[0] == 0 && record.months[1] == 0 && record.months[2] == 0) {
             record.currentIndex = 0;
         } else {
-            // Otherwise advance to the next position (cycle 0-2)
+            // Otherwise move to next slot (cycle 0-2)
             record.currentIndex = (record.currentIndex + 1) % 3;
         }
         
@@ -208,10 +207,10 @@ Stakeable
     }
     
     /**
-     * @dev Get a user's TAT minting records
+     * @dev Get TAT mint records for a user
      * @param account User address
-     * @return months Array of recorded year-month values
-     * @return amounts Array of corresponding minted amounts
+     * @return months Recorded year-month values
+     * @return amounts Corresponding mint amounts
      */
     function getTATRecord(address account) public view returns (uint256[] memory months, uint256[] memory amounts) {
         TATRecord storage record = _tatRecords[account];
@@ -224,7 +223,7 @@ Stakeable
             }
         }
         
-        // Create return arrays
+        // Prepare return arrays
         months = new uint256[](validCount);
         amounts = new uint256[](validCount);
         
