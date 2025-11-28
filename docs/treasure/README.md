@@ -30,7 +30,7 @@ const {deployProxy} = require('@openzeppelin/truffle-upgrades');
 module.exports = async function (deployer, network, accounts) {
     try {
         if (process.env.ACTION === "upgrade") {
-            /* TODO:更新 */
+            /* TODO: update */
         }
         else {
             const dao = await deployProxy(DAO, ["DAO", 2, 10], {deployer});

@@ -22,7 +22,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
 
     event AssetValueSet(bytes32 requesterid, uint256 Date, uint256 Value);
 
-    // TCASH铸造状态变化事件
+    // TCASH mint status change event
     event TCashMintStatusChanged(
         bool status,
         uint256 lockPrice,
@@ -36,12 +36,12 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     bytes32 private _requestIdToPullAssetValue; // oralce request id
-    bytes32 private _requestIdToPullTCashStatus; // TCASH状态请求ID
+    bytes32 private _requestIdToPullTCashStatus; // TCASH status request ID
 
     mapping(uint256 => AssetValue) private _assetMappedValues;
     AssetValue[] private _assetValues;
 
-    // TCASH历史价格记录
+    // TCASH historical price records
     mapping(uint256 => uint256) private _tcashHistoricalPrices;
     uint256 private _lastTCashPriceTimestamp;
     uint256 private _lastTCashPrice;
@@ -156,27 +156,27 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     /**
-     * @dev 设置TCASH价格并检查铸造锁定条件
-     * @param _price 当前TCASH价格
+     * @dev Set TCASH price and check mint lock conditions
+     * @param _price Current TCASH price
      */
     function setTCashPrice(uint256 _price) public onlyFeeder {
         require(_price > 0, "Price must be greater than zero");
 
-        // 获取参数
+        // Fetch parameters
         uint256 lockThreshold = _parameterInfo.getPlatformConfig("TCASHMLT");
         uint256 resetThreshold = _parameterInfo.getPlatformConfig("TCASHMRST");
 
-        // 记录历史价格
+        // Record historical price
         uint256 hourAgo = block.timestamp.sub(1 hours);
         uint256 previousHourPrice = _tcashHistoricalPrices[hourAgo];
 
-        // 更新当前价格记录
+        // Update current price record
         _tcashHistoricalPrices[block.timestamp] = _price;
         _lastTCashPrice = _price;
         _lastTCashPriceTimestamp = block.timestamp;
 
-        // 调用Oracle合约检查并更新TCASH铸造状态
-        // 使用sendOracleRequest发送请求
+        // Ask the Oracle contract to check and update TCASH mint status
+        // Send the request via sendOracleRequest
         uint256 nonce = _nextNonce();
         bytes4 callbackSelector = this.receiveTCashMintStatus.selector;
 
@@ -186,7 +186,7 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
             nonce
         );
 
-        // 获取Oracle合约引用并调用检查函数
+        // Get Oracle contract reference and call status check
         IOracle oracleContract = IOracle(_oracleContract());
         oracleContract.checkAndUpdateTCashMintStatus(
             _price,
@@ -197,10 +197,10 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     /**
-     * @dev 接收TCASH铸造状态变更的回调函数
-     * @param _requestId 请求ID
-     * @param _status 当前TCASH铸造状态
-     * @param _lockPrice 锁定价格
+     * @dev Callback for TCASH mint status changes
+     * @param _requestId Request ID
+     * @param _status Current TCASH mint status
+     * @param _lockPrice Lock price
      */
     function receiveTCashMintStatus(
         bytes32 _requestId,
@@ -216,9 +216,9 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     /**
-     * @dev 获取最新TCASH价格
-     * @return price 价格
-     * @return timestamp 时间戳
+     * @dev Get the latest TCASH price
+     * @return price Latest price
+     * @return timestamp Timestamp of the price
      */
     function getLatestTCashPrice()
         public
@@ -229,9 +229,9 @@ contract SimpleClient is Initializable, OwnableUpgradeable, OracleClient {
     }
 
     /**
-     * @dev 获取历史TCASH价格
-     * @param _timestamp 查询的时间戳
-     * @return 该时间戳的价格
+     * @dev Get historical TCASH price
+     * @param _timestamp Timestamp to query
+     * @return Price at that timestamp
      */
     function getHistoricalTCashPrice(
         uint256 _timestamp

@@ -20,7 +20,7 @@ const CONFIG = {
 
 async function findProxyAdmin() {
     try {
-        console.log('🔍 查找ProxyAdmin地址');
+        console.log('🔍 Finding ProxyAdmin address');
         console.log('=====================');
         
         const web3 = new Web3(CONFIG.RPC_URL);
@@ -32,7 +32,7 @@ async function findProxyAdmin() {
         const proxyAdmins = new Set();
         
         for (const [kind, proxyAddress] of Object.entries(CONFIG.PRODUCER_ADDRESSES)) {
-            console.log(`\n📋 检查 ${kind} Producer: ${proxyAddress}`);
+            console.log(`\n📋 Checking ${kind} Producer: ${proxyAddress}`);
             
             try {
                 // Read admin from storage slot
@@ -43,8 +43,8 @@ async function findProxyAdmin() {
                 const implData = await web3.eth.getStorageAt(proxyAddress, implementationSlot);
                 const implAddress = '0x' + implData.slice(-40).toLowerCase();
                 
-                console.log(`   实现地址: ${implAddress}`);
-                console.log(`   管理员地址: ${adminAddress}`);
+                console.log(`   Implementation address: ${implAddress}`);
+                console.log(`   Admin address: ${adminAddress}`);
                 
                 if (adminAddress !== '0x0000000000000000000000000000000000000000') {
                     proxyAdmins.add(adminAddress);
@@ -52,43 +52,43 @@ async function findProxyAdmin() {
                     // Verify admin contract exists
                     const adminCode = await web3.eth.getCode(adminAddress);
                     if (adminCode !== '0x') {
-                        console.log(`   ✅ 管理员合约存在`);
+                        console.log(`   ✅ Admin contract exists`);
                     } else {
-                        console.log(`   ❌ 管理员合约不存在`);
+                        console.log(`   ❌ Admin contract does not exist`);
                     }
                 } else {
-                    console.log(`   ⚠️  未找到管理员地址`);
+                    console.log(`   ⚠️  Admin address not found`);
                 }
                 
             } catch (error) {
-                console.log(`   ❌ 检查失败: ${error.message}`);
+                console.log(`   ❌ Check failed: ${error.message}`);
             }
         }
         
-        console.log('\n📊 结果总结');
-        console.log('===========');
+        console.log('\n📊 Summary');
+        console.log('==========');
         
         if (proxyAdmins.size === 0) {
-            console.log('❌ 未找到任何ProxyAdmin地址');
-            console.log('💡 可能的原因:');
-            console.log('   - 使用的不是标准的OpenZeppelin代理');
-            console.log('   - 代理架构不同');
-            console.log('   - 需要其他方式查找管理员');
+            console.log('❌ No ProxyAdmin addresses found');
+            console.log('💡 Possible reasons:');
+            console.log('   - Not using the standard OpenZeppelin proxy');
+            console.log('   - Different proxy architecture');
+            console.log('   - Need another method to locate the admin');
         } else if (proxyAdmins.size === 1) {
             const adminAddress = Array.from(proxyAdmins)[0];
-            console.log(`✅ 找到统一的ProxyAdmin地址: ${adminAddress}`);
-            console.log('\n🎉 可以使用此地址更新 upgrade-via-proxyadmin.js:');
+            console.log(`✅ Found a single ProxyAdmin address: ${adminAddress}`);
+            console.log('\n🎉 Use this address to update upgrade-via-proxyadmin.js:');
             console.log(`   PROXY_ADMIN_ADDRESS: "${adminAddress}",`);
         } else {
-            console.log(`⚠️  找到多个不同的管理员地址:`);
+            console.log(`⚠️  Found multiple admin addresses:`);
             proxyAdmins.forEach(admin => {
                 console.log(`   - ${admin}`);
             });
-            console.log('💡 需要进一步确认哪个是正确的ProxyAdmin');
+            console.log('💡 Need to confirm which ProxyAdmin is correct');
         }
         
         // Additional check: try to call admin() function directly
-        console.log('\n🔍 额外检查: 尝试直接调用admin()函数');
+        console.log('\n🔍 Extra check: try calling admin() directly');
         console.log('----------------------------------');
         
         const proxyABI = [
@@ -108,17 +108,17 @@ async function findProxyAdmin() {
                 console.log(`${kind}: ${admin}`);
                 proxyAdmins.add(admin.toLowerCase());
             } catch (error) {
-                console.log(`${kind}: 无法直接调用 (${error.message})`);
+                console.log(`${kind}: direct call failed (${error.message})`);
             }
         }
         
         if (proxyAdmins.size === 1) {
             const finalAdmin = Array.from(proxyAdmins)[0];
-            console.log(`\n🎯 最终确认的ProxyAdmin地址: ${finalAdmin}`);
+            console.log(`\n🎯 Final confirmed ProxyAdmin address: ${finalAdmin}`);
         }
         
     } catch (error) {
-        console.error('❌ 查找失败:', error.message);
+        console.error('❌ Lookup failed:', error.message);
         process.exit(1);
     }
 }

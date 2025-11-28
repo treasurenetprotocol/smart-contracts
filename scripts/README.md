@@ -1,10 +1,10 @@
-# 用户角色管理脚本
+# User Role Management Scripts
 
-本文档说明如何使用脚本将用户添加到所有角色中。
+This document explains how to use the scripts to add a user to every role.
 
-## 添加用户到所有角色
+## Add a User to All Roles
 
-系统中包含以下角色：
+The system contains these roles:
 - ADMIN
 - FOUNDATION_MANAGER
 - AUCTION_MANAGER
@@ -13,84 +13,84 @@
 - TCASH_MINTER
 - TCASH_BURNER
 
-添加用户到所有角色需要三个步骤：
-1. 创建提案
-2. 签名提案（需要多人签名达到阈值）
-3. 执行提案（需要等待确认时间）
+Adding a user to all roles involves three steps:
+1. Create proposals
+2. Sign proposals (multiple signatures required to meet the threshold)
+3. Execute proposals (after the waiting period)
 
-## 脚本使用说明
+## Script Usage
 
-### 1. 创建提案
+### 1. Create proposals
 
-这个脚本会为每个角色创建一个提案，将指定的用户添加到对应角色。
+This script creates one proposal per role to add the specified user.
 
 ```bash
-# 设置环境变量
-export MULSIG_ADDRESS=0x... # 多签合约地址
+# Set environment variables
+export MULSIG_ADDRESS=0x... # multisig contract address
 
-# 运行脚本
+# Run the script
 npx hardhat run scripts/add_user_to_roles.js --network <network>
 ```
 
-运行后，脚本会输出每个提案的ID，记录这些ID用于后续步骤。
+After running, the script outputs proposal IDs. Record them for later steps.
 
-### 2. 签名提案
+### 2. Sign proposals
 
-这个脚本用于签名提案。按照治理规则，需要足够数量的 FOUNDATION_MANAGER 签名才能执行提案。
+Use this script to sign proposals. Per governance rules, enough FOUNDATION_MANAGER signatures are required before execution.
 
 ```bash
-# 设置环境变量
-export MULSIG_ADDRESS=0x... # 多签合约地址
-export PROPOSAL_IDS=1,2,3,4,5,6,7 # 替换为实际创建的提案ID，以逗号分隔
+# Set environment variables
+export MULSIG_ADDRESS=0x... # multisig contract address
+export PROPOSAL_IDS=1,2,3,4,5,6,7 # replace with actual proposal IDs, comma-separated
 export ACTION=sign
 
-# 运行脚本
+# Run the script
 npx hardhat run scripts/sign_execute_proposals.js --network <network>
 ```
 
-此脚本需要由多个不同的 FOUNDATION_MANAGER 运行，每人使用自己的私钥。
+Multiple FOUNDATION_MANAGER accounts should run this script, each with their own private key.
 
-### 3. 执行提案
+### 3. Execute proposals
 
-当提案获得足够的签名并且等待时间结束后，可以执行提案：
+Once proposals have enough signatures and the waiting time has passed, execute them:
 
 ```bash
-# 设置环境变量
-export MULSIG_ADDRESS=0x... # 多签合约地址
-export PROPOSAL_IDS=1,2,3,4,5,6,7 # 替换为实际创建的提案ID，以逗号分隔
+# Set environment variables
+export MULSIG_ADDRESS=0x... # multisig contract address
+export PROPOSAL_IDS=1,2,3,4,5,6,7 # replace with actual proposal IDs, comma-separated
 export ACTION=execute
 
-# 运行脚本
+# Run the script
 npx hardhat run scripts/sign_execute_proposals.js --network <network>
 ```
 
-## 注意事项
+## Notes
 
-1. 运行脚本的账户必须拥有 FOUNDATION_MANAGER 角色
-2. 执行提案时需要等待足够的确认时间（通常为合约中设置的确认时间）
-3. 如果提案已经被执行或被删除，相应的操作将失败
+1. Accounts running the scripts must have the FOUNDATION_MANAGER role.
+2. Proposal execution requires waiting for the configured confirmation time.
+3. If a proposal was already executed or deleted, the operation will fail.
 
-## 验证
+## Verification
 
-可以通过调用 Roles 合约的 `hasRole` 函数验证用户是否已成功添加到对应角色：
+Verify that the user was added by calling the Roles contract `hasRole` function:
 
 ```solidity
-// 检查用户是否具有指定角色
+// Check whether the user has the specified role
 bool hasRole = rolesContract.hasRole(roleId, userAddress);
 ```
 
-## 完整流程示例
+## Full Example
 
-以下是一个完整的流程示例：
+Example end-to-end flow:
 
-1. 创建提案：
+1. Create proposals:
 ```bash
 export MULSIG_ADDRESS=0x123...
 npx hardhat run scripts/add_user_to_roles.js --network mainnet
-# 输出: 提案IDs: 42, 43, 44, 45, 46, 47, 48
+# Output: Proposal IDs: 42, 43, 44, 45, 46, 47, 48
 ```
 
-2. 多位 FOUNDATION_MANAGER 签名提案：
+2. Multiple FOUNDATION_MANAGER accounts sign:
 ```bash
 export MULSIG_ADDRESS=0x123...
 export PROPOSAL_IDS=42,43,44,45,46,47,48
@@ -98,7 +98,7 @@ export ACTION=sign
 npx hardhat run scripts/sign_execute_proposals.js --network mainnet
 ```
 
-3. 等待确认时间结束后，执行提案：
+3. After the confirmation window, execute:
 ```bash
 export MULSIG_ADDRESS=0x123...
 export PROPOSAL_IDS=42,43,44,45,46,47,48
@@ -106,4 +106,4 @@ export ACTION=execute
 npx hardhat run scripts/sign_execute_proposals.js --network mainnet
 ```
 
-完成上述步骤后，用户 0x09eda46ffcec4656235391dd298875b82aa458a9 将被添加到所有角色中。 
+After these steps, user 0x09eda46ffcec4656235391dd298875b82aa458a9 is added to every role.

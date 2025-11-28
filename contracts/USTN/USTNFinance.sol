@@ -488,7 +488,7 @@ contract USTNFinance is Initializable, OwnableUpgradeable {
         return abi.encodeWithSignature("initialize()");
     }
 
-    // 在 USTNFinance 合约中添加函数来调用 USTN 合约
+    // Expose helper functions to call USTN contract methods
     function callAddTotalSupply(uint256 amount) external {
         USTNget.addTotalSupply(amount);
     }

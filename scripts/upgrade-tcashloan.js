@@ -2,48 +2,48 @@ const { ethers, upgrades } = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  console.log("开始升级TCashLoan合约...");
+  console.log("Starting TCashLoan contract upgrade...");
 
-  // 获取合约工厂
+  // Get the contract factory
   const TCashLoan = await ethers.getContractFactory("TCashLoan");
   
-  // 从环境变量获取代理合约地址
+  // Get proxy contract address from environment variables
   const PROXY_ADDRESS = process.env.TCASHLOAN_PROXY_ADDRESS;
   
   if (!PROXY_ADDRESS) {
-    throw new Error("请在.env文件中设置TCASHLOAN_PROXY_ADDRESS环境变量");
+    throw new Error("Please set the TCASHLOAN_PROXY_ADDRESS environment variable in the .env file");
   }
   
-  console.log(`准备升级地址为 ${PROXY_ADDRESS} 的合约`);
+  console.log(`Preparing to upgrade contract at address ${PROXY_ADDRESS}`);
   
-  // 执行升级
+  // Perform the upgrade
   const upgradedContract = await upgrades.upgradeProxy(PROXY_ADDRESS, TCashLoan);
   await upgradedContract.deployed();
   
-  console.log("TCashLoan合约升级成功！");
-  console.log(`升级后的合约地址: ${upgradedContract.address}`);
+  console.log("TCashLoan contract upgraded successfully!");
+  console.log(`Upgraded contract address: ${upgradedContract.address}`);
   
-  // 等待一段时间以确保交易被确认
-  console.log("等待区块确认...");
-  await new Promise(resolve => setTimeout(resolve, 60000)); // 等待60秒
+  // Wait a bit to ensure the transaction is confirmed
+  console.log("Waiting for block confirmations...");
+  await new Promise(resolve => setTimeout(resolve, 60000)); // wait 60 seconds
   
-  // 尝试验证合约（如果在支持的网络上）
+  // Try to verify the contract (if supported on the network)
   try {
-    console.log("尝试验证合约...");
+    console.log("Attempting to verify the contract...");
     await run("verify:verify", {
       address: upgradedContract.address,
       constructorArguments: []
     });
-    console.log("合约验证成功！");
+    console.log("Contract verification succeeded!");
   } catch (error) {
-    console.log("合约验证失败或在此网络不支持验证:", error.message);
+    console.log("Contract verification failed or is not supported on this network:", error.message);
   }
 }
 
-// 执行主函数
+// Execute main function
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("升级过程中出错:", error);
+    console.error("Error during upgrade:", error);
     process.exit(1);
-  }); 
+  });

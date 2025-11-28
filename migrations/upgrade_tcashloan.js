@@ -3,48 +3,48 @@ const { upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 const fs = require('fs');
 
 /**
- * 升级TCashLoan合约
- * 注意：这个脚本仅升级合约实现，不会修改存储的数据
+ * Upgrade the TCashLoan contract
+ * Note: this script only upgrades the implementation and does not alter stored data
  */
 module.exports = async function (deployer, network, accounts) {
   try {
-    console.log('开始升级TCashLoan合约...');
+    console.log('Starting TCashLoan upgrade...');
     
-    // 获取当前已部署的TCashLoan合约地址
+    // Get the currently deployed TCashLoan address
     let tcashLoanAddress;
     
     try {
-      // 尝试使用deployed()方法获取已部署的TCashLoan实例
+      // Attempt to get the deployed TCashLoan instance via deployed()
       const tcashLoanInstance = await TCashLoan.deployed();
       tcashLoanAddress = tcashLoanInstance.address;
-      console.log(`通过deployed()方法获取到TCashLoan地址: ${tcashLoanAddress}`);
+      console.log(`Retrieved TCashLoan address via deployed(): ${tcashLoanAddress}`);
     } catch (error) {
-      console.log('无法通过deployed()获取合约地址，尝试使用环境变量...');
+      console.log('Unable to get address via deployed(), trying environment variables...');
     }
     
-    // 检查地址是否有效
+    // Validate address
     if (!tcashLoanAddress || tcashLoanAddress === '' || tcashLoanAddress.includes('...')) {
-      console.error(`错误: 没有为网络 ${network} 提供有效的TCashLoan合约地址`);
-      console.error(`请先部署合约或设置环境变量 ${network.toUpperCase()}_TCASHLOAN_ADDRESS 或 TCASHLOAN_ADDRESS`);
+      console.error(`Error: No valid TCashLoan contract address provided for network ${network}`);
+      console.error(`Please deploy the contract or set ${network.toUpperCase()}_TCASHLOAN_ADDRESS or TCASHLOAN_ADDRESS`);
       return;
     }
     
-    console.log(`准备升级TCashLoan，网络: ${network}，当前地址: ${tcashLoanAddress}`);
+    console.log(`Preparing to upgrade TCashLoan, network: ${network}, current address: ${tcashLoanAddress}`);
     
-    // 执行合约升级
+    // Execute upgrade
     const upgradedTCashLoan = await upgradeProxy(tcashLoanAddress, TCashLoan, { deployer });
     
-    console.log('TCashLoan升级成功:', upgradedTCashLoan.address);
+    console.log('TCashLoan upgraded successfully:', upgradedTCashLoan.address);
     
-    // 将地址写入文件
+    // Write address to file
     try {
       fs.appendFileSync('upgraded_contracts.txt', `TCashLoan=${upgradedTCashLoan.address}\n`);
-      console.log('地址信息已写入 upgraded_contracts.txt 文件');
+      console.log('Address written to upgraded_contracts.txt');
     } catch (err) {
-      console.error('写入文件时出错:', err);
+      console.error('Error writing to file:', err);
     }
     
   } catch (error) {
-    console.error('升级TCashLoan时出错:', error);
+    console.error('Error upgrading TCashLoan:', error);
   }
-}; 
+};

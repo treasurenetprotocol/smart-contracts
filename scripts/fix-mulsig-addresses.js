@@ -18,9 +18,9 @@ const CONFIG = {
     MULSIG_ADDRESS: "0x2c188Cf07c4370F6461066827bd1c6A856ab9B70",
     GOVERNANCE_ADDRESS: "0xc69bd55C22664cF319698984211FeD155403C066",
     
-    // Foundation manager address (需要填入mainnet的私钥)
-    FOUNDATION_MANAGER_ADDRESS: "0x7ec62bc5062fa1d94f27775d211a3585ca4048ae", // 使用有Foundation Manager权限的账户
-    FOUNDATION_MANAGER_PRIVATE_KEY: "0x46067b79171192352063d2a74c876301de534cde65f707bccd0b4f5f416fcda6" // 对应私钥
+    // Foundation manager address (fill in the mainnet private key)
+    FOUNDATION_MANAGER_ADDRESS: "0x7ec62bc5062fa1d94f27775d211a3585ca4048ae", // account with Foundation Manager permissions
+    FOUNDATION_MANAGER_PRIVATE_KEY: "" // corresponding private key
 };
 
 // Load contract ABI
@@ -37,18 +37,18 @@ function loadContractABI(contractName) {
 
 async function fixMulSigAddresses() {
     try {
-        console.log('🌐 修复Producer合约的_mulSig地址 - MAINNET 环境');
+        console.log('🌐 Fixing Producer contract _mulSig addresses - MAINNET');
         console.log('===============================================');
-        console.log(`网络: Treasurenet Mainnet`);
+        console.log(`Network: Treasurenet Mainnet`);
         console.log(`RPC URL: ${CONFIG.RPC_URL}`);
-        console.log(`目标MulSig地址: ${CONFIG.MULSIG_ADDRESS}`);
+        console.log(`Target MulSig address: ${CONFIG.MULSIG_ADDRESS}`);
         console.log(`Foundation Manager: ${CONFIG.FOUNDATION_MANAGER_ADDRESS}`);
         console.log('');
 
         // Validate required configuration
         if (!CONFIG.FOUNDATION_MANAGER_ADDRESS || !CONFIG.FOUNDATION_MANAGER_PRIVATE_KEY) {
-            console.error('❌ 错误: 需要填入FOUNDATION_MANAGER_ADDRESS和FOUNDATION_MANAGER_PRIVATE_KEY');
-            console.error('请使用有权限的mainnet账户信息更新CONFIG');
+            console.error('❌ Error: FOUNDATION_MANAGER_ADDRESS and FOUNDATION_MANAGER_PRIVATE_KEY are required');
+            console.error('Please update CONFIG with a mainnet account that has permissions');
             process.exit(1);
         }
 
@@ -60,30 +60,30 @@ async function fixMulSigAddresses() {
         web3.eth.accounts.wallet.add(account);
 
         // Verify network connectivity
-        console.log('🔗 Step 1: 验证网络连接');
+        console.log('🔗 Step 1: Verify network connectivity');
         console.log('-------------------------');
         try {
             const networkId = await web3.eth.net.getId();
             const blockNumber = await web3.eth.getBlockNumber();
-            console.log(`✅ 网络连接成功`);
+            console.log(`✅ Network connection successful`);
             console.log(`   Network ID: ${networkId}`);
-            console.log(`   当前区块: ${blockNumber}`);
+            console.log(`   Current block: ${blockNumber}`);
             
             if (networkId !== 5570) {
-                console.warn(`⚠️  警告: 期望Network ID为5570 (Treasurenet Mainnet), 当前为 ${networkId}`);
+                console.warn(`⚠️  Warning: Expected Network ID 5570 (Treasurenet Mainnet), got ${networkId}`);
             }
         } catch (error) {
-            console.error(`❌ 网络连接失败: ${error.message}`);
+            console.error(`❌ Network connection failed: ${error.message}`);
             process.exit(1);
         }
 
         // Check account balance
         const balance = await web3.eth.getBalance(CONFIG.FOUNDATION_MANAGER_ADDRESS);
         const balanceInUnit = web3.utils.fromWei(balance, 'ether');
-        console.log(`   账户余额: ${balanceInUnit} UNIT`);
+        console.log(`   Account balance: ${balanceInUnit} UNIT`);
         
         if (parseFloat(balanceInUnit) < 0.05) {
-            console.warn(`⚠️  警告: 账户余额较低 (${balanceInUnit} UNIT), 可能不足以支付gas费用`);
+            console.warn(`⚠️  Warning: Low balance (${balanceInUnit} UNIT), may be insufficient for gas`);
         }
 
         // Load contract ABIs
@@ -94,7 +94,7 @@ async function fixMulSigAddresses() {
         const governance = new web3.eth.Contract(governanceABI, CONFIG.GOVERNANCE_ADDRESS);
 
         console.log('');
-        console.log('🔍 Step 2: 验证Foundation Manager权限');
+        console.log('🔍 Step 2: Verify Foundation Manager permissions');
         console.log('--------------------------------------');
 
         // Check Foundation Manager role (using mainnet Roles address)
@@ -110,7 +110,7 @@ async function fixMulSigAddresses() {
         console.log('✅ Foundation Manager permission verified');
 
         console.log('');
-        console.log('🔧 Step 3: 修复所有Producer合约 (MAINNET)');
+        console.log('🔧 Step 3: Fix all Producer contracts (MAINNET)');
         console.log('------------------------------------------');
 
         // Get all treasure kinds and their producer addresses
@@ -118,7 +118,7 @@ async function fixMulSigAddresses() {
         const results = [];
 
         for (const kind of treasureKinds) {
-            console.log(`\n📋 处理 ${kind} Producer...`);
+            console.log(`\n📋 Handling ${kind} Producer...`);
 
             try {
                 // Get producer address from governance
@@ -126,12 +126,12 @@ async function fixMulSigAddresses() {
                 const producerAddress = treasureInfo[0];
 
                 if (producerAddress === '0x0000000000000000000000000000000000000000') {
-                    console.log(`   ⚠️  ${kind} Producer不存在，跳过`);
+                    console.log(`   ⚠️  ${kind} Producer does not exist, skipping`);
                     results.push({ kind, status: 'skipped', reason: 'Producer not found' });
                     continue;
                 }
 
-                console.log(`   Producer地址: ${producerAddress}`);
+                console.log(`   Producer address: ${producerAddress}`);
 
                 // Create producer contract instance
                 const producer = new web3.eth.Contract(producerABI, producerAddress);
@@ -140,17 +140,17 @@ async function fixMulSigAddresses() {
                 let currentMulSig;
                 try {
                     currentMulSig = await producer.methods.getMulSigContract().call();
-                    console.log(`   当前_mulSig: ${currentMulSig}`);
+                    console.log(`   Current _mulSig: ${currentMulSig}`);
                 } catch (error) {
-                    console.log(`   ❌ 无法获取当前_mulSig: ${error.message}`);
-                    console.log(`   💡 这可能表示合约还未升级，需要先升级合约`);
+                    console.log(`   ❌ Unable to fetch current _mulSig: ${error.message}`);
+                    console.log(`   💡 This may indicate the contract has not been upgraded yet`);
                     results.push({ kind, status: 'failed', error: 'Contract not upgraded' });
                     continue;
                 }
 
                 // Check if already correct
                 if (currentMulSig.toLowerCase() === CONFIG.MULSIG_ADDRESS.toLowerCase()) {
-                    console.log(`   ✅ _mulSig地址已正确，无需修改`);
+                    console.log(`   ✅ _mulSig already correct, skipping`);
                     results.push({ kind, status: 'skipped', reason: 'Already correct' });
                     continue;
                 }
@@ -162,11 +162,11 @@ async function fixMulSigAddresses() {
                 const gasPrice = await web3.eth.getGasPrice();
                 const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.3);
                 
-                console.log(`   Gas估算: ${gasEstimate} (带缓冲: ${gasWithBuffer})`);
-                console.log(`   Gas价格: ${web3.utils.fromWei(gasPrice, 'gwei')} Gwei`);
+                console.log(`   Gas estimate: ${gasEstimate} (with buffer: ${gasWithBuffer})`);
+                console.log(`   Gas price: ${web3.utils.fromWei(gasPrice, 'gwei')} Gwei`);
                 
                 const estimatedCost = web3.utils.fromWei((BigInt(gasWithBuffer) * BigInt(gasPrice)).toString(), 'ether');
-                console.log(`   预估费用: ${estimatedCost} UNIT`);
+                console.log(`   Estimated cost: ${estimatedCost} UNIT`);
 
                 // Execute setMulSigContract
                 const receipt = await producer.methods.setMulSigContract(CONFIG.MULSIG_ADDRESS).send({
@@ -175,10 +175,10 @@ async function fixMulSigAddresses() {
                     gasPrice: Number(gasPrice)
                 });
 
-                console.log(`   ✅ 设置成功！`);
-                console.log(`   交易哈希: ${receipt.transactionHash}`);
-                console.log(`   Gas使用: ${receipt.gasUsed}`);
-                console.log(`   实际费用: ${web3.utils.fromWei((BigInt(receipt.gasUsed) * BigInt(gasPrice)).toString(), 'ether')} UNIT`);
+                console.log(`   ✅ Set successfully!`);
+                console.log(`   Tx hash: ${receipt.transactionHash}`);
+                console.log(`   Gas used: ${receipt.gasUsed}`);
+                console.log(`   Actual cost: ${web3.utils.fromWei((BigInt(receipt.gasUsed) * BigInt(gasPrice)).toString(), 'ether')} UNIT`);
 
                 results.push({
                     kind,
@@ -188,11 +188,11 @@ async function fixMulSigAddresses() {
                 });
 
                 // Wait for confirmation
-                console.log(`   ⏳ 等待确认 (15秒)...`);
+                console.log(`   ⏳ Waiting for confirmation (15 seconds)...`);
                 await new Promise(resolve => setTimeout(resolve, 15000));
 
             } catch (error) {
-                console.log(`   ❌ 设置失败: ${error.message}`);
+                console.log(`   ❌ Failed to set: ${error.message}`);
                 results.push({
                     kind,
                     status: 'failed',
@@ -202,76 +202,76 @@ async function fixMulSigAddresses() {
         }
 
         console.log('');
-        console.log('🧪 Step 4: 验证设置结果');
+        console.log('🧪 Step 4: Verify results');
         console.log('-----------------------');
 
         for (const kind of treasureKinds) {
-            console.log(`\n🔍 验证 ${kind} Producer...`);
+            console.log(`\n🔍 Verifying ${kind} Producer...`);
 
             try {
                 const treasureInfo = await governance.methods.getTreasureByKind(kind).call();
                 const producerAddress = treasureInfo[0];
 
                 if (producerAddress === '0x0000000000000000000000000000000000000000') {
-                    console.log(`   ⏭️  ${kind} Producer不存在，跳过验证`);
+                    console.log(`   ⏭️  ${kind} Producer does not exist, skipping verification`);
                     continue;
                 }
 
                 const producer = new web3.eth.Contract(producerABI, producerAddress);
                 const currentMulSig = await producer.methods.getMulSigContract().call();
 
-                console.log(`   当前_mulSig: ${currentMulSig}`);
+                console.log(`   Current _mulSig: ${currentMulSig}`);
 
                 if (currentMulSig.toLowerCase() === CONFIG.MULSIG_ADDRESS.toLowerCase()) {
-                    console.log(`   ✅ _mulSig地址正确`);
+                    console.log(`   ✅ _mulSig address correct`);
                 } else {
-                    console.log(`   ❌ _mulSig地址不正确`);
-                    console.log(`      期望: ${CONFIG.MULSIG_ADDRESS}`);
-                    console.log(`      实际: ${currentMulSig}`);
+                    console.log(`   ❌ _mulSig address incorrect`);
+                    console.log(`      Expected: ${CONFIG.MULSIG_ADDRESS}`);
+                    console.log(`      Actual: ${currentMulSig}`);
                 }
 
             } catch (error) {
-                console.log(`   ❌ 验证失败: ${error.message}`);
+                console.log(`   ❌ Verification failed: ${error.message}`);
             }
         }
 
         console.log('');
-        console.log('📊 修复结果总结 - MAINNET');
+        console.log('📊 Fix results summary - MAINNET');
         console.log('========================');
 
         const successful = results.filter(r => r.status === 'success');
         const failed = results.filter(r => r.status === 'failed');
         const skipped = results.filter(r => r.status === 'skipped');
 
-        console.log(`✅ 修复成功: ${successful.length} 个Producer`);
-        console.log(`❌ 修复失败: ${failed.length} 个Producer`);
-        console.log(`⏭️  跳过修复: ${skipped.length} 个Producer`);
+        console.log(`✅ Fixed successfully: ${successful.length} Producer(s)`);
+        console.log(`❌ Failed to fix: ${failed.length} Producer(s)`);
+        console.log(`⏭️  Skipped: ${skipped.length} Producer(s)`);
 
         if (successful.length > 0) {
-            console.log('\n✅ 修复成功的Producer:');
+            console.log('\n✅ Successfully fixed Producers:');
             successful.forEach(result => {
                 console.log(`- ${result.kind}: ${result.transactionHash}`);
             });
         }
 
         if (failed.length > 0) {
-            console.log('\n❌ 修复失败的Producer:');
+            console.log('\n❌ Producers that failed to fix:');
             failed.forEach(result => {
                 console.log(`- ${result.kind}: ${result.error}`);
             });
         }
 
         if (successful.length > 0) {
-            console.log('\n🎉 _mulSig地址修复完成！');
-            console.log('现在所有的multisig操作应该可以正常工作了。');
-            console.log('\n💡 可以尝试执行之前失败的提案了');
+            console.log('\n🎉 _mulSig address fix completed!');
+            console.log('All multisig operations should now work as expected.');
+            console.log('\n💡 You can retry proposals that previously failed');
         }
 
-        console.log('\n🌍 Mainnet修复完成！');
-        console.log('请保存所有交易哈希以备审计使用。');
+        console.log('\n🌍 Mainnet fix complete!');
+        console.log('Please save all transaction hashes for audit purposes.');
 
     } catch (error) {
-        console.error('❌ 修复失败:', error.message);
+        console.error('❌ Fix failed:', error.message);
         process.exit(1);
     }
 }

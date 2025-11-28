@@ -27,9 +27,9 @@ interface ITAT is IERC20Upgradeable,IStake {
     ) external;
 
     /**
-     * @dev 设置用户TAT铸造记录
-     * @param account 用户地址
-     * @param amount 铸造代币数量
+     * @dev Set TAT minting record for a user
+     * @param account User address
+     * @param amount Amount of tokens minted
      */
     function setTATRecord(
         address account,
@@ -37,10 +37,10 @@ interface ITAT is IERC20Upgradeable,IStake {
     ) external;
     
     /**
-     * @dev 获取用户TAT铸造记录
-     * @param account 用户地址
-     * @return months 记录的年月数组
-     * @return amounts 对应的铸造金额数组
+     * @dev Get TAT minting record for a user
+     * @param account User address
+     * @return months Array of year-month entries
+     * @return amounts Corresponding minted amounts
      */
     function getTATRecord(address account) external view returns (uint256[] memory months, uint256[] memory amounts);
 

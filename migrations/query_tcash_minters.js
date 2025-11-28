@@ -6,28 +6,28 @@ const TCashAuction = artifacts.require('TCashAuction');
 const TCash = artifacts.require('TCash');
 
 /**
- * 查询TCASH_MINTER角色的所有成员
- * 这个脚本仅用于查询，不会修改任何合约状态
+ * Query all members of the TCASH_MINTER role
+ * This script is read-only and will not modify any contract state
  */
 module.exports = async function(deployer, network, accounts) {
   try {
-    // console.log('查询TCASH_MINTER角色的所有成员...');
+    // console.log('Querying all members of the TCASH_MINTER role...');
     
-    // // 获取已部署的Roles合约实例
+    // // Get deployed Roles contract instance
     // const roles = await Roles.deployed();
     
-    // // 获取TCASH_MINTER角色标识符
+    // // Get TCASH_MINTER role identifier
     // const TCASH_MINTER_ROLE = await roles.TCASH_MINTER();
-    // console.log('TCASH_MINTER角色ID:', TCASH_MINTER_ROLE);
+    // console.log('TCASH_MINTER role ID:', TCASH_MINTER_ROLE);
     
-    // // 获取TCASH_MINTER角色的所有成员
+    // // Get all TCASH_MINTER members
     // const minters = await roles.getRoleMemberArray(TCASH_MINTER_ROLE);
 
     // const hasRole = await roles.hasRole(TCASH_MINTER_ROLE, "0x45b10BEC2A86893F6C8733e4138aa8F2d4A9576E");
     // console.log('hasRole:', hasRole);
     
-    // console.log('TCASH_MINTER角色成员数量:', minters.length);
-    // console.log('TCASH_MINTER角色成员地址:');
+    // console.log('TCASH_MINTER member count:', minters.length);
+    // console.log('TCASH_MINTER member addresses:');
     // minters.forEach((address, index) => {
     //   console.log(`${index + 1}. ${address}`);
     // });
@@ -35,22 +35,22 @@ module.exports = async function(deployer, network, accounts) {
     const parameterInfo = await ParameterInfo.deployed();
     const oracle = await Oracle.deployed();
 
-    // await oracle.updatePrice("UNIT", web3.utils.toWei("1.2", "ether")); // 假设1 UNIT = 1 ETH
-    // await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // 假设1 TCASH = 0.1 ETH
-    // console.log('Oracle价格数据初始化完成');
+    // await oracle.updatePrice("UNIT", web3.utils.toWei("1.2", "ether")); // assume 1 UNIT = 1 ETH
+    // await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // assume 1 TCASH = 0.1 ETH
+    // console.log('Oracle price data initialized');
 
     const warningRatio = await parameterInfo.getPlatformConfig("TCASHMCT");
     const liquidationRatio = await parameterInfo.getPlatformConfig("TCASHLT");
     console.log('warningRatio:', warningRatio.toString());
     console.log('liquidationRatio:', liquidationRatio.toString());
 
-    const unitPrice = await oracle.getPrice("UNIT"); // 假设1 UNIT = 1 ETH
-    const tcashPrice = await oracle.getPrice("TCASH"); // 假设1 TCASH = 0.1 ETH
+    const unitPrice = await oracle.getPrice("UNIT"); // assume 1 UNIT = 1 ETH
+    const tcashPrice = await oracle.getPrice("TCASH"); // assume 1 TCASH = 0.1 ETH
 
     console.log('unitPrice (raw):', unitPrice.toString());
     console.log('tcashPrice (raw):', tcashPrice.toString());
     
-    // 假设价格以wei为单位，转换为ETH单位
+    // Assume prices are in wei; convert to ETH units
     const unitPriceInEth = web3.utils.fromWei(unitPrice.toString(), 'ether');
     const tcashPriceInEth = web3.utils.fromWei(tcashPrice.toString(), 'ether');
     
@@ -61,7 +61,7 @@ module.exports = async function(deployer, network, accounts) {
     const tcashLoan = await TCashLoan.deployed();
     const loanCollateralRatio = await tcashLoan.getLoanCollateralRatio("4");
     console.log('loanCollateralRatio:', loanCollateralRatio.toString());
-    // 显示贷款抵押率的百分比形式（如果需要）
+    // Show collateral ratio as a percentage (if needed)
     console.log('loanCollateralRatio (%)', loanCollateralRatio.toString() / 10000);
    
 
@@ -75,38 +75,38 @@ module.exports = async function(deployer, network, accounts) {
     const liquidation = await tcashLoan.startLiquidation("2");
     console.log('liquidation:', liquidation);
 
-    // 查询所有拍卖项目
+    // Query all auctions
     const auctions = await tcashAuction.queryAuctions();
-    console.log('\n=== 拍卖项目列表 ===');
-    console.log('拍卖项目总数:', auctions.length);
+    console.log('\n=== Auction Items ===');
+    console.log('Total auctions:', auctions.length);
 
-    // 遍历每个拍卖项目并显示详细信息
+    // Iterate through each auction and display details
     for (let i = 0; i < auctions.length; i++) {
-        console.log(`\n拍卖项目 #${i}:`);
-        console.log('抵押品数量:', web3.utils.fromWei(auctions[i].sales.toString(), 'ether'), 'UNIT');
-        console.log('起拍价:', web3.utils.fromWei(auctions[i].startValue.toString(), 'ether'), 'TCASH');
-        console.log('当前最高价:', web3.utils.fromWei(auctions[i].nowValue.toString(), 'ether'), 'TCASH');
-        console.log('结束时间:', new Date(auctions[i].timeOver * 1000).toLocaleString());
-        console.log('状态:', auctions[i].state);
-        console.log('债务金额:', web3.utils.fromWei(auctions[i].debt.toString(), 'ether'), 'TCASH');
+        console.log(`\nAuction #${i}:`);
+        console.log('Collateral amount:', web3.utils.fromWei(auctions[i].sales.toString(), 'ether'), 'UNIT');
+        console.log('Starting price:', web3.utils.fromWei(auctions[i].startValue.toString(), 'ether'), 'TCASH');
+        console.log('Current highest bid:', web3.utils.fromWei(auctions[i].nowValue.toString(), 'ether'), 'TCASH');
+        console.log('End time:', new Date(auctions[i].timeOver * 1000).toLocaleString());
+        console.log('State:', auctions[i].state);
+        console.log('Debt amount:', web3.utils.fromWei(auctions[i].debt.toString(), 'ether'), 'TCASH');
 
-        // 查询当前最高出价者
+        // Query highest bidder
         // const [highestBider, highestBidValue] = await tcashAuction.queryBider(i);
-        // console.log('当前最高出价者:', highestBider);
-        // console.log('最高出价:', web3.utils.fromWei(highestBidValue.toString(), 'ether'), 'TCASH');
+        // console.log('Current highest bidder:', highestBider);
+        // console.log('Highest bid:', web3.utils.fromWei(highestBidValue.toString(), 'ether'), 'TCASH');
 
-        // 查询所有竞价记录
+        // Query all bidding records
         const biders = await tcashAuction.getAuctionBider(i);
-        console.log('\n竞价记录:');
+        console.log('\nBid records:');
         for (let j = 0; j < biders.length; j++) {
-            console.log(`竞价 #${j + 1}:`);
-            console.log('时间:', new Date(biders[j].time * 1000).toLocaleString());
-            console.log('竞价者:', biders[j].bider);
-            console.log('竞价金额:', web3.utils.fromWei(biders[j].value.toString(), 'ether'), 'TCASH');
+            console.log(`Bid #${j + 1}:`);
+            console.log('Time:', new Date(biders[j].time * 1000).toLocaleString());
+            console.log('Bidder:', biders[j].bider);
+            console.log('Bid amount:', web3.utils.fromWei(biders[j].value.toString(), 'ether'), 'TCASH');
         }
     }
 
   } catch (error) {
-    console.error('查询失败:', error);
+    console.error('Query failed:', error);
   }
-}; 
+};

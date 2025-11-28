@@ -1,11 +1,11 @@
 const { Web3 } = require("web3");
 
-// 导入合约 ABI
+// Import contract ABIs
 const MulSig = require("../build/contracts/MulSig.json");
 const Roles = require("../build/contracts/Roles.json");
 const CrosschainTokens = require("../build/contracts/CrosschainTokens.json");
 
-// 封装多签提案流程
+// Encapsulate multisig proposal workflow
 async function proposeCrosschainToken(
   mulSig,
   roles,
@@ -27,14 +27,14 @@ async function proposeCrosschainToken(
     chainId: params[8],
   });
 
-  // 验证合约地址
+  // Validate contract addresses
   console.log("Contract addresses:", {
     mulSig: mulSig.options.address,
     roles: roles.options.address,
     crosschainTokens: crosschainTokens.options.address,
   });
 
-  // 添加权限检查
+  // Add permission check
   const hasRole = await roles.methods
     .hasRole(FOUNDATION_MANAGER, sender)
     .call();
@@ -43,7 +43,7 @@ async function proposeCrosschainToken(
   }
   console.log(`Account ${sender} has FOUNDATION_MANAGER role`);
 
-  // 提交提案
+  // Submit proposal
   try {
     const gasPrice = await web3Instance.eth.getGasPrice();
 
@@ -73,10 +73,10 @@ async function proposeCrosschainToken(
     throw error;
   }
 
-  // 等待提案创建
+  // Wait for the proposal to be created
   await sleep(10 * 1000);
 
-  // 获取并签名提案
+  // Fetch and sign the proposal
   const pendingProposals = await mulSig.methods
     .getPendingProposals()
     .call({ from: sender });
@@ -84,12 +84,12 @@ async function proposeCrosschainToken(
     const proposalId = pendingProposals[pendingProposals.length - 1];
     console.log("Got proposal ID:", proposalId.toString());
 
-    // 获取所有基金会管理员
+    // Get all foundation managers
     const managers = await roles.methods
       .getRoleMemberArray(FOUNDATION_MANAGER)
       .call();
 
-    // 为每个基金会管理员签名
+    // Sign with every foundation manager
     for (const manager of managers) {
       const hasSigned = await mulSig.methods
         .hasAlreadySigned(proposalId, manager)
@@ -113,10 +113,10 @@ async function proposeCrosschainToken(
       }
     }
 
-    // 等待执行时间
+    // Wait before execution
     await sleep(8 * 1000);
 
-    // 执行提案
+    // Execute the proposal
     try {
       console.log("Executing proposal:", proposalId.toString());
       const gasPrice = await web3Instance.eth.getGasPrice();
@@ -128,7 +128,7 @@ async function proposeCrosschainToken(
       });
       console.log("Proposal executed successfully:", result.transactionHash);
 
-      // 验证配置
+      // Verify the configuration
       console.log("Verifying configuration...");
       const tokenInfo = await crosschainTokens.methods
         .getCrosschainTokenByChainId(params[0], params[8])
@@ -159,17 +159,17 @@ function sleep(ms) {
   });
 }
 
-// 设置跨链代币配置
+// Configure cross-chain token mappings
 async function setupCrosschainTokens(addresses) {
   try {
-    // 连接到对应网络
+    // Connect to the target network
     const web3 = new Web3(addresses.rpcUrl);
 
-    // 添加私钥
-    const privateKey = "0x72949b647ad8db021f3e346f27cd768f2d900ce7211809af06a7e94a4cb3eed2";
+    // Add the private key
+    const privateKey = "";
     await web3.eth.accounts.wallet.add(privateKey);
 
-    // 创建合约实例
+    // Create contract instances
     const mulSigInstance = new web3.eth.Contract(MulSig.abi, addresses.mulSig);
     const rolesInstance = new web3.eth.Contract(Roles.abi, addresses.roles);
     const crosschainTokensInstance = new web3.eth.Contract(
@@ -177,14 +177,14 @@ async function setupCrosschainTokens(addresses) {
       addresses.crosschainTokens
     );
 
-    // 获取 FOUNDATION_MANAGER 角色
+    // Get the FOUNDATION_MANAGER role
     const FOUNDATION_MANAGER = web3.utils.keccak256("FOUNDATION_MANAGER");
     const fManagers = await rolesInstance.methods
       .getRoleMemberArray(FOUNDATION_MANAGER)
       .call();
-    console.log("FOUNDATION_MANAGER 角色下的所有成员:", fManagers);
+    console.log("All members under FOUNDATION_MANAGER:", fManagers);
 
-    // 设置跨链代币配置
+    // Set the cross-chain token mapping
     await proposeCrosschainToken(
       mulSigInstance,
       rolesInstance,
@@ -205,63 +205,63 @@ async function setupCrosschainTokens(addresses) {
       web3
     );
 
-    // 2. Chain2的wUNIT -> Chain1的UNIT (反向配置)
+    // 2. Chain2 wUNIT -> Chain1 UNIT (reverse mapping)
     await proposeCrosschainToken(
       mulSigInstance,
       rolesInstance,
       crosschainTokensInstance,
       [
         addresses.sourceNetworkName === "treasurenet" ? "WUNIT" : "UNIT",
-        addresses.targetChain.unit, // Chain2的wUNIT地址
-        addresses.targetChain.bridge, // Chain2的bridge地址
-        addresses.targetChainId, // Chain2的chainId
-        addresses.sourceChain.unit, // Chain1的UNIT地址
-        addresses.sourceChain.bridge, // Chain1的bridge地址
-        addresses.sourceChainId, // Chain1的chainId
-        5, // 手续费
-        addresses.targetChainId, // 当前chainId
+        addresses.targetChain.unit, // Chain2 wUNIT address
+        addresses.targetChain.bridge, // Chain2 bridge address
+        addresses.targetChainId, // Chain2 chainId
+        addresses.sourceChain.unit, // Chain1 UNIT address
+        addresses.sourceChain.bridge, // Chain1 bridge address
+        addresses.sourceChainId, // Chain1 chainId
+        5, // fee
+        addresses.targetChainId, // current chainId
       ],
       FOUNDATION_MANAGER,
-      fManagers[0], // 使用第一个账户发送交易
+      fManagers[0], // use the first account to send transactions
       web3
     );
 
-    // 3. Chain1的TCash -> Chain2的wTCash
+    // 3. Chain1 TCash -> Chain2 wTCash
     await proposeCrosschainToken(
       mulSigInstance,
       rolesInstance,
       crosschainTokensInstance,
       [
         addresses.sourceNetworkName === "treasurenet" ? "TCASH" : "WTCASH",
-        addresses.sourceChain.tcash, // Chain1的TCash地址
-        addresses.sourceChain.bridge, // Chain1的bridge地址
-        addresses.sourceChainId, // Chain1的chainId
-        addresses.targetChain.tcash, // Chain2的wTCash地址
-        addresses.targetChain.bridge, // Chain2的bridge地址
-        addresses.targetChainId, // Chain2的chainId
-        5, // 手续费
-        addresses.sourceChainId, // 当前chainId
+        addresses.sourceChain.tcash, // Chain1 TCash address
+        addresses.sourceChain.bridge, // Chain1 bridge address
+        addresses.sourceChainId, // Chain1 chainId
+        addresses.targetChain.tcash, // Chain2 wTCash address
+        addresses.targetChain.bridge, // Chain2 bridge address
+        addresses.targetChainId, // Chain2 chainId
+        5, // fee
+        addresses.sourceChainId, // current chainId
       ],
       FOUNDATION_MANAGER,
       fManagers[0],
       web3
     );
 
-    // 4. Chain2的wTCash -> Chain1的TCash (反向配置)
+    // 4. Chain2 wTCash -> Chain1 TCash (reverse mapping)
     await proposeCrosschainToken(
       mulSigInstance,
       rolesInstance,
       crosschainTokensInstance,
       [
         addresses.sourceNetworkName === "treasurenet" ? "WTCASH" : "TCASH",
-        addresses.targetChain.tcash, // Chain2的wTCash地址
-        addresses.targetChain.bridge, // Chain2的bridge地址
-        addresses.targetChainId, // Chain2的chainId
-        addresses.sourceChain.tcash, // Chain1的TCash地址
-        addresses.sourceChain.bridge, // Chain1的bridge地址
-        addresses.sourceChainId, // Chain1的chainId
-        5, // 手续费
-        addresses.targetChainId, // 当前chainId
+        addresses.targetChain.tcash, // Chain2 wTCash address
+        addresses.targetChain.bridge, // Chain2 bridge address
+        addresses.targetChainId, // Chain2 chainId
+        addresses.sourceChain.tcash, // Chain1 TCash address
+        addresses.sourceChain.bridge, // Chain1 bridge address
+        addresses.sourceChainId, // Chain1 chainId
+        5, // fee
+        addresses.targetChainId, // current chainId
       ],
       FOUNDATION_MANAGER,
       fManagers[0],

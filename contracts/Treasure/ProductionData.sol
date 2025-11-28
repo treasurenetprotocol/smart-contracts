@@ -331,7 +331,7 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         uint256 total;
         require(accounts.length == amounts.length, "accounts and amounts must have same length");
         
-        // 获取uniqueId对应的owner
+        // Get owner for the given uniqueId
         IProducer.ProducerCore memory producer = _getProducer(uniqueId);
         address owner = producer.owner;
         
@@ -350,31 +350,31 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
 
 
     /**
-     * @dev 获取当前年月，格式YYYYMM
-     * @return 当前年月，例如202407表示2024年7月
+     * @dev Get current year-month in YYYYMM format
+     * @return Current year-month, e.g., 202407 means July 2024
      */
     function getCurrentYearMonth() internal view returns (uint256) {
-        // 获取当前时间戳
+        // Get current timestamp
         uint256 timestamp = block.timestamp;
         
-        // 转换为日期（简化实现）
-        uint256 secondsInDay = 86400; // 24小时 * 60分钟 * 60秒
-        uint256 secondsInYear = secondsInDay * 365; // 简化，不考虑闰年
+        // Convert to date (simplified)
+        uint256 secondsInDay = 86400; // 24 hours * 60 minutes * 60 seconds
+        uint256 secondsInYear = secondsInDay * 365; // simplified, ignores leap years
         
         uint256 yearsSince1970 = timestamp / secondsInYear;
         uint256 year = 1970 + yearsSince1970;
         
-        // 计算月份
+        // Calculate month
         uint256 secondsRemainingInYear = timestamp % secondsInYear;
         uint256 daysRemainingInYear = secondsRemainingInYear / secondsInDay;
         
-        // 简化实现，大约估算月份
+        // Approximate month
         uint256 month = (daysRemainingInYear * 12) / 365 + 1;
         
-        // 限制月份范围
+        // Clamp month range
         if (month > 12) month = 12;
         
-        // 组合成YYYYMM格式
+        // Combine into YYYYMM
         return year * 100 + month;
     }
 }
