@@ -1,0 +1,49 @@
+{
+  "name": "treasurenet",
+  "version": "1.0.0",
+  "description": "Smart Contracts for Treasurenet",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "ganache": "./ganache.sh",
+    "compile": "truffle compile --all",
+    "migrate": "truffle migrate  --compile-all --network ganache",
+    "migrate-tn": "truffle migrate --network tn",
+    "migrate-tn2": "truffle migrate --reset --network tn2",
+    "migrate-tn-testnet": "truffle migrate --network tn_testnet",
+    "migrate-tn-mainnet": "truffle migrate --network tn_mainnet",
+    "migrate-tn-polygon": "truffle migrate --network polygon",
+    "test": "truffle test --debug --show-events",
+    "lint": "echo lint;npm run solhint && echo prettier; npm run prettier:solidity",
+    "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol",
+    "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/**/*.sol"
+  },
+  "author": "bjwswang",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@openzeppelin/contracts": "4.7.3",
+    "@openzeppelin/contracts-upgradeable": "4.7.3",
+    "@openzeppelin/truffle-upgrades": "1.17.0",
+    "@openzeppelin/upgrades-core": "1.20.2",
+    "@truffle/hdwallet-provider": "^1.7.0",
+    "chai": "^4.3.7",
+    "hardhat": "^2.22.15",
+    "js-sha3": "^0.8.0",
+    "prettier": "^2.7.1",
+    "prettier-plugin-solidity": "*",
+    "solhint": "^3.3.7",
+    "solhint-plugin-prettier": "^0.0.5",
+    "truffle-assertions": "^0.9.2"
+  },
+  "dependencies": {
+    "@openzeppelin/test-helpers": "^0.5.16",
+    "dotenv": "^16.4.5",
+    "eslint": "^9.0.0",
+    "ethers": "^6.0.0",
+    "ganache": "^6.4.5",
+    "keccak256": "^1.0.6",
+    "web3": "^4.14.0"
+  }
+}
