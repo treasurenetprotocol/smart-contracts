@@ -3,7 +3,7 @@
  * Built on the proven @web3-kms-signer library
  */
 
-const { Web3 } = require('web3');
+const Web3 = require('web3');
 const { Signer } = require('@web3-kms-signer/core');
 const { KMSWallets } = require('@web3-kms-signer/kms-wallets');
 const { KMSProviderAWS } = require('@web3-kms-signer/kms-provider-aws');

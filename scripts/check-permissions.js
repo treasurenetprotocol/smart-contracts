@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { Web3 } = require('web3');
+const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
 

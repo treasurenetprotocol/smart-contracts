@@ -68,8 +68,8 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         address _producerContract,
         address _tatContract
     ) internal onlyInitializing {
-        __ExpenseInitialize(_parameterInfoContract);
         __oracleClientInitialize(_oracleContract);
+        __ExpenseInitialize(_parameterInfoContract);
 
         TREASURE_KIND = _treasureKind;
 

@@ -43,6 +43,7 @@ contract Governance is OwnableUpgradeable {
         address[] memory _producers,
         address[] memory _productionDatas        
     ) public initializer {
+        __Ownable_init();
         _role = IRoles(_roleContract);
         _parameterInfo = _parameterInfoContract;
         _mulSig = _mulSigContract;

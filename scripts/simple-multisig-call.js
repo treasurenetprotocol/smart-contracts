@@ -3,7 +3,7 @@
  * Based on the existing AWS KMS infrastructure
  */
 
-const { Web3 } = require('web3');
+const Web3 = require('web3');
 
 // Configuration
 const CONFIG = {
