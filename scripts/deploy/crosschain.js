@@ -107,7 +107,15 @@ async function main() {
     resolveContract(entry, state, 'ORACLE'),
     resolveContract(entry, state, 'TAT')
   );
-  await tcashLoan.setAuctionContract(resolveContract(entry, state, 'TCASH_AUCTION'));
+
+  // ensure setAuctionContract is sent from owner
+  const loanOwner = await tcashLoan.owner();
+  const signers = await ethers.getSigners();
+  const ownerSigner = signers.find((s) => s.address.toLowerCase() === loanOwner.toLowerCase());
+  if (!ownerSigner) {
+    throw new Error(`Owner ${loanOwner} not available in local signers; cannot setAuctionContract`);
+  }
+  await tcashLoan.connect(ownerSigner).setAuctionContract(resolveContract(entry, state, 'TCASH_AUCTION'));
 
   const FOUNDATION_MANAGER_ROLE = await roles.FOUNDATION_MANAGER();
   if (!(await roles.hasRole(FOUNDATION_MANAGER_ROLE, (await ethers.getSigners())[0].address))) {
