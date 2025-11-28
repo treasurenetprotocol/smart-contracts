@@ -216,9 +216,9 @@ contract USTN is IERC20Upgradeable, Initializable, OwnableUpgradeable {
         return (getOSMValue(ustn) * amount) / getOSMValue(unit);
     }
 
-    // 移除 payable，添加amount参数让用户指定想mint的数量
+    // Remove payable and add amount parameter so users specify how much to mint
     function mint(uint256 amount) public returns (bool result) {
-        // 直接使用传入的amount作为要mint的数量
+        // Use the provided amount directly
         _totalSupply += amount;
         _balance[msg.sender] += amount;
 

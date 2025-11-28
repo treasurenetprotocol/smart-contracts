@@ -244,7 +244,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
     //DebugBool
     event DebugBool(bool value, string message);
 
-    // 用于调试，不是 view
+    // For debugging; not a view function
     function calculateAmountDebug(uint256 perMonthTotal, uint256 ratio, bool isFirstMonth) internal returns (uint256) {
         emit DebugLog(perMonthTotal, "Calculated Amount");
         emit DebugLog(ratio, "perMonthTotal");
@@ -275,7 +275,7 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         for (uint256 i = claimedMonth + 1; i <= current; i++) {
             uint256 actualRatio = _getActualRatio(vip, i);
             bool isFirstMonth = i == 1;
-            // 存储每次循环的结果
+            // Store the result of each iteration
             results[i - (claimedMonth + 1)] = CalculationResult(_totalPerMonth[i], actualRatio, isFirstMonth);
         }
 

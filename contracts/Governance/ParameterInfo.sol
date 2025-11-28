@@ -33,13 +33,13 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         _platformConfig["loanInterestRate"] = 5;
         _platformConfig["loanPledgeRate"] = 15000;
         
-        // TCash相关参数初始化
-        _platformConfig["TCASHDIR"] = 5;         // TCash贷款日利率 (0.05%)
-        _platformConfig["TCASHMCT"] = 750000;    // TCash预警线 (75%)
-        _platformConfig["TCASHLT"] = 500000;     // TCash清算线 (50%)
-        _platformConfig["TCASHRC"] = 365;        // TCash还款周期 (365次)
-        _platformConfig["TCASHMLT"] = 3000;      // TCASH铸造锁定线 (30%)
-        _platformConfig["TCASHMRST"] = 11000;    // TCASH铸造恢复线 (110%)
+        // Initialize TCash-related parameters
+        _platformConfig["TCASHDIR"] = 5;         // TCash daily interest rate (0.05%)
+        _platformConfig["TCASHMCT"] = 750000;    // TCash warning threshold (75%)
+        _platformConfig["TCASHLT"] = 500000;     // TCash liquidation threshold (50%)
+        _platformConfig["TCASHRC"] = 365;        // TCash repayment cycle (365 intervals)
+        _platformConfig["TCASHMLT"] = 3000;      // TCash mint lock threshold (30%)
+        _platformConfig["TCASHMRST"] = 11000;    // TCash mint reset threshold (110%)
 
         _priceDiscountConfig.API = 3110;
         _priceDiscountConfig.sulphur = 500;
@@ -78,12 +78,12 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     ///    - loanInterestRate
     ///    - loanPledgeRate
     ///    - liquidationRatio
-    ///    - TCASHDIR (TCash贷款日利率)
-    ///    - TCASHMCT (TCash预警线)
-    ///    - TCASHLT (TCash清算线)
-    ///    - TCASHRC (TCash还款周期)
-    ///    - TCASHMLT (TCASH铸造锁定线)
-    ///    - TCASHMRST (TCASH铸造恢复线)
+    ///    - TCASHDIR (TCash daily interest rate)
+    ///    - TCASHMCT (TCash warning threshold)
+    ///    - TCASHLT (TCash liquidation threshold)
+    ///    - TCASHRC (TCash repayment cycle)
+    ///    - TCASHMLT (TCASH mint lock threshold)
+    ///    - TCASHMRST (TCASH mint reset threshold)
     /// @param amount Parameter value
     /// @return bool Whether the setting was successful
     function setPlatformConfig(string memory key, uint256 amount)
@@ -107,7 +107,7 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
             require(9000 <= amount && amount <= 9900, "overflow");
             liquidationRatio = amount;
         } 
-        // TCash相关参数设置
+        // TCash parameter settings
         else if (keccak256(bytes(key)) == keccak256(bytes("TCASHDIR"))) {
             require(0 < amount && amount <= 1000, "Invalid interest rate");
             _platformConfig[key] = amount;
@@ -157,7 +157,7 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         return _platformConfig["loanInterestRate"];
     }
     
-    // TCash相关参数便捷查询接口
+    // Convenience getter for TCash parameters
     function getTCashDailyInterestRate() public view returns (uint256) {
         return _platformConfig["TCASHDIR"];
     }

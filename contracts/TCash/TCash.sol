@@ -8,17 +8,17 @@ import "../Governance/IRoles.sol";
 import "../Oracle/IOracle.sol";
 
 contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
-    // 角色管理
+    // Role management
     IRoles public roles;
-    // Oracle合约
+    // Oracle contract
     IOracle public oracle;
     
-    // TCash精度
+    // TCash decimals
     uint8 private constant _decimals = 18;
 
-    // 记录拍卖中锁定的TCash余额
+    // Locked TCash balances during auctions
     mapping(address => uint256) private _lockedBalances;
-    // 允许调用bidCost和bidBack方法的拍卖合约地址
+    // Auction contract allowed to call bidCost and bidBack
     address public tcashAuction;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -30,68 +30,68 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         __ERC20_init("TCash", "TCash");
         __Ownable_init();
         
-        // 初始铸造1,000,000个TCash到指定账户
+        // Mint initial 1,000,000 TCash to the designated account
         _mint(initialReceiver, 1_000_000 * 10**_decimals);
     }
     
-    // 返回代币精度
+    // Return token decimals
     function decimals() public pure override returns (uint8) {
         return _decimals;
     }
 
-    // 设置角色管理合约
+    // Set roles contract
     function setRoles(address _roles) external onlyOwner {
         roles = IRoles(_roles);
     }
     
-    // 设置Oracle合约
+    // Set oracle contract
     function setOracle(address _oracle) external onlyOwner {
         oracle = IOracle(_oracle);
     }
     
-    // 设置拍卖合约地址
+    // Set auction contract address
     function setAuctionContract(address _tcashAuction) external onlyOwner {
         tcashAuction = _tcashAuction;
     }
 
-    // 锁定用户TCash进行拍卖出价
+    // Lock user TCash for auction bids
     function bidCost(address user, uint256 amount) external returns (bool) {
         require(msg.sender == tcashAuction, "Only auction contract can call");
         require(balanceOf(user) >= amount, "Insufficient balance");
         
-        // 锁定用户TCash
+        // Lock user TCash
         _lockedBalances[user] += amount;
         
         return true;
     }
     
-    // 拍卖失败后返还用户锁定的TCash
+    // Return locked TCash when auction fails
     function bidBack(address user, uint256 amount) external returns (bool) {
         require(msg.sender == tcashAuction, "Only auction contract can call");
         require(_lockedBalances[user] >= amount, "Insufficient locked balance");
         
-        // 解锁用户TCash
+        // Unlock user TCash
         _lockedBalances[user] -= amount;
         
         return true;
     }
     
-    // 查询用户锁定的TCash余额
+    // Query locked TCash balance
     function getLockedBalance(address user) external view returns (uint256) {
         return _lockedBalances[user];
     }
     
-    // 覆盖transferable余额计算，排除锁定的金额
+    // Override transferable balance calculation to exclude locked amounts
     function transferableBalanceOf(address account) public view returns (uint256) {
         return balanceOf(account) - _lockedBalances[account];
     }
 
-    // Mint tokens - 只有拥有TCASH_MINTER角色的地址可以铸造代币
+    // Mint tokens - only TCASH_MINTER role can mint
     function mint(address to, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to mint");
         
-        // 检查Oracle是否设置及TCASH铸造状态
+        // Check oracle is set and mint status is enabled
         if (address(oracle) != address(0)) {
             require(oracle.getTCashMintStatus(), "TCash minting is currently disabled");
         }
@@ -100,13 +100,13 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
 
-    // Burn tokens - 用户销毁自己的代币
+    // Burn tokens - user burns own tokens
     function burn(uint256 amount) external returns (bool) {
         _burn(msg.sender, amount);
         return true;
     }
 
-    // BurnFrom tokens - 允许授权合约销毁指定地址的代币
+    // BurnFrom tokens - authorized contracts burn a given address's tokens
     function burnFrom(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to burn");
@@ -116,12 +116,12 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
 
-    // Add balance - 只有拥有TCASH_MINTER角色的地址可以增加余额
+    // Add balance - only TCASH_MINTER role can add balance
     function addBalance(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_MINTER(), msg.sender), "Not authorized to add balance");
         
-        // 检查Oracle是否设置及TCASH铸造状态
+        // Check oracle is set and mint status is enabled
         if (address(oracle) != address(0)) {
             require(oracle.getTCashMintStatus(), "TCash minting is currently disabled");
         }
@@ -130,7 +130,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
 
-    // Reduce balance - 减少余额
+    // Reduce balance
     function reduceBalance(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to reduce balance");
@@ -140,15 +140,15 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
     
-    // 覆盖转账方法，确保不转移锁定的金额
+    // Override transfer to prevent moving locked amounts
     function transfer(address to, uint256 amount) public override returns (bool) {
         require(amount <= transferableBalanceOf(msg.sender), "Transfer amount exceeds unlocked balance");
         return super.transfer(to, amount);
     }
     
-    // 覆盖transferFrom方法，确保不转移锁定的金额
+    // Override transferFrom to prevent moving locked amounts
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
         require(amount <= transferableBalanceOf(from), "Transfer amount exceeds unlocked balance");
         return super.transferFrom(from, to, amount);
     }
-} 
+}

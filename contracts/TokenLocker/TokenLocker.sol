@@ -254,7 +254,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         uint256 totalClaimable;
         LockedRecord[] storage records = lockedRecords[account];
 
-        // 管理员0，非管理员1
+        // Managers use claimMethod 0; non-managers use 1
         uint256 currentClaimMethod;
         if (managers.contains(msg.sender)) {
             currentClaimMethod = 0;
@@ -268,7 +268,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             uint256 idx = i - 1;
             LockedRecord storage record = records[idx];
 
-            // 只处理对应claimMethod的记录
+            // Only process records matching the claimMethod
             if (
                 record.isActive &&
                 block.timestamp >= record.time &&
@@ -311,10 +311,10 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         view 
         returns (LockedRecord[] memory) 
     {
-        // 获取用户所有记录
+        // Fetch all user records
         LockedRecord[] storage userRecords = lockedRecords[_account];
         
-        // 计算激活的记录数量
+        // Count active records
         uint256 activeCount = 0;
         for (uint256 i = 0; i < userRecords.length; i++) {
             if (userRecords[i].isActive) {
@@ -322,7 +322,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             }
         }
         
-        // 创建返回数组，只包含激活的记录
+        // Create return array containing only active records
         LockedRecord[] memory activeRecords = new LockedRecord[](activeCount);
         uint256 currentIndex = 0;
         
@@ -341,28 +341,28 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         bytes calldata _planID, 
         address _account
     ) external onlyManager nonReentrant returns (bool) {
-        // 检查计划是否存在
+        // Ensure the plan exists
         require(plans[_planID].planAmount > 0, "Plan not exist");
-        // 检查账户是否在该计划下
+        // Ensure the account belongs to the plan
         require(planAccounts[_planID].contains(_account), "Account not in plan");
         
         bool found = false;
         LockedRecord[] storage records = lockedRecords[_account];
         
-        // 直接遍历指定账户的所有记录
+        // Iterate through all records for the account
         for (uint256 j = 0; j < records.length; j++) {
             if (keccak256(records[j].lockedID) == keccak256(_lockedID) && 
                 keccak256(records[j].planID) == keccak256(_planID) && 
                 records[j].isActive) {
                 found = true;
                 
-                // 获取记录金额，用于后续处理
+                // Record amount for later adjustments
                 uint256 recordAmount = records[j].amount;
                 
-                // 1. 将金额返还到可用余额
+                // 1. Return amount to available balance
                 totalAvailableAmount += recordAmount;
                 
-                // 2. 更新计划分配的金额
+                // 2. Update plan allocated amount
                 Plan storage plan = plans[_planID];
                 if (plan.allocatedAmount >= recordAmount) {
                     plan.allocatedAmount -= recordAmount;
@@ -370,20 +370,20 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
                     plan.allocatedAmount = 0;
                 }
                 
-                // 3. 标记记录为非活跃
+                // 3. Mark record as inactive
                 records[j].isActive = false;
                 
-                // 4. 优化：如果是数组最后一个元素，直接移除
+                // 4. Optimization: if last element, remove directly
                 if (j != records.length - 1) {
                     records[j] = records[records.length - 1];
                 }
                 records.pop();
                 
-                // 5. 更新计划记录索引映射
+                // 5. Update plan record index mapping
                 uint256[] storage indices = planRecordIndices[_planID][_account];
                 for (uint256 k = 0; k < indices.length; k++) {
                     if (indices[k] == j) {
-                        // 优化：移除该索引（通过替换并弹出）
+                        // Optimization: remove index by swapping and popping
                         if (k != indices.length - 1) {
                             indices[k] = indices[indices.length - 1];
                         }
@@ -392,12 +392,12 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
                     }
                 }
                 
-                // 6. 若该账户在该计划下没有其他记录，则从计划账户列表中移除
+                // 6. If the account has no other records in the plan, remove it from the plan list
                 if (indices.length == 0) {
                     planAccounts[_planID].remove(_account);
                 }
                            
-                // 已找到并处理，可以返回
+                // Record handled; return
                 return true;
             }
         }
@@ -411,13 +411,13 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
         view 
         returns (LockedRecord[] memory records, address[] memory accounts) 
     {
-        // 确保计划存在
+        // Ensure plan exists
         require(plans[_planID].planAmount > 0, "Plan not exist");
         
-        // 获取该计划下的所有账户
+        // Get all accounts under this plan
         address[] memory planAccountsList = planAccounts[_planID].values();
         
-        // 计算该计划下的总记录数
+        // Calculate total record count for the plan
         uint256 totalRecords = 0;
         for (uint256 i = 0; i < planAccountsList.length; i++) {
             address account = planAccountsList[i];
@@ -425,11 +425,11 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             totalRecords += indices.length;
         }
         
-        // 初始化返回数组
+        // Initialize return arrays
         records = new LockedRecord[](totalRecords);
         accounts = new address[](totalRecords);
         
-        // 填充返回数组
+        // Fill return arrays
         uint256 currentIndex = 0;
         for (uint256 i = 0; i < planAccountsList.length; i++) {
             address account = planAccountsList[i];
@@ -439,7 +439,7 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
                 uint256 recordIndex = indices[j];
                 if (recordIndex < lockedRecords[account].length) {
                     LockedRecord memory record = lockedRecords[account][recordIndex];
-                    // 只返回属于该计划且仍然激活的记录
+                    // Only return records for this plan that are still active
                     if (keccak256(record.planID) == keccak256(_planID) && record.isActive) {
                         records[currentIndex] = record;
                         accounts[currentIndex] = account;
@@ -449,9 +449,9 @@ contract TokenLocker is Initializable, ReentrancyGuardUpgradeable {
             }
         }
         
-        // 如果实际记录数少于预期的总记录数，调整数组大小
+        // If fewer records are active than expected, resize arrays
         if (currentIndex < totalRecords) {
-            // 创建新的数组，仅包含有效记录
+            // Create new arrays containing only valid records
             LockedRecord[] memory adjustedRecords = new LockedRecord[](currentIndex);
             address[] memory adjustedAccounts = new address[](currentIndex);
             
