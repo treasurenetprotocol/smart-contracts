@@ -3,16 +3,13 @@ set -euo pipefail
 
 # Usage:
 #   run_with_env.sh <env_file> <rpc_var_name> [script_target ...]
-#   - If no script_target or first is "full", runs the default full pipeline:
-#     DeployCore -> DeployProducers -> DeployTCash -> DeployTokenLocker -> DeployCrosschain
-#   - script_target accepts either path or path:ContractName
+#   - If no script_target or first is "full", runs the default one-shot pipeline DeployFullTN.
+#   - script_target accepts either path or path:ContractName.
 ENV_FILE=${1:?env file required}
 RPC_VAR=${2:?rpc var name required}
 shift 2
 
-DEFAULT_TARGETS=(
-  "script/DeployCore.s.sol:DeployCore"
-)
+DEFAULT_TARGETS=("script/DeployFullTN.s.sol:DeployFullTN")
 
 TARGETS=()
 EXTRA_ARGS=()

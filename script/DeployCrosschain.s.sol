@@ -2,8 +2,8 @@
 pragma solidity ^0.8.10;
 
 import "forge-std/Script.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "./lib/EnvUtils.sol";
 import "Governance/CrosschainTokens.sol";
 import "Crosschain/CrosschainBridge.sol";
 import "Governance/MulSig.sol";
@@ -47,11 +47,11 @@ contract DeployCrosschain is Script {
         tat = vm.envAddress("TAT_PROXY");
 
         // Role arrays parsed from comma-separated env strings
-        address[] memory foundationManagers = _parseAddresses(vm.envOr("FOUNDATION_MANAGERS", string("")));
-        address[] memory auctionManagers = _parseAddresses(vm.envOr("AUCTION_MANAGERS", string("")));
-        address[] memory feeders = _parseAddresses(vm.envOr("FEEDERS", string("")));
-        address[] memory crosschainSenders = _parseAddresses(vm.envOr("CROSSCHAIN_SENDERS", string("")));
-        address[] memory tcashManagers = _parseAddresses(vm.envOr("TCASH_MANAGERS", string("")));
+        address[] memory foundationManagers = EnvUtils.parseAddresses(vm.envOr("FOUNDATION_MANAGERS", string("")));
+        address[] memory auctionManagers = EnvUtils.parseAddresses(vm.envOr("AUCTION_MANAGERS", string("")));
+        address[] memory feeders = EnvUtils.parseAddresses(vm.envOr("FEEDERS", string("")));
+        address[] memory crosschainSenders = EnvUtils.parseAddresses(vm.envOr("CROSSCHAIN_SENDERS", string("")));
+        address[] memory tcashManagers = EnvUtils.parseAddresses(vm.envOr("TCASH_MANAGERS", string("")));
 
         uint256 confirmDuration = vm.envOr("CONFIRM_DURATION_SECONDS", uint256(5));
         uint256 unitPrice = vm.envUint("INIT_UNIT_PRICE_WEI");
@@ -125,54 +125,5 @@ contract DeployCrosschain is Script {
         console2.log("MulSig initialized     :", mulSig);
         console2.log("Roles initialized      :", roles);
         console2.log("TCashLoan initialized  :", tcashLoan);
-    }
-
-    /// @dev Parse comma-separated 0x addresses into an array; empty string returns empty array
-    function _parseAddresses(string memory csv) internal pure returns (address[] memory addrs) {
-        bytes memory b = bytes(csv);
-        if (b.length == 0) return addrs;
-
-        // Count addresses
-        uint256 count = 1;
-        for (uint256 i; i < b.length; i++) {
-            if (b[i] == ",") {
-                count++;
-            }
-        }
-
-        addrs = new address[](count);
-        uint256 idx;
-        uint256 start;
-        for (uint256 i; i <= b.length; i++) {
-            if (i == b.length || b[i] == ",") {
-                uint256 len = i - start;
-                addrs[idx] = _toAddress(_slice(b, start, len));
-                idx++;
-                start = i + 1;
-            }
-        }
-    }
-
-    function _slice(bytes memory data, uint256 start, uint256 len) internal pure returns (bytes memory) {
-        bytes memory out = new bytes(len);
-        for (uint256 i; i < len; i++) {
-            out[i] = data[start + i];
-        }
-        return out;
-    }
-
-    function _toAddress(bytes memory str) internal pure returns (address addr) {
-        require(str.length == 42, "address format");
-        require(str[0] == "0" && (str[1] == "x" || str[1] == "X"), "address prefix");
-        uint160 res;
-        for (uint256 i = 2; i < 42; i++) {
-            uint8 v = uint8(str[i]);
-            res <<= 4;
-            if (v >= 48 && v <= 57) res |= uint160(v - 48);          // 0-9
-            else if (v >= 65 && v <= 70) res |= uint160(v - 55);     // A-F
-            else if (v >= 97 && v <= 102) res |= uint160(v - 87);    // a-f
-            else revert("invalid hex char");
-        }
-        addr = address(res);
     }
 }
