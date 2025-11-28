@@ -27,6 +27,21 @@ fi
 if [ ${#EXTRA_ARGS[@]} -eq 0 ]; then
   EXTRA_ARGS=(--legacy)
 fi
+if [[ " ${EXTRA_ARGS[*]} " == *" --resume "* ]]; then
+  script_path="${TARGETS[0]%:*}"
+  script_name="$(basename "$script_path")"
+  broadcast_dir="broadcast/$script_name"
+  if ! ls "$broadcast_dir"/*/run-latest.json >/dev/null 2>&1; then
+    echo "No previous broadcast found for $script_name; removing --resume" >&2
+    tmp=()
+    for arg in "${EXTRA_ARGS[@]}"; do
+      if [ "$arg" != "--resume" ]; then
+        tmp+=("$arg")
+      fi
+    done
+    EXTRA_ARGS=("${tmp[@]}")
+  fi
+fi
 if [ -n "${FORGE_ARGS:-}" ]; then
   # shellcheck disable=SC2206
   EXTRA_ARGS+=(${FORGE_ARGS})
