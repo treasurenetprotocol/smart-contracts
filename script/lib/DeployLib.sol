@@ -185,6 +185,7 @@ library DeployLib {
         x = _deployCrosschainContracts(c.proxyAdmin, c.roles);
         _initMulSigAndRoles(
             c,
+            t,
             p,
             x.tokens,
             cfg.foundationManagers,
@@ -259,6 +260,7 @@ library DeployLib {
 
     function _initMulSigAndRoles(
         Core memory c,
+        TCashStack memory t,
         Producers memory p,
         address tokens,
         address[] memory foundationManagers,
@@ -270,7 +272,12 @@ library DeployLib {
     ) private {
         CrosschainTokens(tokens).setMulSig(c.mulSig);
         MulSig(c.mulSig).initialize(c.dao, p.governance, c.roles, c.parameterInfo, tokens, confirmDuration);
-        Roles(c.roles).initialize(c.mulSig, foundationManagers, auctionManagers, feeders, crosschainSenders, tcashManagers);
+        address[] memory tcashManagersExpanded = new address[](tcashManagers.length + 1);
+        for (uint256 i; i < tcashManagers.length; i++) {
+            tcashManagersExpanded[i] = tcashManagers[i];
+        }
+        tcashManagersExpanded[tcashManagers.length] = t.tcashLoan;
+        Roles(c.roles).initialize(c.mulSig, foundationManagers, auctionManagers, feeders, crosschainSenders, tcashManagersExpanded);
     }
 
     function _initTCashLoanAndPrices(
