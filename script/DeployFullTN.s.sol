@@ -21,16 +21,17 @@ contract DeployFullTN is Script {
         address proxyAdminOverride = vm.envOr("PROXY_ADMIN", address(0));
         address tcashReceiver = vm.envOr("TCASH_RECEIVER", vm.addr(pk));
 
-        address[] memory foundationManagers = EnvUtils.parseAddresses(vm.envOr("FOUNDATION_MANAGERS", string("")));
-        address[] memory auctionManagers = EnvUtils.parseAddresses(vm.envOr("AUCTION_MANAGERS", string("")));
-        address[] memory feeders = EnvUtils.parseAddresses(vm.envOr("FEEDERS", string("")));
-        address[] memory crosschainSenders = EnvUtils.parseAddresses(vm.envOr("CROSSCHAIN_SENDERS", string("")));
-        address[] memory tcashManagers = EnvUtils.parseAddresses(vm.envOr("TCASH_MANAGERS", string("")));
-
-        uint256 confirmDuration = vm.envOr("CONFIRM_DURATION_SECONDS", uint256(5));
-        uint256 unitPrice = vm.envOr("INIT_UNIT_PRICE_WEI", uint256(0));
-        uint256 tcashPrice = vm.envOr("INIT_TCASH_PRICE_WEI", uint256(0));
         bool deployTokenLocker = vm.envOr("DEPLOY_TOKEN_LOCKER", true);
+        DeployLib.CrosschainConfig memory cfg = DeployLib.CrosschainConfig({
+            foundationManagers: EnvUtils.parseAddresses(vm.envOr("FOUNDATION_MANAGERS", string(""))),
+            auctionManagers: EnvUtils.parseAddresses(vm.envOr("AUCTION_MANAGERS", string(""))),
+            feeders: EnvUtils.parseAddresses(vm.envOr("FEEDERS", string(""))),
+            crosschainSenders: EnvUtils.parseAddresses(vm.envOr("CROSSCHAIN_SENDERS", string(""))),
+            tcashManagers: EnvUtils.parseAddresses(vm.envOr("TCASH_MANAGERS", string(""))),
+            confirmDuration: vm.envOr("CONFIRM_DURATION_SECONDS", uint256(5)),
+            unitPrice: vm.envOr("INIT_UNIT_PRICE_WEI", uint256(0)),
+            tcashPrice: vm.envOr("INIT_TCASH_PRICE_WEI", uint256(0))
+        });
 
         vm.startBroadcast(pk);
 
@@ -48,14 +49,7 @@ contract DeployFullTN is Script {
             core,
             tstack,
             prod,
-            foundationManagers,
-            auctionManagers,
-            feeders,
-            crosschainSenders,
-            tcashManagers,
-            confirmDuration,
-            unitPrice,
-            tcashPrice
+            cfg
         );
 
         vm.stopBroadcast();

@@ -84,6 +84,17 @@ library DeployLib {
         address bridge;
     }
 
+    struct CrosschainConfig {
+        address[] foundationManagers;
+        address[] auctionManagers;
+        address[] feeders;
+        address[] crosschainSenders;
+        address[] tcashManagers;
+        uint256 confirmDuration;
+        uint256 unitPrice;
+        uint256 tcashPrice;
+    }
+
     // Core deployment
     function deployCore(address proxyAdminAddr) internal returns (Core memory c) {
         ProxyAdmin pa = proxyAdminAddr == address(0) ? new ProxyAdmin() : ProxyAdmin(proxyAdminAddr);
@@ -169,28 +180,21 @@ library DeployLib {
         Core memory c,
         TCashStack memory t,
         Producers memory p,
-        address[] memory foundationManagers,
-        address[] memory auctionManagers,
-        address[] memory feeders,
-        address[] memory crosschainSenders,
-        address[] memory tcashManagers,
-        uint256 confirmDuration,
-        uint256 unitPrice,
-        uint256 tcashPrice
+        CrosschainConfig memory cfg
     ) internal returns (Crosschain memory x) {
         x = _deployCrosschainContracts(c.proxyAdmin, c.roles);
         _initMulSigAndRoles(
             c,
             p,
             x.tokens,
-            foundationManagers,
-            auctionManagers,
-            feeders,
-            crosschainSenders,
-            tcashManagers,
-            confirmDuration
+            cfg.foundationManagers,
+            cfg.auctionManagers,
+            cfg.feeders,
+            cfg.crosschainSenders,
+            cfg.tcashManagers,
+            cfg.confirmDuration
         );
-        _initTCashLoanAndPrices(t, c, p.tat, unitPrice, tcashPrice);
+        _initTCashLoanAndPrices(t, c, p.tat, cfg.unitPrice, cfg.tcashPrice);
     }
 
     function _deployPair(address producerImpl, address dataImpl, ProxyAdmin pa)

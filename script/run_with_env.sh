@@ -32,13 +32,13 @@ if [ -n "${FORGE_ARGS:-}" ]; then
   EXTRA_ARGS+=(${FORGE_ARGS})
 fi
 
-# load shell profile to pick up nvm/forge
-if [ -f "$HOME/.bashrc" ]; then
-  # shellcheck disable=SC1090
-  source "$HOME/.bashrc"
+# Ensure forge is on PATH if installed in default location
+if ! command -v forge >/dev/null 2>&1 && [ -x "$HOME/.foundry/bin/forge" ]; then
+  export PATH="$HOME/.foundry/bin:$PATH"
 fi
-if command -v nvm >/dev/null 2>&1; then
-  nvm use 18 >/dev/null 2>&1 || true
+if ! command -v forge >/dev/null 2>&1; then
+  echo "forge not found. Install Foundry (https://book.getfoundry.sh/getting-started/installation) or ensure forge is on PATH." >&2
+  exit 127
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
