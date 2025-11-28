@@ -51,6 +51,7 @@ abstract contract Producer is Initializable, IProducer, Share {
         require(keccak256(bytes(_assetType)) != keccak256(bytes("")), "empty treasure type");
         require(_productionDataContract != address(0), "empty ProductionData contract");
 
+	_mulSig = _mulSigContract;
         _asset_type = _assetType;
         _roles = IRoles(_roleContract);
         _productionData = IProductionData(_productionDataContract);
@@ -77,6 +78,24 @@ abstract contract Producer is Initializable, IProducer, Share {
         require(msg.sender == _mulSig, "");
         _;
     }
+
+    /// @dev Set the MulSig contract address (only FOUNDATION_MANAGER)
+    /// @param _mulSigContract Address of the MulSig contract
+    function setMulSigContract(address _mulSigContract) external onlyFoundationManager {
+        require(_mulSigContract != address(0), "empty MulSig contract address");
+        address oldMulSig = _mulSig;
+        _mulSig = _mulSigContract;
+        emit MulSigContractUpdated(oldMulSig, _mulSigContract);
+    }
+
+    /// @dev Get the current MulSig contract address
+    /// @return Address of the MulSig contract
+    function getMulSigContract() external view returns (address) {
+        return _mulSig;
+    }
+
+    /// @dev Event emitted when MulSig contract address is updated
+    event MulSigContractUpdated(address indexed oldMulSig, address indexed newMulSig);
 
     /// @dev Add a producer (only FOUNDATION_MANAGER)
     /// - Event

@@ -337,10 +337,7 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         
         for (uint256 i = 0; i < accounts.length; i++) {
             _tat.mint(TREASURE_KIND, uniqueId, accounts[i], amounts[i]);
-            // 只有当owner和accounts[i]一致时才记录TAT铸造记录
-            if (owner == accounts[i]) {
-                _tat.setTATRecord(accounts[i], amounts[i]);
-            }
+            _tat.setTATRecord(accounts[i], amounts[i]);
             total = total + amounts[i];
         }
         return total;

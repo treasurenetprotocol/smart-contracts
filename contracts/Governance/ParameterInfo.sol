@@ -35,8 +35,8 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         
         // TCash相关参数初始化
         _platformConfig["TCASHDIR"] = 5;         // TCash贷款日利率 (0.05%)
-        _platformConfig["TCASHMCT"] = 1200000;   // TCash预警线 (120%)
-        _platformConfig["TCASHLT"] = 1100000;    // TCash清算线 (110%)
+        _platformConfig["TCASHMCT"] = 750000;    // TCash预警线 (75%)
+        _platformConfig["TCASHLT"] = 500000;     // TCash清算线 (50%)
         _platformConfig["TCASHRC"] = 365;        // TCash还款周期 (365次)
         _platformConfig["TCASHMLT"] = 3000;      // TCASH铸造锁定线 (30%)
         _platformConfig["TCASHMRST"] = 11000;    // TCASH铸造恢复线 (110%)
@@ -112,10 +112,10 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
             require(0 < amount && amount <= 1000, "Invalid interest rate");
             _platformConfig[key] = amount;
         } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHMCT"))) {
-            require(1000000 < amount && amount <= 2000000, "Invalid margin call threshold");
+            require(500000 < amount && amount <= 2000000, "Invalid margin call threshold");
             _platformConfig[key] = amount;
         } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHLT"))) {
-            require(1000000 < amount && amount <= _platformConfig["TCASHMCT"], "Invalid liquidation threshold");
+            require(400000 < amount && amount <= _platformConfig["TCASHMCT"], "Invalid liquidation threshold");
             _platformConfig[key] = amount;
         } else if (keccak256(bytes(key)) == keccak256(bytes("TCASHRC"))) {
             require(0 < amount && amount <= 1000, "Invalid repayment cycle");

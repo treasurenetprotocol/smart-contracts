@@ -9,6 +9,8 @@ import "@openzeppelin/contracts-upgradeable/access/IAccessControlEnumerableUpgra
  */
 interface IRoles is IAccessControlUpgradeable, IAccessControlEnumerableUpgradeable {
     // Role constants
+    function get_ADMIN() external pure returns (bytes32);
+    function get_AUCTION_MANAGER() external pure returns (bytes32);
     function CROSSCHAIN_SENDER() external pure returns (bytes32);
     function TCASH_MINTER() external pure returns (bytes32);
     function TCASH_BURNER() external pure returns (bytes32);

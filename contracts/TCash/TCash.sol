@@ -27,7 +27,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     }
 
     function initialize(address initialReceiver) public initializer {
-        __ERC20_init("tcash token", "TCash");
+        __ERC20_init("TCash", "TCash");
         __Ownable_init();
         
         // 初始铸造1,000,000个TCash到指定账户
@@ -130,7 +130,7 @@ contract TCash is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         return true;
     }
 
-    // Reduce balance - 只有拥有TCASH_BURNER角色的地址可以减少余额
+    // Reduce balance - 减少余额
     function reduceBalance(address account, uint256 amount) external returns (bool) {
         require(address(roles) != address(0), "Roles not set");
         require(roles.hasRole(roles.TCASH_BURNER(), msg.sender), "Not authorized to reduce balance");
