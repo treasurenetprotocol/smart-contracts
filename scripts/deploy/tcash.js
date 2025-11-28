@@ -38,10 +38,10 @@ async function main() {
   const { instance: tcash, address: tcashAddr, blockNumber: tcashBlock, txHash: tcashTx } = await deployProxyWithInfo(TCash, [ (await ethers.getSigners())[0].address ], { initializer: 'initialize' });
   state = record(paths, state, 'TCASH', tcashAddr, tcashBlock, tcashTx);
 
-  const { instance: wtcash, address: wtcashAddr, blockNumber: wtcashBlock, txHash: wtcashTx } = await deployProxyWithInfo(WTCASH, [], { initializer: 'initialize' });
+  const { instance: wtcash, address: wtcashAddr, blockNumber: wtcashBlock, txHash: wtcashTx } = await deployProxyWithInfo(WTCASH, [[]], { initializer: 'initialize' });
   state = record(paths, state, 'WTCASH', wtcashAddr, wtcashBlock, wtcashTx);
 
-  const { instance: wunit, address: wunitAddr, blockNumber: wunitBlock, txHash: wunitTx } = await deployProxyWithInfo(WUNIT, [], { initializer: 'initialize' });
+  const { instance: wunit, address: wunitAddr, blockNumber: wunitBlock, txHash: wunitTx } = await deployProxyWithInfo(WUNIT, [[]], { initializer: 'initialize' });
   state = record(paths, state, 'WUNIT', wunitAddr, wunitBlock, wunitTx);
 
   const { instance: tatManager, address: tatMgrAddr, blockNumber: tatMgrBlock, txHash: tatMgrTx } = await deployProxyWithInfo(TATManager, [rolesAddr], { initializer: 'initialize' });
