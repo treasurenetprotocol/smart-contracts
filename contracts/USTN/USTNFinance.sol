@@ -98,6 +98,7 @@ contract USTNFinance is Initializable, OwnableUpgradeable {
         address _ustn,
         address _ustna
     ) public initializer {
+        __Ownable_init();
         _roles = IRoles(_rolesContract);
         getRatio = IParameterInfo(_parameterInfoContract);
         getValue = IOracle(_oracleContract);
