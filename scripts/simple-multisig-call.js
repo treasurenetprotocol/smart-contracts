@@ -1,11 +1,11 @@
 /**
- * 简化的多签调用脚本
- * 基于现有的AWS KMS基础设施
+ * Simplified multisig call script
+ * Based on the existing AWS KMS infrastructure
  */
 
 const { Web3 } = require('web3');
 
-// 配置
+// Configuration
 const CONFIG = {
     rpcUrl: 'http://127.0.0.1:8555',
     chainId: 6666,
@@ -14,7 +14,7 @@ const CONFIG = {
     awsAccount: '0x09EDA46FFCec4656235391dd298875B82aA458A9'
 };
 
-// 多签合约ABI（仅需要的方法）
+// Multisig contract ABI (only the methods we need)
 const MULTISIG_ABI = [
     {
         "inputs": [{"type": "uint256", "name": "proposalId"}],
@@ -40,35 +40,35 @@ const MULTISIG_ABI = [
 ];
 
 async function main() {
-    console.log('🚀 简化多签调用脚本');
+    console.log('🚀 Simplified multisig call script');
     console.log('=====================================\n');
 
     try {
-        // 连接网络
+        // Connect to the network
         const web3 = new Web3(CONFIG.rpcUrl);
         const contract = new web3.eth.Contract(MULTISIG_ABI, CONFIG.multisigContract);
 
-        // 检查网络
+        // Check the network
         const networkId = await web3.eth.net.getId();
-        console.log(`✅ 网络连接成功: ${networkId}`);
+        console.log(`✅ Network connected: ${networkId}`);
 
-        // 检查签名状态
+        // Check signature status
         const [signatureCount, alreadySigned] = await Promise.all([
             contract.methods.getSignatureCount(CONFIG.proposalId).call(),
             contract.methods.hasAlreadySigned(CONFIG.proposalId, CONFIG.awsAccount).call()
         ]);
 
-        console.log(`📊 当前状态:`);
-        console.log(`   提案ID: ${CONFIG.proposalId}`);
-        console.log(`   签名数: ${Number(signatureCount)}/2`);
-        console.log(`   AWS账户已签名: ${alreadySigned ? '是' : '否'}`);
+        console.log(`📊 Current status:`);
+        console.log(`   Proposal ID: ${CONFIG.proposalId}`);
+        console.log(`   Signatures: ${Number(signatureCount)}/2`);
+        console.log(`   AWS account signed: ${alreadySigned ? 'Yes' : 'No'}`);
 
         if (alreadySigned) {
-            console.log('\n✅ AWS账户已经签名过此提案');
+            console.log('\n✅ AWS account has already signed this proposal');
             return;
         }
 
-        // 准备交易数据
+        // Prepare transaction data
         const methodData = contract.methods.signTransaction(CONFIG.proposalId).encodeABI();
         const [nonce, gasPrice, gasEstimate] = await Promise.all([
             web3.eth.getTransactionCount(CONFIG.awsAccount),
@@ -86,19 +86,19 @@ async function main() {
             chainId: CONFIG.chainId
         };
 
-        console.log('\n📋 交易信息:');
-        console.log(`   合约地址: ${txData.to}`);
-        console.log(`   方法: signTransaction(uint256)`);
-        console.log(`   参数: [${CONFIG.proposalId}]`);
-        console.log(`   发送者: ${CONFIG.awsAccount}`);
-        console.log(`   Gas限制: ${txData.gas}`);
-        console.log(`   Gas价格: ${txData.gasPrice}`);
+        console.log('\n📋 Transaction info:');
+        console.log(`   Contract address: ${txData.to}`);
+        console.log(`   Method: signTransaction(uint256)`);
+        console.log(`   Params: [${CONFIG.proposalId}]`);
+        console.log(`   Sender: ${CONFIG.awsAccount}`);
+        console.log(`   Gas limit: ${txData.gas}`);
+        console.log(`   Gas price: ${txData.gasPrice}`);
         console.log(`   Nonce: ${txData.nonce}`);
-        console.log(`   调用数据: ${txData.data}`);
+        console.log(`   Call data: ${txData.data}`);
 
-        console.log('\n🔧 使用现有AWS KMS基础设施:');
+        console.log('\n🔧 Use the existing AWS KMS infrastructure:');
         console.log('-------------------------------------');
-        console.log('// 基于你的 helper.js 和现有代码结构');
+        console.log('// Based on your helper.js and current code structure');
         console.log(`
 const contractAddress = '${CONFIG.multisigContract}';
 const methodName = 'signTransaction';
@@ -110,23 +110,23 @@ const gasPrice = ${txData.gasPrice};
 const nonce = ${txData.nonce};
 const chainId = ${CONFIG.chainId};
 
-// 使用你现有的合约调用流程
-// 参考 processRollbackRecord 中的模式
+// Use your existing contract call flow
+// Refer to the pattern in processRollbackRecord
         `);
 
-        console.log('🚀 下一步行动:');
-        console.log('1. 将上述参数集成到你的现有KMS签名流程中');
-        console.log('2. 执行签名和发送交易');
-        console.log('3. 等待交易确认');
-        console.log('4. 验证签名数变为 2/2');
+        console.log('🚀 Next steps:');
+        console.log('1. Integrate the above parameters into your existing KMS signing flow');
+        console.log('2. Sign and send the transaction');
+        console.log('3. Wait for confirmation');
+        console.log('4. Verify the signature count becomes 2/2');
 
     } catch (error) {
-        console.error('❌ 脚本执行失败:', error.message);
+        console.error('❌ Script failed:', error.message);
         process.exit(1);
     }
 }
 
-// 运行脚本
+// Run script
 if (require.main === module) {
     main().catch(console.error);
 }

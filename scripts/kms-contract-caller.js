@@ -1,6 +1,6 @@
 /**
- * AWS KMS合约调用脚本 - 基于现有基础设施
- * 使用选项1: 直接合约调用模式
+ * AWS KMS contract call script - built on existing infrastructure
+ * Using option 1: direct contract call mode
  */
 
 const AWS = require('aws-sdk');
@@ -8,7 +8,7 @@ const { Web3 } = require('web3');
 const { keccak256 } = require('js-sha3');
 const asn1 = require('asn1.js');
 
-// AWS KMS配置
+// AWS KMS configuration
 const AWS_CONFIG = {
     KMS_KEY_ID: '',
     KMS_ACCESS_KEY_ID: '',
@@ -16,13 +16,13 @@ const AWS_CONFIG = {
     KMS_REGION: 'us-west-1'
 };
 
-// 网络配置
+// Network configuration
 const NETWORK_CONFIG = {
     rpcUrl: 'http://127.0.0.1:8555',
     chainId: 6666
 };
 
-// 多签调用参数
+// Multisig call parameters
 const MULTISIG_PARAMS = {
     contractAddress: '0xED54E6944B2a89A13F3CcF0fc08ba7DB54Fd0A8c',
     methodSignature: 'signTransaction(uint256)',
@@ -30,7 +30,7 @@ const MULTISIG_PARAMS = {
     fromAddress: '0x09EDA46FFCec4656235391dd298875B82aA458A9'
 };
 
-// 初始化AWS KMS
+// Initialize AWS KMS
 AWS.config.update({
     accessKeyId: AWS_CONFIG.KMS_ACCESS_KEY_ID,
     secretAccessKey: AWS_CONFIG.KMS_SECRET_ACCESS_KEY,
@@ -40,7 +40,7 @@ AWS.config.update({
 const kms = new AWS.KMS();
 const web3 = new Web3(NETWORK_CONFIG.rpcUrl);
 
-// ASN.1结构定义
+// ASN.1 structure definition
 const EcdsaPubKey = asn1.define('EcdsaPubKey', function () {
     this.seq().obj(
         this.key('algo').seq().obj(
@@ -52,29 +52,29 @@ const EcdsaPubKey = asn1.define('EcdsaPubKey', function () {
 });
 
 /**
- * 工具类 - 基于你现有的helper.js模式
+ * Helper utilities - mirroring your helper.js pattern
  */
 class KMSHelper {
     /**
-     * 获取以太坊地址
+     * Get Ethereum address
      */
     static async getEthereumAddress() {
         try {
             const response = await kms.getPublicKey({ KeyId: AWS_CONFIG.KMS_KEY_ID }).promise();
             const res = EcdsaPubKey.decode(response.PublicKey, 'der');
             let pubKeyBuffer = res.pubKey.data;
-            pubKeyBuffer = pubKeyBuffer.slice(1); // 移除0x04前缀
+            pubKeyBuffer = pubKeyBuffer.slice(1); // remove 0x04 prefix
             const address = keccak256(pubKeyBuffer);
             const buf2 = Buffer.from(address, 'hex');
             const ethAddr = `0x${buf2.slice(-20).toString('hex')}`;
             return ethAddr;
         } catch (error) {
-            throw new Error(`获取以太坊地址失败: ${error.message}`);
+            throw new Error(`Failed to get Ethereum address: ${error.message}`);
         }
     }
 
     /**
-     * 签名交易哈希
+     * Sign transaction hash
      */
     static async signTransactionHash(messageHash) {
         try {
@@ -88,29 +88,29 @@ class KMSHelper {
             const result = await kms.sign(params).promise();
             return result.Signature;
         } catch (error) {
-            throw new Error(`KMS签名失败: ${error.message}`);
+            throw new Error(`KMS signing failed: ${error.message}`);
         }
     }
 
     /**
-     * 解析DER签名
+     * Parse DER signature
      */
     static parseDERSignature(derSignature) {
         const signature = Buffer.from(derSignature);
-        let offset = 2; // 跳过0x30和长度
+        let offset = 2; // skip 0x30 and total length
         
-        // 读取R
+        // Read R
         const rLength = signature[offset + 1];
         offset += 2;
         let r = signature.slice(offset, offset + rLength);
         offset += rLength;
         
-        // 读取S
+        // Read S
         const sLength = signature[offset + 1];
         offset += 2;
         let s = signature.slice(offset, offset + sLength);
         
-        // 移除前导零并确保32字节
+        // Remove leading zeros and ensure 32 bytes
         r = this.normalizeSignatureComponent(r);
         s = this.normalizeSignatureComponent(s);
         
@@ -118,15 +118,15 @@ class KMSHelper {
     }
 
     /**
-     * 规范化签名组件
+     * Normalize signature component
      */
     static normalizeSignatureComponent(component) {
-        // 移除前导零
+        // Remove leading zeros
         while (component.length > 1 && component[0] === 0x00) {
             component = component.slice(1);
         }
         
-        // 确保32字节
+        // Ensure 32 bytes
         if (component.length < 32) {
             const padded = Buffer.alloc(32);
             component.copy(padded, 32 - component.length);
@@ -137,12 +137,12 @@ class KMSHelper {
     }
 
     /**
-     * 转换为以太坊签名格式
+     * Convert to Ethereum signature format
      */
     static async derToEthSignature(derSignature, messageHash) {
         const { r, s } = this.parseDERSignature(derSignature);
         
-        // 规范化s值
+        // Normalize s value
         const secp256k1n = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141');
         const sBigInt = BigInt('0x' + s.toString('hex'));
         
@@ -152,7 +152,7 @@ class KMSHelper {
             normalizedS = Buffer.from(normalizedSBigInt.toString(16).padStart(64, '0'), 'hex');
         }
         
-        // 尝试不同的recovery值
+        // Try different recovery values
         for (let recovery = 0; recovery < 2; recovery++) {
             const v = recovery + 27;
             const signature = `0x${r.toString('hex')}${normalizedS.toString('hex')}${v.toString(16).padStart(2, '0')}`;
@@ -169,16 +169,16 @@ class KMSHelper {
             }
         }
         
-        throw new Error('无法生成有效的以太坊签名');
+        throw new Error('Unable to generate a valid Ethereum signature');
     }
 }
 
 /**
- * 合约调用器 - 基于你的processRollbackRecord模式
+ * Contract caller - following your processRollbackRecord pattern
  */
 class ContractCaller {
     /**
-     * 调用合约方法 - 主要函数
+     * Call contract method - main function
      */
     static async callContractMethod(params) {
         const {
@@ -190,31 +190,31 @@ class ContractCaller {
             gasPrice = null
         } = params;
 
-        console.log('🚀 开始合约调用...');
-        console.log(`   合约: ${contractAddress}`);
-        console.log(`   方法: ${methodSignature}`);
-        console.log(`   参数: [${methodParams.join(', ')}]`);
-        console.log(`   发送者: ${fromAddress}`);
+        console.log('🚀 Starting contract call...');
+        console.log(`   Contract: ${contractAddress}`);
+        console.log(`   Method: ${methodSignature}`);
+        console.log(`   Params: [${methodParams.join(', ')}]`);
+        console.log(`   From: ${fromAddress}`);
 
         try {
-            // 1. 验证地址匹配
+            // 1. Verify address matches
             const kmsAddress = await KMSHelper.getEthereumAddress();
             if (kmsAddress.toLowerCase() !== fromAddress.toLowerCase()) {
-                throw new Error(`地址不匹配: KMS=${kmsAddress}, 期望=${fromAddress}`);
+                throw new Error(`Address mismatch: KMS=${kmsAddress}, expected=${fromAddress}`);
             }
-            console.log('✅ 地址验证通过');
+            console.log('✅ Address verification passed');
 
-            // 2. 构建交易数据
+            // 2. Build transaction data
             const txData = await this.buildTransactionData(params);
-            console.log('✅ 交易数据构建完成');
+            console.log('✅ Transaction data built');
 
-            // 3. 签名交易
+            // 3. Sign transaction
             const signedTx = await this.signTransaction(txData);
-            console.log('✅ 交易签名完成');
+            console.log('✅ Transaction signed');
 
-            // 4. 发送交易
+            // 4. Send transaction
             const receipt = await this.sendTransaction(signedTx);
-            console.log('✅ 交易发送成功');
+            console.log('✅ Transaction sent');
 
             return {
                 success: true,
@@ -225,7 +225,7 @@ class ContractCaller {
             };
 
         } catch (error) {
-            console.error('❌ 合约调用失败:', error.message);
+            console.error('❌ Contract call failed:', error.message);
             return {
                 success: false,
                 error: error.message
@@ -234,17 +234,17 @@ class ContractCaller {
     }
 
     /**
-     * 构建交易数据
+     * Build transaction data
      */
     static async buildTransactionData(params) {
         const { contractAddress, methodSignature, params: methodParams } = params;
 
-        // 构建方法调用数据
+        // Construct method call data
         const methodId = web3.utils.keccak256(methodSignature).slice(0, 10);
         const encodedParams = web3.eth.abi.encodeParameters(['uint256'], methodParams);
         const data = methodId + encodedParams.slice(2);
 
-        // 获取交易参数
+        // Get transaction parameters
         const [nonce, gasPrice, gasEstimate] = await Promise.all([
             web3.eth.getTransactionCount(params.fromAddress),
             web3.eth.getGasPrice(),
@@ -267,12 +267,12 @@ class ContractCaller {
     }
 
     /**
-     * 签名交易
+     * Sign transaction
      */
     static async signTransaction(txData) {
-        console.log('🔐 开始签名交易...');
+        console.log('🔐 Signing transaction...');
 
-        // 构建交易哈希
+        // Build transaction hash
         const tx = {
             nonce: web3.utils.toHex(txData.nonce),
             gasPrice: web3.utils.toHex(txData.gasPrice),
@@ -283,69 +283,69 @@ class ContractCaller {
             chainId: txData.chainId
         };
 
-        // 生成交易哈希
+        // Generate transaction hash
         const tempSignedTx = await web3.eth.accounts.signTransaction(tx, '0x' + '0'.repeat(64));
         const messageHash = tempSignedTx.messageHash;
 
-        console.log('   消息哈希:', messageHash);
+        console.log('   Message hash:', messageHash);
 
-        // 使用KMS签名
+        // Sign with KMS
         const derSignature = await KMSHelper.signTransactionHash(messageHash);
         
-        // 转换为以太坊格式
+        // Convert to Ethereum format
         const ethSignature = await KMSHelper.derToEthSignature(derSignature, messageHash);
 
-        // 构建最终的签名交易
+        // Build the final signed transaction
         const signedTx = await web3.eth.accounts.signTransaction(tx, ethSignature);
         
         return signedTx.rawTransaction;
     }
 
     /**
-     * 发送交易
+     * Send transaction
      */
     static async sendTransaction(rawTransaction) {
-        console.log('📤 发送交易到网络...');
+        console.log('📤 Sending transaction to network...');
         
         const receipt = await web3.eth.sendSignedTransaction(rawTransaction);
         
-        console.log(`   交易哈希: ${receipt.transactionHash}`);
-        console.log(`   区块号: ${receipt.blockNumber}`);
-        console.log(`   Gas使用: ${receipt.gasUsed}`);
+        console.log(`   Tx hash: ${receipt.transactionHash}`);
+        console.log(`   Block number: ${receipt.blockNumber}`);
+        console.log(`   Gas used: ${receipt.gasUsed}`);
         
         return receipt;
     }
 }
 
 /**
- * 主函数
+ * Main entry
  */
 async function main() {
-    console.log('🚀 KMS合约调用器启动...');
+    console.log('🚀 KMS contract caller starting...');
     console.log('=====================================\n');
 
     try {
-        // 执行多签调用
+        // Execute multisig call
         const result = await ContractCaller.callContractMethod(MULTISIG_PARAMS);
 
         if (result.success) {
-            console.log('\n🎉 多签调用成功!');
-            console.log(`   交易哈希: ${result.transactionHash}`);
-            console.log(`   区块号: ${result.blockNumber}`);
-            console.log(`   Gas使用: ${result.gasUsed}`);
-            console.log('\n✅ 提案4现在应该有2/2签名了!');
+            console.log('\n🎉 Multisig call succeeded!');
+            console.log(`   Tx hash: ${result.transactionHash}`);
+            console.log(`   Block number: ${result.blockNumber}`);
+            console.log(`   Gas used: ${result.gasUsed}`);
+            console.log('\n✅ Proposal 4 should now have 2/2 signatures!');
         } else {
-            console.log('\n❌ 多签调用失败:', result.error);
+            console.log('\n❌ Multisig call failed:', result.error);
             process.exit(1);
         }
 
     } catch (error) {
-        console.error('❌ 脚本执行失败:', error.message);
+        console.error('❌ Script failed:', error.message);
         process.exit(1);
     }
 }
 
-// 运行脚本
+// Run script
 if (require.main === module) {
     main().catch(console.error);
 }

@@ -11,84 +11,84 @@ const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 const fs = require('fs');
 
 /**
- * 初始部署脚本，部署基础组件
- * - DAO: 治理组织
- * - MulSig: 多重签名合约
- * - Roles: 角色权限管理
- * - ParameterInfo: 系统参数配置
- * - Oracle: 预言机
+ * Initial deployment script for base components
+ * - DAO: governance organization
+ * - MulSig: multisignature contract
+ * - Roles: role and permission management
+ * - ParameterInfo: system parameter configuration
+ * - Oracle: price oracle
  */
 module.exports = async function (deployer, network, accounts) {
     try {
-        console.log('部署基础组件...');
+        console.log('Deploying base components...');
 
-        // 记录部署地址到文件
-        fs.writeFileSync('contracts.txt', `# 合约部署地址 - ${network} - ${new Date().toISOString()}\n`);
+        // Record deployment addresses to file
+        fs.writeFileSync('contracts.txt', `# Contract deployment addresses - ${network} - ${new Date().toISOString()}\n`);
 
-        // 1. 先部署所有合约，但不立即初始化
-        console.log('第一步：部署合约实例...');
+        // 1. Deploy contracts first without initializing
+        console.log('Step 1: Deploy contract instances...');
 
-        // 部署DAO合约(不初始化)
+        // Deploy DAO contract (without init)
         const dao = await deployProxy(DAO, { initializer: false }, { deployer });
-        console.log('DAO部署成功:', dao.address);
+        console.log('DAO deployed:', dao.address);
         fs.appendFileSync('contracts.txt', `const DAO_ADDRESS='${dao.address}'\n`);
 
-        // 部署MulSig多重签名合约(不初始化)
+        // Deploy MulSig multisig contract (without init)
         const mulSig = await deployProxy(MulSig, { initializer: false }, { deployer });
-        console.log('MulSig部署成功:', mulSig.address);
+        console.log('MulSig deployed:', mulSig.address);
         fs.appendFileSync('contracts.txt', `const MULSIG_ADDRESS='${mulSig.address}'\n`);
 
-        // 部署Roles权限管理合约(不初始化)
+        // Deploy Roles contract (without init)
         const roles = await deployProxy(Roles, { initializer: false }, { deployer });
-        console.log('Roles部署成功:', roles.address);
+        console.log('Roles deployed:', roles.address);
         fs.appendFileSync('contracts.txt', `const ROLES_ADDRESS='${roles.address}'\n`);
 
-        // 部署ParameterInfo参数合约(不初始化)
+        // Deploy ParameterInfo contract (without init)
         const parameterInfo = await deployProxy(ParameterInfo, { initializer: false }, { deployer });
-        console.log('ParameterInfo部署成功:', parameterInfo.address);
+        console.log('ParameterInfo deployed:', parameterInfo.address);
         fs.appendFileSync('contracts.txt', `const PARAMETER_INFO_ADDRESS='${parameterInfo.address}'\n`);
 
-        // 部署Oracle预言机合约(不初始化)
+        // Deploy Oracle contract (without init)
         const oracle = await deployProxy(Oracle, { initializer: false }, { deployer });
-        console.log('Oracle部署成功:', oracle.address);
+        console.log('Oracle deployed:', oracle.address);
         fs.appendFileSync('contracts.txt', `const ORACLE_ADDRESS='${oracle.address}'\n`);
 
-        // 2. 按照正确的顺序初始化合约
-        console.log('第二步：初始化合约...');
+        // 2. Initialize contracts in the correct order
+        console.log('Step 2: Initialize contracts...');
 
-        // 初始化DAO
+        // Initialize DAO
         await dao.initialize('DAO', 2, 10);
-        console.log('DAO初始化成功');
+        console.log('DAO initialized');
 
-        // 初始化参数管理
+        // Initialize parameter management
         await parameterInfo.initialize(mulSig.address);
-        console.log('ParameterInfo初始化成功');
+        console.log('ParameterInfo initialized');
 
 
-        // 初始化Oracle
+        // Initialize Oracle
         await oracle.initialize(roles.address);
-        console.log('Oracle初始化成功');
+        console.log('Oracle initialized');
 
-        // // 最后初始化MulSig (因为它依赖前面几个合约)
+        // // Initialize MulSig last (because it depends on previous contracts)
         // await mulSig.initialize(
         //     dao.address,
-        //     accounts[0], // 临时值，将在后续迁移中更新
+        //     accounts[0], // placeholder value; updated in later migrations
         //     roles.address,
         //     parameterInfo.address,
-        //     accounts[0], // CrosschainTokens地址，将在后续迁移中更新
-        //     3600 // 确认时长(秒)
+        //     accounts[0], // CrosschainTokens address; updated later
+        //     3600 // confirmation duration (seconds)
         // );
-        // console.log('MulSig初始化成功');
+        // console.log('MulSig initialized');
 
-        console.log('基础组件部署完成');
+        console.log('Base components deployed');
     } catch (error) {
-        console.error('部署失败:', error);
-        // 打印更详细的错误信息
+        console.error('Deployment failed:', error);
+        // Print detailed error info
         if (error.stack) {
-            console.error('错误堆栈:', error.stack);
+            console.error('Error stack:', error.stack);
         }
         if (error.cause) {
-            console.error('错误原因:', error.cause);
+            console.error('Error cause:', error.cause);
         }
     }
 };

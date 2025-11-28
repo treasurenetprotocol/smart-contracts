@@ -11,36 +11,36 @@ const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 const fs = require('fs');
 
 /**
- * 部署USTN相关合约
- * - USTN: USTN稳定币合约
- * - USTNAuction: USTN拍卖合约
- * - USTNFinance: USTN金融合约
+ * Deploy USTN related contracts
+ * - USTN: USTN stablecoin contract
+ * - USTNAuction: USTN auction contract
+ * - USTNFinance: USTN finance contract
  */
 module.exports = async function (deployer, network, accounts) {
     try {
-        console.log('部署USTN相关合约...');
+        console.log('Deploying USTN related contracts...');
 
-        // 获取已部署的合约实例
+        // Get deployed contract instances
         const roles = await Roles.deployed();
         const mulSig = await MulSig.deployed();
         const oracle = await Oracle.deployed();
         const parameterInfo = await ParameterInfo.deployed();
         const tcash = await TCash.deployed();
 
-        // 部署USTN合约
+        // Deploy USTN contract
         const ustn = await deployProxy(USTN, { initializer: false }, { deployer });
 
-        console.log('USTN部署成功:', ustn.address);
+        console.log('USTN deployed:', ustn.address);
         fs.appendFileSync('contracts.txt', `const USTN_ADDRESS='${ustn.address}'\n`);
 
-        // 部署USTNAuction拍卖合约
+        // Deploy USTNAuction contract
         const ustnAuction = await deployProxy(USTNAuction, { initializer: false }, { deployer });
-        console.log('USTNAuction部署成功:', ustnAuction.address);
+        console.log('USTNAuction deployed:', ustnAuction.address);
         fs.appendFileSync('contracts.txt', `const USTN_AUCTION_ADDRESS='${ustnAuction.address}'\n`);
 
-        // 部署USTNFinance金融合约
+        // Deploy USTNFinance contract
         const ustnFinance = await deployProxy(USTNFinance, { initializer: false }, { deployer });
-        console.log('USTNFinance部署成功:', ustnFinance.address);
+        console.log('USTNFinance deployed:', ustnFinance.address);
         fs.appendFileSync('contracts.txt', `const USTN_FINANCE_ADDRESS='${ustnFinance.address}'\n`);
 
 
@@ -66,14 +66,14 @@ module.exports = async function (deployer, network, accounts) {
         );
         
         
-        // // 设置合约关系
+        // // Set contract relationships
         // await ustn.setFinance(ustnFinance.address);
         // await ustn.setAuction(ustnAuction.address);
         // await ustnAuction.setFinance(ustnFinance.address);
         // await ustnFinance.setAuction(ustnAuction.address);
 
-        console.log('USTN相关合约部署完成');
+        console.log('USTN contracts deployment complete');
     } catch (error) {
-        console.error('部署失败:', error);
+        console.error('Deployment failed:', error);
     }
 };

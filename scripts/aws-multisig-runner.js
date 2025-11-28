@@ -1,11 +1,11 @@
 /**
  * AWS Multisig Runner
- * 直接运行的Node.js脚本，使用AWS KMS签名多签提案
- * 
- * 使用方法:
- * 1. 配置AWS环境变量
- * 2. 修改配置部分的参数
- * 3. 运行: node scripts/aws-multisig-runner.js
+ * Standalone Node.js script that signs multisig proposals with AWS KMS
+ *
+ * Usage:
+ * 1. Configure AWS environment variables
+ * 2. Update the configuration section parameters
+ * 3. Run: node scripts/aws-multisig-runner.js
  */
 
 const AWS = require('aws-sdk');
@@ -30,13 +30,13 @@ AWS.config.update({
 
 const kms = new AWS.KMS();
 
-// ===== 配置部分 - 请根据你的环境修改 =====
+// ===== Configuration - adjust for your environment =====
 const CONFIG = {
-    // 网络配置
+    // Network configuration
     rpcUrl: 'http://127.0.0.1:8555',
     chainId: 6666,
     
-    // AWS配置 - 使用硬编码配置
+    // AWS config - using hardcoded values
     aws: {
         accessKeyId: AWS_CONFIG.KMS_ACCESS_KEY_ID,
         secretAccessKey: AWS_CONFIG.KMS_SECRET_ACCESS_KEY,
@@ -44,14 +44,14 @@ const CONFIG = {
         keyId: AWS_CONFIG.KMS_KEY_ID
     },
     
-    // 多签配置
+    // Multisig configuration
     multisig: {
         contractAddress: '0xED54E6944B2a89A13F3CcF0fc08ba7DB54Fd0A8c',
         proposalId: 4,
         awsAccount: '0x09EDA46FFCec4656235391dd298875B82aA458A9'
     },
     
-    // 预期提案内容 (安全验证)
+    // Expected proposal content (safety check)
     expectedProposal: {
         treasureKind: "OIL",
         dapp: "OtterStreamTest",
@@ -59,7 +59,7 @@ const CONFIG = {
     }
 };
 
-// ===== 合约ABI =====
+// ===== Contract ABIs =====
 const MULTISIG_ABI = [
     {
         "inputs": [{"type": "uint256", "name": "proposalId"}],
@@ -112,7 +112,7 @@ const MULTISIG_ABI = [
         "stateMutability": "view",
         "type": "function"
     },
-    // 添加直接读取提案类型的函数
+    // Add function to read proposal type directly
     {
         "inputs": [{"type": "uint256", "name": "proposalId"}],
         "name": "getProposalType",
@@ -120,7 +120,7 @@ const MULTISIG_ABI = [
         "stateMutability": "view",
         "type": "function"
     },
-    // 添加获取提案详细信息的函数  
+    // Add function to fetch proposal details
     {
         "inputs": [{"type": "uint256", "name": "proposalId"}],
         "name": "getRegisterDAppProposal",
@@ -138,10 +138,10 @@ const MULTISIG_ABI = [
     }
 ];
 
-// ===== AWS KMS 工具类 =====
+// ===== AWS KMS helpers =====
 
 /**
- * ASN.1 结构定义
+ * ASN.1 structure definition
  */
 const EcdsaPubKey = asn1.define('EcdsaPubKey', function () {
     this.seq().obj(
@@ -154,7 +154,7 @@ const EcdsaPubKey = asn1.define('EcdsaPubKey', function () {
 });
 
 /**
- * AWS KMS 签名器 - 完整实现
+ * AWS KMS signer - complete implementation
  */
 class AWSKMSSigner {
     constructor(config) {
@@ -169,14 +169,14 @@ class AWSKMSSigner {
     }
 
     /**
-     * 获取以太坊地址
+     * Get Ethereum address
      */
     async getEthereumAddress() {
         try {
             const response = await this.kms.getPublicKey({ KeyId: this.keyId }).promise();
             const res = EcdsaPubKey.decode(response.PublicKey, 'der');
             let pubKeyBuffer = res.pubKey.data;
-            // 移除前缀 0x04
+            // Remove 0x04 prefix
             pubKeyBuffer = pubKeyBuffer.slice(1);
             const address = keccak256(pubKeyBuffer);
             const buf2 = Buffer.from(address, 'hex');
@@ -188,14 +188,14 @@ class AWSKMSSigner {
     }
 
     /**
-     * 获取公钥
+     * Get public key
      */
     async getPublicKey() {
         try {
             const response = await this.kms.getPublicKey({ KeyId: this.keyId }).promise();
             const res = EcdsaPubKey.decode(response.PublicKey, 'der');
             let pubKeyBuffer = res.pubKey.data;
-            // 移除前缀 0x04
+            // Remove 0x04 prefix
             pubKeyBuffer = pubKeyBuffer.slice(1);
             return pubKeyBuffer;
         } catch (error) {
@@ -204,12 +204,12 @@ class AWSKMSSigner {
     }
 
     /**
-     * KMS签名并转换为以太坊格式
+     * Sign with KMS and convert to Ethereum format
      */
     async signMessageHash(msgHash) {
         try {
-            console.log('🔍 开始KMS签名过程...');
-            console.log('   消息哈希:', msgHash.slice(0, 20) + '...');
+            console.log('🔍 Starting KMS signing...');
+            console.log('   Message hash:', msgHash.slice(0, 20) + '...');
             
             const params = {
                 KeyId: this.keyId,
@@ -218,75 +218,75 @@ class AWSKMSSigner {
                 MessageType: 'DIGEST',
             };
             
-            console.log('📡 调用AWS KMS...');
+            console.log('📡 Calling AWS KMS...');
             const kmsResult = await this.kms.sign(params).promise();
-            console.log('✅ KMS响应成功，签名长度:', kmsResult.Signature.length);
+            console.log('✅ KMS responded, signature length:', kmsResult.Signature.length);
             
-            // 解析DER编码的签名
-            console.log('🔍 解析DER编码...');
+            // Parse DER encoded signature
+            console.log('🔍 Parsing DER encoding...');
             const signature = this.parseDERSignature(kmsResult.Signature);
-            console.log('✅ DER解析成功');
-            console.log('   R长度:', signature.r.length, 'R:', signature.r.toString('hex').slice(0, 20) + '...');
-            console.log('   S长度:', signature.s.length, 'S:', signature.s.toString('hex').slice(0, 20) + '...');
+            console.log('✅ DER parsing succeeded');
+            console.log('   R length:', signature.r.length, 'R:', signature.r.toString('hex').slice(0, 20) + '...');
+            console.log('   S length:', signature.s.length, 'S:', signature.s.toString('hex').slice(0, 20) + '...');
             
-            // 转换为以太坊格式
-            console.log('🔄 转换为以太坊格式...');
+            // Convert to Ethereum format
+            console.log('🔄 Converting to Ethereum format...');
             const ethSignature = await this.toEthereumSignature(signature, msgHash);
             
-            console.log('✅ 以太坊签名生成成功');
+            console.log('✅ Ethereum signature generated');
             return ethSignature;
         } catch (error) {
-            console.log('❌ KMS签名失败:', error.message);
-            console.log('   错误堆栈:', error.stack);
+            console.log('❌ KMS signing failed:', error.message);
+            console.log('   Stack:', error.stack);
             throw new Error(`Failed to sign with KMS: ${error.message}`);
         }
     }
 
     /**
-     * 解析DER编码的签名
+     * Parse a DER-encoded signature
      */
     parseDERSignature(derSignature) {
         try {
             const signature = Buffer.from(derSignature);
             
-            // 验证DER格式
+            // Validate DER format
             if (signature[0] !== 0x30) {
                 throw new Error('Invalid DER format: missing sequence tag');
             }
             
-            // DER格式: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
-            let offset = 2; // 跳过 0x30 和总长度
+            // DER format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
+            let offset = 2; // skip 0x30 and total length
             
-            // 验证R的标签
+            // Validate R tag
             if (signature[offset] !== 0x02) {
                 throw new Error('Invalid DER format: missing R integer tag');
             }
             
-            // 读取R
+            // Read R
             const rLength = signature[offset + 1];
             offset += 2;
             let r = signature.slice(offset, offset + rLength);
             offset += rLength;
             
-            // 验证S的标签
+            // Validate S tag
             if (signature[offset] !== 0x02) {
                 throw new Error('Invalid DER format: missing S integer tag');
             }
             
-            // 读取S  
+            // Read S
             const sLength = signature[offset + 1];
             offset += 2;
             let s = signature.slice(offset, offset + sLength);
             
-            // 移除前导零（DER可能包含前导零以避免负数）
+            // Remove leading zeros (DER may include them to avoid negatives)
             r = this.removeLeadingZeros(r);
             s = this.removeLeadingZeros(s);
             
-            // 确保R和S都是32字节
+            // Ensure R and S are 32 bytes
             r = this.ensure32Bytes(r);
             s = this.ensure32Bytes(s);
             
-            // 验证r和s在有效范围内
+            // Validate r and s are within range
             this.validateSignatureComponents(r, s);
             
             return { r, s };
@@ -296,7 +296,7 @@ class AWSKMSSigner {
     }
 
     /**
-     * 移除前导零
+     * Remove leading zeros
      */
     removeLeadingZeros(buffer) {
         let start = 0;
@@ -307,7 +307,7 @@ class AWSKMSSigner {
     }
 
     /**
-     * 验证签名组件
+     * Validate signature components
      */
     validateSignatureComponents(r, s) {
         const secp256k1n = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141');
@@ -325,7 +325,7 @@ class AWSKMSSigner {
     }
 
     /**
-     * 确保是32字节
+     * Ensure buffer is 32 bytes
      */
     ensure32Bytes(buf) {
         if (buf.length === 32) return buf;
@@ -337,34 +337,34 @@ class AWSKMSSigner {
     }
 
     /**
-     * 转换为以太坊签名格式
+     * Convert to Ethereum signature format
      */
     async toEthereumSignature(signature, msgHash) {
         const { r, s } = signature;
         
-        // 检查s值是否需要规范化（避免malleable签名）
+        // Check whether s needs normalization (avoid malleable signatures)
         const secp256k1n = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141');
         const sBigInt = BigInt('0x' + s.toString('hex'));
         
         let normalizedS = s;
         if (sBigInt > secp256k1n / 2n) {
-            // 如果s > n/2，则使用 n - s
+            // If s > n/2, use n - s
             const normalizedSBigInt = secp256k1n - sBigInt;
             normalizedS = Buffer.from(normalizedSBigInt.toString(16).padStart(64, '0'), 'hex');
         }
         
-        // 获取公钥用于恢复v值
+        // Get public key to recover v
         const publicKey = await this.getPublicKey();
         
-        // 尝试v=27和v=28，看哪个能恢复出正确的地址
+        // Try v=27 and v=28 to see which recovers the correct address
         for (let recovery = 0; recovery < 2; recovery++) {
             const v = recovery + 27;
             
             try {
-                // 构建完整签名
+                // Build full signature
                 const fullSignature = `0x${r.toString('hex')}${normalizedS.toString('hex')}${v.toString(16).padStart(2, '0')}`;
                 
-                // 验证签名是否正确
+                // Verify the signature
                 const recoveredAddress = this.web3.eth.accounts.recover(msgHash, fullSignature);
                 const expectedAddress = await this.getEthereumAddress();
                 
@@ -372,22 +372,22 @@ class AWSKMSSigner {
                     return fullSignature;
                 }
             } catch (e) {
-                console.log(`   尝试 v=${v} 失败:`, e.message);
+                console.log(`   Attempt with v=${v} failed:`, e.message);
                 continue;
             }
         }
         
-        throw new Error('无法生成有效的以太坊签名');
+        throw new Error('Unable to generate a valid Ethereum signature');
     }
 
     /**
-     * 签名以太坊交易 - 完整实现
+     * Sign an Ethereum transaction - full implementation
      */
     async signTransaction(txData) {
         try {
-            console.log('🔐 开始使用AWS KMS签名交易...');
+            console.log('🔐 Signing transaction with AWS KMS...');
             
-            // 构建交易对象 
+            // Build transaction object
             const tx = {
                 nonce: this.web3.utils.toHex(txData.nonce),
                 gasPrice: this.web3.utils.toHex(txData.gasPrice),
@@ -398,20 +398,20 @@ class AWSKMSSigner {
                 chainId: CONFIG.chainId
             };
             
-            console.log('📋 交易数据准备完成');
+            console.log('📋 Transaction data prepared');
             
-            // 使用Web3的签名方法生成交易哈希
+            // Use Web3 signing to produce the tx hash
             const tempSignedTx = await this.web3.eth.accounts.signTransaction(tx, '0x' + '0'.repeat(64));
             const txHash = tempSignedTx.messageHash;
             
-            console.log('🔢 交易哈希生成完成');
+            console.log('🔢 Transaction hash generated');
             
-            // 使用KMS签名
+            // Sign with KMS
             const signature = await this.signMessageHash(txHash);
             
-            console.log('✍️  KMS签名完成');
+            console.log('✍️  KMS signing complete');
             
-            // 构建已签名的交易对象
+            // Construct signed transaction object
             const signedTxData = {
                 messageHash: txHash,
                 v: signature.slice(130, 132),
@@ -420,11 +420,11 @@ class AWSKMSSigner {
                 rawTransaction: signature
             };
             
-            console.log('✅ 签名交易构建完成');
-            console.log('   签名:', signature.slice(0, 20) + '...');
+            console.log('✅ Signed transaction constructed');
+            console.log('   Signature:', signature.slice(0, 20) + '...');
             
-            // 由于KMS签名的复杂性，我们将返回完整的签名数据
-            // 调用者可以使用这些数据来发送交易
+            // Because KMS signing is complex, return the full signature data
+            // Caller can use this to submit the transaction
             return signedTxData;
             
         } catch (error) {
@@ -435,25 +435,25 @@ class AWSKMSSigner {
 
 
         /**
-     * 测试KMS连接和签名基础功能
+     * Test KMS connectivity and basic signing
      */
     async testKMSBasics() {
         try {
-            console.log('🔍 测试KMS基础功能...');
+            console.log('🔍 Testing basic KMS functions...');
             
-            // 测试1: 获取公钥
+            // Test 1: get public key
             const publicKey = await this.getPublicKey();
-            console.log('✅ 公钥获取成功，长度:', publicKey.length);
+            console.log('✅ Public key retrieved, length:', publicKey.length);
             
-            // 测试2: 获取以太坊地址
+            // Test 2: get Ethereum address
             const address = await this.getEthereumAddress();
-            console.log('✅ 地址计算成功:', address);
+            console.log('✅ Address computed:', address);
             
-            // 测试3: 尝试签名一个简单的消息
+            // Test 3: sign a simple message
             const testMessage = Buffer.from('Hello World', 'utf8');
             const testHash = this.web3.utils.keccak256(testMessage);
             
-            console.log('🔍 测试消息签名...');
+            console.log('🔍 Testing message signing...');
             const params = {
                 KeyId: this.keyId,
                 Message: Buffer.from(testHash.slice(2), 'hex'),
@@ -462,33 +462,33 @@ class AWSKMSSigner {
             };
             
             const kmsResult = await this.kms.sign(params).promise();
-            console.log('✅ KMS签名测试成功，长度:', kmsResult.Signature.length);
+            console.log('✅ KMS signature test succeeded, length:', kmsResult.Signature.length);
             
             return true;
         } catch (error) {
-            console.log('❌ KMS基础测试失败:', error.message);
+            console.log('❌ KMS basic test failed:', error.message);
             return false;
         }
     }
 
     /**
-     * 直接发送签名的多签交易
+     * Sign and send a multisig transaction directly
      */
     async signAndSendMultisigTransaction(proposalId) {
         try {
-            console.log(`🚀 开始签名多签提案 ${proposalId}...`);
+            console.log(`🚀 Signing multisig proposal ${proposalId}...`);
             
-            // 首先测试KMS基础功能
+            // First test KMS basics
             const kmsOk = await this.testKMSBasics();
             if (!kmsOk) {
-                throw new Error('KMS基础功能测试失败');
+                throw new Error('KMS basic functionality test failed');
             }
             
-            // 准备合约调用
+            // Prepare contract call
             const contract = new this.web3.eth.Contract(MULTISIG_ABI, CONFIG.multisig.contractAddress);
             const methodData = contract.methods.signTransaction(proposalId).encodeABI();
             
-            // 获取交易参数
+            // Gather transaction parameters
             const [nonce, gasPrice, gasEstimate] = await Promise.all([
                 this.web3.eth.getTransactionCount(CONFIG.multisig.awsAccount),
                 this.web3.eth.getGasPrice(),
@@ -504,14 +504,14 @@ class AWSKMSSigner {
                 value: 0
             };
             
-            console.log('📋 交易参数:');
+            console.log('📋 Transaction params:');
             console.log(`   Gas: ${txData.gas}`);
             console.log(`   Gas Price: ${txData.gasPrice}`);
             console.log(`   Nonce: ${txData.nonce}`);
             
-            // 由于KMS签名转换复杂，我们暂时使用备用方案
-            console.log('⚠️  KMS签名转换过于复杂，建议使用现有基础设施');
-            throw new Error('请使用现有的AWS KMS基础设施完成签名');
+            // Because KMS signing conversion is complex, fall back to existing workflow
+            console.log('⚠️  KMS signing conversion is complex; please use your existing infrastructure');
+            throw new Error('Please complete signing with your existing AWS KMS flow');
             
         } catch (error) {
             throw new Error(`Multisig signing failed: ${error.message}`);
@@ -519,7 +519,7 @@ class AWSKMSSigner {
     }
 }
 
-// ===== 多签处理器 =====
+// ===== Multisig handler =====
 
 class MultisigRunner {
     constructor() {
@@ -529,16 +529,16 @@ class MultisigRunner {
     }
 
     /**
-     * 运行完整的多签流程
+     * Run the full multisig workflow
      */
     async run() {
         console.log('🚀 AWS Multisig Runner Starting...\n');
 
         try {
-            // 1. 验证配置
+            // 1. Validate configuration
             await this.validateConfig();
 
-            // 2. 验证提案安全性
+            // 2. Verify proposal safety
             try {
                 await this.verifyProposalSafety();
             } catch (error) {
@@ -546,15 +546,15 @@ class MultisigRunner {
                 console.log('   Continuing with signature check...\n');
             }
 
-            // 3. 检查签名状态
+            // 3. Check signature status
             const signatureStatus = await this.checkSignatureStatus();
 
-            // 4. 执行签名 (如果需要)
+            // 4. Sign if needed
             if (!signatureStatus.alreadySigned) {
                 await this.signProposal();
             }
 
-            // 5. 检查执行条件
+            // 5. Verify execution conditions
             await this.checkExecutionConditions();
 
             console.log('\n✅ Multisig runner completed successfully!');
@@ -566,17 +566,17 @@ class MultisigRunner {
     }
 
     /**
-     * 验证配置
+     * Validate configuration
      */
     async validateConfig() {
         console.log('🔍 Validating configuration...');
 
-        // 检查AWS配置
+        // Check AWS config
         if (!CONFIG.aws.accessKeyId || !CONFIG.aws.secretAccessKey || !CONFIG.aws.keyId) {
             throw new Error('AWS configuration missing. Please set environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_KMS_KEY_ID');
         }
 
-        // 检查网络连接
+        // Check network connection
         try {
             const networkId = await this.web3.eth.net.getId();
             console.log(`✅ Connected to network ID: ${networkId}`);
@@ -588,7 +588,7 @@ class MultisigRunner {
             throw new Error(`Network connection failed: ${error.message}`);
         }
 
-        // 验证AWS账号地址
+        // Validate AWS account address
         try {
             const derivedAddress = await this.signer.getEthereumAddress();
             console.log(`✅ AWS account derived: ${derivedAddress}`);
@@ -606,22 +606,22 @@ class MultisigRunner {
     }
 
     /**
-     * 验证提案安全性
-     * 由于transactionDetails不支持type 5提案，我们使用storage访问
+     * Verify proposal safety
+     * transactionDetails does not support type 5 proposals, so use storage access
      */
     async verifyProposalSafety() {
         console.log('🛡️  Verifying proposal safety...');
 
         try {
-            // 直接通过storage slot读取提案数据
+            // Read proposal data directly via storage slot
             const proposalId = CONFIG.multisig.proposalId;
             
-            // 计算提案的storage位置
+            // Compute proposal storage position
             const proposalSlot = this.web3.utils.keccak256(
                 this.web3.eth.abi.encodeParameters(['uint256', 'uint256'], [proposalId, 0])
             );
             
-            // 读取提案的各个字段
+            // Read each field of the proposal
             const proposalData = await this.readProposalFromStorage(proposalId);
             
             console.log(`📋 Proposal ${proposalId} details:`);
@@ -631,20 +631,20 @@ class MultisigRunner {
             console.log(`   Proposal Type: ${proposalData.proposalType || 'Reading...'}`);
             console.log(`   Execute Time: ${proposalData.executeTime ? new Date(Number(proposalData.executeTime) * 1000) : 'Not set'}`);
 
-            // 检查提案是否存在（通过signature count > 0来验证）
+            // Check whether proposal exists (signature count > 0)
             const signatureCount = await this.contract.methods.getSignatureCount(proposalId).call();
             
             if (Number(signatureCount) === 0) {
-                // 可能是新提案，检查pending proposals
+                // Might be a new proposal; check pending proposals
                 console.log('⚠️  Warning: Proposal may not exist or has no signatures yet');
                 console.log('   This could be normal for a newly created proposal');
             }
 
-            // 简化验证 - 主要检查提案存在性
+            // Simplified validation - primarily check existence
             console.log('✅ Proposal exists and is accessible\n');
 
         } catch (error) {
-            // 如果storage读取失败，提供替代验证
+            // If storage read fails, offer fallback
             console.log('⚠️  Direct proposal reading not available');
             console.log('   This is expected for the current contract version');
             console.log('   Proceeding with signature status check...\n');
@@ -652,12 +652,12 @@ class MultisigRunner {
     }
 
     /**
-     * 尝试从storage读取提案数据（实验性功能）
+     * Attempt to read proposal data from storage (experimental)
      */
     async readProposalFromStorage(proposalId) {
         try {
-            // 这是一个实验性功能，用于直接读取storage
-            // 在实际合约中可能不会工作，仅用于调试
+            // Experimental: attempt to read storage directly
+            // May not work in production contracts; intended for debugging
             const proposalSlot = this.web3.utils.keccak256(
                 this.web3.eth.abi.encodeParameters(['uint256', 'uint256'], [proposalId, 0])
             );
@@ -681,7 +681,7 @@ class MultisigRunner {
     }
 
     /**
-     * 检查签名状态
+     * Check signature status
      */
     async checkSignatureStatus() {
         console.log('📝 Checking signature status...');
@@ -713,13 +713,13 @@ class MultisigRunner {
     }
 
     /**
-     * 签名提案
+     * Sign the proposal
      */
     async signProposal() {
         console.log('🖊️  Signing proposal...');
 
         try {
-            // 准备交易数据
+            // Prepare transaction data
             const methodData = this.contract.methods.signTransaction(CONFIG.multisig.proposalId).encodeABI();
             const nonce = await this.web3.eth.getTransactionCount(CONFIG.multisig.awsAccount);
             const gasPrice = await this.web3.eth.getGasPrice();
@@ -742,12 +742,12 @@ class MultisigRunner {
             console.log(`   Gas Price: ${txData.gasPrice}`);
             console.log(`   Nonce: ${txData.nonce}`);
 
-            // 这里是关键部分 - 使用AWS KMS签名
+            // Critical part - sign with AWS KMS
             console.log('\n🔐 Attempting to sign with AWS KMS...');
             
-            // 由于KMS签名的复杂性，这里提供两个选项：
+            // Because KMS signing is complex, provide two options:
             
-            // 选项1: 使用你现有的KMS签名逻辑
+            // Option 1: use existing KMS signing logic
             console.log('\n💡 Option 1: Use your existing KMS signing infrastructure');
             console.log('   Please integrate this transaction data into your existing signing system:');
             console.log('   Contract:', CONFIG.multisig.contractAddress);
@@ -755,25 +755,25 @@ class MultisigRunner {
             console.log('   Params: [4]');
             console.log('   From:', CONFIG.multisig.awsAccount);
             
-            // 选项2: 直接使用完整的KMS签名实现
+            // Option 2: attempt full KMS signing implementation
             try {
-                console.log('\n🔐 尝试使用完整的AWS KMS签名...');
+                console.log('\n🔐 Trying full AWS KMS signing...');
                 const receipt = await this.signer.signAndSendMultisigTransaction(CONFIG.multisig.proposalId);
-                console.log(`\n🎉 多签提案签名成功!`);
-                console.log(`   交易哈希: ${receipt.transactionHash}`);
-                console.log(`   Gas使用: ${receipt.gasUsed}`);
-                console.log(`   区块号: ${receipt.blockNumber}`);
+                console.log(`\n🎉 Multisig proposal signed successfully!`);
+                console.log(`   Tx hash: ${receipt.transactionHash}`);
+                console.log(`   Gas used: ${receipt.gasUsed}`);
+                console.log(`   Block number: ${receipt.blockNumber}`);
                 return receipt;
             } catch (kmsError) {
-                console.log('\n💡 选项2: AWS KMS自动签名失败');
-                console.log('   错误:', kmsError.message);
-                console.log('\n🔧 完成签名的方法:');
-                console.log('   1. 使用上述交易数据配合你现有的KMS系统');
-                console.log('   2. 检查AWS KMS权限和网络连接');
-                console.log('   3. 使用Truffle Console手动签名');
+                console.log('\n💡 Option 2: AWS KMS automatic signing failed');
+                console.log('   Error:', kmsError.message);
+                console.log('\n🔧 How to finish signing:');
+                console.log('   1. Use the above transaction data with your existing KMS system');
+                console.log('   2. Check AWS KMS permissions and network connectivity');
+                console.log('   3. Use Truffle Console to sign manually');
                 
-                // 不抛出错误，让用户选择手动方式
-                console.log('\n⚠️  继续执行其他检查...');
+                // Do not throw; allow user to proceed manually
+                console.log('\n⚠️  Continuing with other checks...');
             }
 
         } catch (error) {
@@ -782,7 +782,7 @@ class MultisigRunner {
     }
 
     /**
-     * 检查执行条件
+     * Check execution conditions
      */
     async checkExecutionConditions() {
         console.log('⏰ Checking execution conditions...');
@@ -832,10 +832,10 @@ class MultisigRunner {
     }
 }
 
-// ===== 主函数 =====
+// ===== Main entry =====
 
 async function main() {
-    // // 检查环境变量
+    // // Validate environment variables
     // const requiredEnvVars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_KMS_KEY_ID'];
     // const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
     
@@ -859,7 +859,7 @@ async function main() {
     }
 }
 
-// 运行脚本
+// Run script
 if (require.main === module) {
     main().catch(console.error);
 }

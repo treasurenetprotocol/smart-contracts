@@ -1,6 +1,6 @@
 /**
- * AWS KMS多签调用脚本
- * 基于用户成功的@web3-kms-signer库实现
+ * AWS KMS multisig call script
+ * Built on the proven @web3-kms-signer library
  */
 
 const { Web3 } = require('web3');
@@ -8,7 +8,7 @@ const { Signer } = require('@web3-kms-signer/core');
 const { KMSWallets } = require('@web3-kms-signer/kms-wallets');
 const { KMSProviderAWS } = require('@web3-kms-signer/kms-provider-aws');
 
-// AWS KMS配置
+// AWS KMS configuration
 const awsConfig = {
     //dev
 /*    kms: {
@@ -26,7 +26,7 @@ const awsConfig = {
     }
 };
 
-// 网络配置 dev
+// Network config (dev)
 // const CONFIG = {
 //     rpcUrl: 'http://127.0.0.1:8555',
 //     chainId: 6666,
@@ -39,12 +39,12 @@ const CONFIG = {
     rpcUrl: 'https://rpc.treasurenet.io',
     chainId: 5570,
     multisigContract: '0x2c188Cf07c4370F6461066827bd1c6A856ab9B70',
-    //提案号。需要每次修改
+    // Proposal number; update for each run
     proposalId: 6,
     awsAccount: '0x9038e6adaa51239e10c8954fae1fa870ea69f6ea'
 };
 
-// 多签合约ABI
+// Multisig contract ABI
 const MULTISIG_ABI = [
     {
         "inputs": [{"type": "uint256", "name": "proposalId"}],
@@ -70,7 +70,7 @@ const MULTISIG_ABI = [
 ];
 
 /**
- * 多签调用器类 - 基于用户成功的模式
+ * Multisig caller class - based on a proven pattern
  */
 class MultisigSigner {
     constructor() {
@@ -87,58 +87,57 @@ class MultisigSigner {
     }
 
     /**
-     * 获取以太坊地址 - 基于你的getEthereumAddress函数
+     * Get Ethereum address - based on your getEthereumAddress helper
      */
     async getEthereumAddress() {
         try {
-            // 使用KMSWallets获取地址
+            // Use KMSWallets to get the address
             const wallet = this.provider;
             const publicKey = await wallet.getPublicKey({ KeyId: awsConfig.kms.keyId });
             
-            // 这里需要你的getEthereumAddress工具函数
-            // 暂时返回配置的地址
+            // This needs your getEthereumAddress helper; return configured address for now
             return CONFIG.awsAccount;
         } catch (error) {
-            throw new Error(`获取以太坊地址失败: ${error.message}`);
+            throw new Error(`Failed to get Ethereum address: ${error.message}`);
         }
     }
 
     /**
-     * 计算Gas参数 - 基于你的calculateGasParameters模式
+     * Calculate gas parameters - based on your calculateGasParameters pattern
      */
     async calculateGasParameters(web3, contract, methodName, params, senderAddress) {
         try {
-            console.log('🔍 计算Gas参数...');
+            console.log('🔍 Calculating gas parameters...');
             
             const gasEstimate = await contract.methods[methodName](...params)
                 .estimateGas({ from: senderAddress });
             
             const gasPrice = await web3.eth.getGasPrice();
             
-            // 添加20%的Gas缓冲
+            // Add 20% gas buffer
             const finalGas = Math.floor(Number(gasEstimate) * 1.2);
             const adjustedGasPrice = Number(gasPrice);
             
-            console.log(`   Gas估算: ${gasEstimate}`);
-            console.log(`   最终Gas: ${finalGas}`);
-            console.log(`   Gas价格: ${adjustedGasPrice}`);
+            console.log(`   Gas estimate: ${gasEstimate}`);
+            console.log(`   Final gas: ${finalGas}`);
+            console.log(`   Gas price: ${adjustedGasPrice}`);
             
             return {
                 finalGas,
                 adjustedGasPrice
             };
         } catch (error) {
-            throw new Error(`Gas计算失败: ${error.message}`);
+            throw new Error(`Gas calculation failed: ${error.message}`);
         }
     }
 
     /**
-     * 创建并签名交易 - 基于你的createAndSignTransaction函数
+     * Create and sign transaction - based on your createAndSignTransaction function
      */
     async createAndSignTransaction(web3, chainId, contractAddress, methodData, gasInfo, senderAddress = null, signer = null) {
-        console.log('🔐 创建并签名交易...');
+        console.log('🔐 Creating and signing transaction...');
         
-        // 使用提供的参数或默认值
+        // Use provided params or defaults
         let finalSenderAddress = senderAddress || CONFIG.awsAccount;
         let finalSigner = signer || this.signer;
 
@@ -154,7 +153,7 @@ class MultisigSigner {
             data: methodData,
         };
 
-        console.log('   交易数据准备完成');
+        console.log('   Transaction data prepared');
         console.log(`   To: ${txData.to}`);
         console.log(`   Gas Limit: ${parseInt(txData.gasLimit, 16)}`);
         console.log(`   Gas Price: ${parseInt(txData.gasPrice, 16)}`);
@@ -163,50 +162,50 @@ class MultisigSigner {
     }
 
     /**
-     * 发送交易 - 基于你的sendTransactionWithErrorHandling函数
+     * Send transaction - based on your sendTransactionWithErrorHandling function
      */
     async sendTransactionWithErrorHandling(web3, signedTx, proposalId) {
-        console.log('📤 发送签名交易...');
+        console.log('📤 Sending signed transaction...');
         
         try {
             const result = await web3.eth.sendSignedTransaction(signedTx);
             
-            console.log('✅ 交易发送成功!');
-            console.log(`   交易哈希: ${result.transactionHash}`);
-            console.log(`   区块号: ${result.blockNumber}`);
-            console.log(`   Gas使用: ${result.gasUsed}`);
+            console.log('✅ Transaction sent!');
+            console.log(`   Tx hash: ${result.transactionHash}`);
+            console.log(`   Block number: ${result.blockNumber}`);
+            console.log(`   Gas used: ${result.gasUsed}`);
             
             return result;
         } catch (error) {
-            // 处理交易超时但有哈希的情况
+            // Handle timeout cases that still return a hash
             if (error.message && error.message.includes('Transaction was not mined within')) {
                 const txHashMatch = error.message.match(/Transaction Hash: (0x[a-fA-F0-9]{64})/);
                 if (txHashMatch && txHashMatch[1]) {
                     const txHash = txHashMatch[1];
-                    console.log(`⚠️  交易超时但有哈希: ${txHash}`);
+                    console.log(`⚠️  Transaction timed out but has hash: ${txHash}`);
                     return { transactionHash: txHash, status: 'pending' };
                 }
             }
             
-            console.error('❌ 交易发送失败:', error.message);
+            console.error('❌ Transaction failed to send:', error.message);
             throw error;
         }
     }
 
     /**
-     * 检查签名状态
+     * Check signature status
      */
     async checkSignatureStatus() {
-        console.log('📊 检查签名状态...');
+        console.log('📊 Checking signature status...');
         
         const [signatureCount, alreadySigned] = await Promise.all([
             this.contract.methods.getSignatureCount(CONFIG.proposalId).call(),
             this.contract.methods.hasAlreadySigned(CONFIG.proposalId, CONFIG.awsAccount).call()
         ]);
 
-        console.log(`   提案ID: ${CONFIG.proposalId}`);
-        console.log(`   当前签名: ${Number(signatureCount)}/2`);
-        console.log(`   AWS账户已签名: ${alreadySigned ? '是' : '否'}`);
+        console.log(`   Proposal ID: ${CONFIG.proposalId}`);
+        console.log(`   Current signatures: ${Number(signatureCount)}/2`);
+        console.log(`   AWS account signed: ${alreadySigned ? 'Yes' : 'No'}`);
 
         return {
             signatureCount: Number(signatureCount),
@@ -215,35 +214,35 @@ class MultisigSigner {
     }
 
     /**
-     * 执行多签签名 - 主函数
+     * Execute multisig signing - main routine
      */
     async signMultisigProposal() {
-        console.log('🚀 开始多签签名过程...');
+        console.log('🚀 Starting multisig signing...');
         console.log('=====================================\n');
 
         try {
-            // 1. 检查网络连接
+            // 1. Check network connection
             const networkId = await this.web3.eth.net.getId();
-            console.log(`✅ 连接到网络: ${networkId}`);
+            console.log(`✅ Connected to network: ${networkId}`);
             
             if (networkId != CONFIG.chainId) {
-                console.warn(`⚠️  网络ID不匹配: 期望${CONFIG.chainId}, 实际${networkId}`);
+                console.warn(`⚠️  Network ID mismatch: expected ${CONFIG.chainId}, got ${networkId}`);
             }
 
-            // 2. 检查签名状态
+            // 2. Check signature status
             const status = await this.checkSignatureStatus();
             
             if (status.alreadySigned) {
-                console.log('\n✅ AWS账户已经签名过此提案!');
+                console.log('\n✅ AWS account has already signed this proposal!');
                 return;
             }
 
             if (status.signatureCount >= 2) {
-                console.log('\n✅ 提案已有足够签名!');
+                console.log('\n✅ Proposal already has enough signatures!');
                 return;
             }
 
-            // 3. 计算Gas参数
+            // 3. Calculate gas parameters
             const gasInfo = await this.calculateGasParameters(
                 this.web3,
                 this.contract,
@@ -252,11 +251,11 @@ class MultisigSigner {
                 CONFIG.awsAccount
             );
 
-            // 4. 编码方法数据
+            // 4. Encode method data
             const methodData = this.contract.methods.signTransaction(CONFIG.proposalId).encodeABI();
-            console.log(`✅ 方法数据编码完成: ${methodData.slice(0, 20)}...`);
+            console.log(`✅ Method data encoded: ${methodData.slice(0, 20)}...`);
 
-            // 5. 创建并签名交易
+            // 5. Create and sign transaction
             const signedTx = await this.createAndSignTransaction(
                 this.web3,
                 CONFIG.chainId,
@@ -267,46 +266,46 @@ class MultisigSigner {
                 this.signer
             );
 
-            console.log('✅ 交易签名完成');
+            console.log('✅ Transaction signed');
 
-            // 6. 发送交易
+            // 6. Send transaction
             const result = await this.sendTransactionWithErrorHandling(
                 this.web3,
                 signedTx,
                 CONFIG.proposalId
             );
 
-            // 7. 验证结果
-            console.log('\n🔍 验证签名结果...');
+            // 7. Verify result
+            console.log('\n🔍 Verifying signature result...');
             const newStatus = await this.checkSignatureStatus();
             
             if (newStatus.signatureCount > status.signatureCount) {
-                console.log(`🎉 签名成功! 当前签名数: ${newStatus.signatureCount}/2`);
+                console.log(`🎉 Signature succeeded! Current signatures: ${newStatus.signatureCount}/2`);
             }
 
             return result;
 
         } catch (error) {
-            console.error('❌ 多签签名失败:', error.message);
+            console.error('❌ Multisig signing failed:', error.message);
             throw error;
         }
     }
 }
 
 /**
- * 主函数
+ * Main entry
  */
 async function main() {
     try {
         const signer = new MultisigSigner();
         await signer.signMultisigProposal();
     } catch (error) {
-        console.error('❌ 脚本执行失败:', error.message);
+        console.error('❌ Script execution failed:', error.message);
         process.exit(1);
     }
 }
 
-// 运行脚本
+// Run script
 if (require.main === module) {
     main().catch(console.error);
 }
@@ -316,4 +315,3 @@ module.exports = {
     CONFIG,
     awsConfig
 };
-

@@ -14,15 +14,15 @@ const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 const fs = require('fs');
 
 /**
- * 部署跨链相关合约
- * - CrosschainTokens: 跨链代币管理
- * - CrosschainBridge: 跨链桥接合约
+ * Deploy cross-chain related contracts
+ * - CrosschainTokens: cross-chain token management
+ * - CrosschainBridge: cross-chain bridge contract
  */
 module.exports = async function (deployer, network, accounts) {
     try {
-        console.log('部署跨链相关合约...');
+        console.log('Deploying cross-chain contracts...');
 
-        // 获取已部署的合约实例
+        // Get deployed contract instances
         const mulSig = await MulSig.deployed();
         const roles = await Roles.deployed();
         const gov = await Governance.deployed();
@@ -32,18 +32,18 @@ module.exports = async function (deployer, network, accounts) {
         const tcash = await TCash.deployed();
         const tcashLoan = await TCashLoan.deployed();
         const tat = await TAT.deployed();
-        // 部署CrosschainTokens代币管理合约
+        // Deploy CrosschainTokens token management contract
         const crosschainTokens = await deployProxy(CrosschainTokens,
-            ['0x0000000000000000000000000000000000000000'], // 先用零地址
+            ['0x0000000000000000000000000000000000000000'], // start with zero address
             {
                 deployer,
                 initializer: 'initialize'
             }
         );
-        console.log('CrosschainTokens部署成功:', crosschainTokens.address);
+        console.log('CrosschainTokens deployed:', crosschainTokens.address);
         fs.appendFileSync('contracts.txt', `const CROSSCHAIN_TOKENS_ADDRESS='${crosschainTokens.address}'\n`);
 
-        // 部署CrosschainBridge跨链桥合约
+        // Deploy CrosschainBridge contract
         const crosschainBridge = await deployProxy(CrosschainBridge,
             [crosschainTokens.address, roles.address],
             {
@@ -51,23 +51,23 @@ module.exports = async function (deployer, network, accounts) {
                 initializer: 'initialize'
             }
         );
-        console.log('CrosschainBridge部署成功:', crosschainBridge.address);
+        console.log('CrosschainBridge deployed:', crosschainBridge.address);
         fs.appendFileSync('contracts.txt', `const CROSSCHAIN_BRIDGE_ADDRESS='${crosschainBridge.address}'\n`);
 
-        // 更新CrosschainTokens中的MulSig地址
+        // Update MulSig address in CrosschainTokens
         const crosschainTokensInstance = await CrosschainTokens.at(crosschainTokens.address);
         await crosschainTokensInstance.setMulSig(mulSig.address);
 
 
-        // 重新初始化MulSig合约，现在我们有了Governance实例
-        console.log('更新MulSig合约初始化参数...');
+        // Reinitialize MulSig now that we have a Governance instance
+        console.log('Updating MulSig initialization parameters...');
         // await mulSig.initialize(
-        //     accounts[0], // 使用部署账户代替dao.address
-        //     gov.address, // 现在使用正确的governance地址
+        //     accounts[0], // use deployer account instead of dao.address
+        //     gov.address, // now using the correct governance address
         //     roles.address,
-        //     oracle.address, // 使用oracle地址代替parameterInfo.address
+        //     oracle.address, // use oracle address instead of parameterInfo.address
         //     crosschainTokens.address,
-        //     3600 // 确认时长(秒)
+        //     3600 // confirmation duration (seconds)
         // );
 
         await mulSig.initialize(dao.address,
@@ -76,16 +76,16 @@ module.exports = async function (deployer, network, accounts) {
             parameterInfo.address,
             crosschainTokens.address,
             5);
-        console.log('MulSig合约更新成功');
+        console.log('MulSig contract updated');
 
-        // // 更新MulSig中的CrosschainTokens地址
+        // // Update CrosschainTokens address in MulSig
         // const mulSigInstance = await MulSig.at(mulSig.address);
         // if ((await mulSigInstance.crosschainTokens()) === '0x0000000000000000000000000000000000000000') {
         //     await mulSigInstance.setCrosschainTokens(crosschainTokens.address);
         // }
 
 
-        // 初始化Roles合约 (注意：这里需要提供必要的初始角色地址数组)
+        // Initialize Roles contract (provide necessary initial role address arrays)
         await roles.initialize(mulSig.address, 
             [accounts[0], '0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10','0x6A79824E6be14b7e5Cb389527A02140935a76cD5'], 
             [accounts[0], '0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10','0x6A79824E6be14b7e5Cb389527A02140935a76cD5'], 
@@ -93,27 +93,27 @@ module.exports = async function (deployer, network, accounts) {
             [crosschainBridge.address, "0x594E5b01D5D89b5C4183Fe11Fe157c42102aEc10", "0x6A79824E6be14b7e5Cb389527A02140935a76cD5"],
             [tcash.address, tcashLoan.address]
         )
-        console.log('Roles初始化成功');
+        console.log('Roles initialized successfully');
 
         await tcashLoan.initialize(tcash.address, roles.address, parameterInfo.address, oracle.address, tat.address);
 
 
-        // 给部署账户授予FOUNDATION_MANAGER角色以设置价格
-        // 假设accounts[0]已经有ADMIN角色，可以授予其他角色
+        // Grant FOUNDATION_MANAGER role to deployer account to set prices
+        // Assuming accounts[0] already has the ADMIN role and can grant others
         const FOUNDATION_MANAGER_ROLE = web3.utils.keccak256("FOUNDATION_MANAGER");
         if (!(await roles.hasRole(FOUNDATION_MANAGER_ROLE, accounts[0]))) {
             await roles.grantRole(FOUNDATION_MANAGER_ROLE, accounts[0]);
-            console.log(`授予账户 ${accounts[0]} FOUNDATION_MANAGER角色`);
+            console.log(`Granted FOUNDATION_MANAGER role to account ${accounts[0]}`);
         }
 
-        // 设置UNIT和TCASH的初始价格
-        // 这些价格需要根据实际情况调整
-        await oracle.updatePrice("UNIT", web3.utils.toWei("1", "ether")); // 假设1 UNIT = 1 ETH
-        await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // 假设1 TCASH = 0.1 ETH
-        console.log('Oracle价格数据初始化完成');
+        // Set initial prices for UNIT and TCASH
+        // These should be adjusted for the real environment
+        await oracle.updatePrice("UNIT", web3.utils.toWei("1", "ether")); // assume 1 UNIT = 1 ETH
+        await oracle.updatePrice("TCASH", web3.utils.toWei("2", "ether")); // assume 1 TCASH = 0.1 ETH
+        console.log('Oracle price data initialized');
 
-        console.log('跨链相关合约部署完成');
+        console.log('Cross-chain contracts deployment complete');
     } catch (error) {
-        console.error('部署失败:', error);
+        console.error('Deployment failed:', error);
     }
 };

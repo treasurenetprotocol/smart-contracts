@@ -65,9 +65,9 @@ function loadContractABI(contractName) {
 
 async function checkProxyAdmin() {
     try {
-        console.log('检查Producer合约的Proxy Admin信息');
+        console.log('Checking Proxy Admin info for Producer contracts');
         console.log('==================================');
-        console.log(`当前账户: ${CONFIG.FOUNDATION_MANAGER_ADDRESS}`);
+        console.log(`Current account: ${CONFIG.FOUNDATION_MANAGER_ADDRESS}`);
         console.log('');
 
         // Initialize Web3
@@ -81,7 +81,7 @@ async function checkProxyAdmin() {
         const governanceABI = loadContractABI('Governance');
         const governance = new web3.eth.Contract(governanceABI, CONFIG.GOVERNANCE_ADDRESS);
 
-        console.log('🔍 获取Producer合约地址...');
+        console.log('🔍 Fetching Producer contract addresses...');
         console.log('--------------------------');
 
         // Get Producer addresses from governance
@@ -102,39 +102,39 @@ async function checkProxyAdmin() {
         }
 
         console.log('');
-        console.log('🔍 检查Proxy Admin信息...');
+        console.log('🔍 Inspecting Proxy Admin info...');
         console.log('-------------------------');
 
         for (const [kind, info] of Object.entries(producerInfo)) {
             if (!info.producer || info.producer === '0x0000000000000000000000000000000000000000') {
-                console.log(`⏭️  ${kind}: 跳过 - 未找到合约地址`);
+                console.log(`⏭️  ${kind}: skipping - contract address not found`);
                 continue;
             }
 
-            console.log(`\n📋 ${kind} Producer: ${info.producer}`);
+                console.log(`\n📋 ${kind} Producer: ${info.producer}`);
 
             try {
                 // Try to get admin info using different methods
                 
                 // Method 1: Try calling admin() directly on the proxy
-                console.log('   方法1: 直接调用 admin() 函数...');
+                console.log('   Method 1: Call admin() directly on proxy...');
                 try {
                     const proxy = new web3.eth.Contract(TRANSPARENT_PROXY_ABI, info.producer);
                     const admin = await proxy.methods.admin().call();
-                    console.log(`   ✅ 代理管理员: ${admin}`);
+                    console.log(`   ✅ Proxy admin: ${admin}`);
                     
                     // Also get implementation
                     try {
                         const implementation = await proxy.methods.implementation().call();
-                        console.log(`   📄 实现合约: ${implementation}`);
+                        console.log(`   📄 Implementation: ${implementation}`);
                     } catch (implError) {
-                        console.log(`   ⚠️  无法获取实现地址: ${implError.message}`);
+                        console.log(`   ⚠️  Unable to fetch implementation: ${implError.message}`);
                     }
                 } catch (directError) {
-                    console.log(`   ❌ 直接调用失败: ${directError.message}`);
+                    console.log(`   ❌ Direct call failed: ${directError.message}`);
                     
                     // Method 2: Try with ProxyAdmin contract
-                    console.log('   方法2: 查找ProxyAdmin合约...');
+                    console.log('   Method 2: Inspect ProxyAdmin contract...');
                     
                     // Try to find ProxyAdmin by checking storage slots
                     // Admin address is typically stored at slot 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103
@@ -144,17 +144,17 @@ async function checkProxyAdmin() {
                         const adminAddress = '0x' + adminData.slice(-40);
                         
                         if (adminAddress !== '0x0000000000000000000000000000000000000000') {
-                            console.log(`   ✅ 从存储获取管理员: ${web3.utils.toChecksumAddress(adminAddress)}`);
+                            console.log(`   ✅ Admin from storage: ${web3.utils.toChecksumAddress(adminAddress)}`);
                         } else {
-                            console.log(`   ❌ 存储槽为空`);
+                            console.log(`   ❌ Storage slot empty`);
                         }
                     } catch (storageError) {
-                        console.log(`   ❌ 存储读取失败: ${storageError.message}`);
+                        console.log(`   ❌ Failed to read storage: ${storageError.message}`);
                     }
                 }
 
                 // Method 3: Check if current account can upgrade
-                console.log('   方法3: 检查当前账户升级权限...');
+                console.log('   Method 3: Check upgrade permissions for current account...');
                 try {
                     // Try to estimate gas for upgradeProxy call
                     // This is a hacky way to check permissions without actually upgrading
@@ -165,33 +165,33 @@ async function checkProxyAdmin() {
                     const gasEstimate = await tempContract.methods.setMulSigContract(CONFIG.FOUNDATION_MANAGER_ADDRESS)
                         .estimateGas({ from: CONFIG.FOUNDATION_MANAGER_ADDRESS });
                     
-                    console.log(`   ✅ 当前账户有管理权限 (gas估算: ${gasEstimate})`);
+                    console.log(`   ✅ Current account has management permission (gas estimate: ${gasEstimate})`);
                 } catch (permError) {
-                    console.log(`   ❌ 权限检查失败: ${permError.message}`);
+                    console.log(`   ❌ Permission check failed: ${permError.message}`);
                 }
 
             } catch (error) {
-                console.log(`   ❌ 检查失败: ${error.message}`);
+                console.log(`   ❌ Check failed: ${error.message}`);
             }
         }
 
         console.log('');
-        console.log('🔍 检查OpenZeppelin网络清单...');
+        console.log('🔍 Checking OpenZeppelin network manifests...');
         console.log('-------------------------------');
 
         // Check if .openzeppelin directory exists
         const openzeppelinDir = path.join(process.cwd(), '.openzeppelin');
         if (fs.existsSync(openzeppelinDir)) {
-            console.log(`✅ .openzeppelin 目录存在: ${openzeppelinDir}`);
+            console.log(`✅ .openzeppelin directory exists: ${openzeppelinDir}`);
             
             // Look for network manifest files
             const files = fs.readdirSync(openzeppelinDir);
-            console.log(`📁 文件列表: ${files.join(', ')}`);
+            console.log(`📁 Files: ${files.join(', ')}`);
             
             // Check for network-specific files
             const networkFiles = files.filter(f => f.includes('6666') || f.includes('treasurenet'));
             if (networkFiles.length > 0) {
-                console.log(`🌐 网络文件: ${networkFiles.join(', ')}`);
+                console.log(`🌐 Network files: ${networkFiles.join(', ')}`);
                 
                 // Try to read and parse manifest
                 for (const file of networkFiles) {
@@ -200,43 +200,43 @@ async function checkProxyAdmin() {
                         const content = fs.readFileSync(filePath, 'utf8');
                         const manifest = JSON.parse(content);
                         
-                        console.log(`\n📄 ${file} 内容:`);
+                        console.log(`\n📄 Contents of ${file}:`);
                         console.log(`   Admin: ${manifest.admin?.address || 'N/A'}`);
-                        console.log(`   代理数量: ${Object.keys(manifest.proxies || {}).length}`);
+                        console.log(`   Proxy count: ${Object.keys(manifest.proxies || {}).length}`);
                         
                         if (manifest.proxies) {
                             for (const [proxyAddr, proxyInfo] of Object.entries(manifest.proxies)) {
-                                console.log(`   代理 ${proxyAddr}: ${proxyInfo.kind || 'unknown'}`);
+                                console.log(`   Proxy ${proxyAddr}: ${proxyInfo.kind || 'unknown'}`);
                             }
                         }
                     } catch (parseError) {
-                        console.log(`   ❌ 解析 ${file} 失败: ${parseError.message}`);
+                        console.log(`   ❌ Failed to parse ${file}: ${parseError.message}`);
                     }
                 }
             } else {
-                console.log('⚠️  未找到网络相关的清单文件');
+                console.log('⚠️  No network manifest files found');
             }
         } else {
-            console.log('❌ .openzeppelin 目录不存在');
+            console.log('❌ .openzeppelin directory does not exist');
         }
 
         console.log('');
-        console.log('💡 解决建议');
+        console.log('💡 Suggested actions');
         console.log('===========');
-        console.log('1. 如果代理管理员与当前账户不匹配，需要:');
-        console.log('   - 使用正确的管理员账户');
-        console.log('   - 或者请求管理员转移权限');
+        console.log('1. If the proxy admin differs from the current account:');
+        console.log('   - Use the correct admin account');
+        console.log('   - Or request the admin to transfer ownership');
         console.log('');
-        console.log('2. 如果是网络清单问题，可以:');
-        console.log('   - 删除 .openzeppelin 目录重新初始化');
-        console.log('   - 或者手动编辑清单文件');
+        console.log('2. If network manifests are the issue:');
+        console.log('   - Delete the .openzeppelin directory and reinitialize');
+        console.log('   - Or edit the manifest files manually');
         console.log('');
-        console.log('3. 替代方案:');
-        console.log('   - 直接使用ProxyAdmin合约升级');
-        console.log('   - 或者使用多签提案进行升级');
+        console.log('3. Alternatives:');
+        console.log('   - Upgrade directly via the ProxyAdmin contract');
+        console.log('   - Or perform the upgrade via a multisig proposal');
 
     } catch (error) {
-        console.error('❌ 检查失败:', error.message);
+        console.error('❌ Check failed:', error.message);
         process.exit(1);
     }
 }
@@ -247,4 +247,3 @@ if (require.main === module) {
 }
 
 module.exports = checkProxyAdmin;
-
