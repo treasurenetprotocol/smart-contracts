@@ -241,13 +241,11 @@ library DeployLib {
     }
 
     function _deployCrosschainContracts(ProxyAdmin pa, address roles) private returns (Crosschain memory x) {
-        address[] memory zeroValidators = new address[](1);
-        zeroValidators[0] = address(0);
         x.tokens = address(
             new TransparentUpgradeableProxy(
                 address(new CrosschainTokens()),
                 address(pa),
-                abi.encodeWithSelector(CrosschainTokens.initialize.selector, zeroValidators)
+                abi.encodeWithSelector(CrosschainTokens.initialize.selector, address(0))
             )
         );
         x.bridge = address(
