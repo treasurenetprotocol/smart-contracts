@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "./IRoles.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -88,7 +88,11 @@ contract Governance is OwnableUpgradeable {
         require(_addTreasure(_treasureType, _producer, _productionData),"failed to add treasure");
     }
 
-    function _addTreasure(string memory _treasureType,address _producer,address _productionData) internal returns(bool){
+    function _addTreasure(
+        string memory _treasureType,
+        address _producer,
+        address _productionData
+    ) internal returns(bool) {
         bytes32 kind = keccak256(bytes(_treasureType));
         require(_treasures[kind].ProducerContract == address(0), "treasure type already exists");
         require(_producer != address(0),"empty producer contract");

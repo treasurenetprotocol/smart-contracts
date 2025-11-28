@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 interface IProductionData {
     event VerifiedProduction(bytes32 _uniqueId, uint256 month, uint256 amount);

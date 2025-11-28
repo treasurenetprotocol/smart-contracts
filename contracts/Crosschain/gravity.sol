@@ -85,7 +85,7 @@ contract Gravity is ReentrancyGuard {
     // TransactionBatchExecutedEvent and SendToCosmosEvent both include the field _eventNonce.
     // This is incremented every time one of these events is emitted. It is checked by the
     // Cosmos module to ensure that all events are received in order, and that none are lost.
-    //
+
     // ValsetUpdatedEvent does not include the field _eventNonce because it is never submitted to the Cosmos
     // module. It is purely for the use of relayers to allow them to successfully submit batches.
     event TransactionBatchExecutedEvent(

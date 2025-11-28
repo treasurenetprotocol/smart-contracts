@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
-import "@openzeppelin/contracts/access/IAccessControlEnumerable.sol";
+pragma solidity ^0.8.10;
 
-interface IRoles is IAccessControlEnumerable {
-    // Role definitions
+import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/IAccessControlEnumerableUpgradeable.sol";
+
+/**
+ * @dev Extended role-based access control interface with additional functionality
+ */
+interface IRoles is IAccessControlUpgradeable, IAccessControlEnumerableUpgradeable {
+    // Role constants
+    function get_ADMIN() external pure returns (bytes32);
+    function get_AUCTION_MANAGER() external pure returns (bytes32);
     function CROSSCHAIN_SENDER() external pure returns (bytes32);
-
-    // Role management functions
+    function TCASH_MINTER() external pure returns (bytes32);
+    function TCASH_BURNER() external pure returns (bytes32);
+    
+    // Additional role management functions
     function getRoleMemberArray(bytes32 role) external view returns (address[] memory);
 }
