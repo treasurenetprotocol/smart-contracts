@@ -1,4 +1,4 @@
-const { Web3 } = require("web3");
+const Web3 = require("web3");
 
 // Import contract ABIs
 const MulSig = require("../build/contracts/MulSig.json");

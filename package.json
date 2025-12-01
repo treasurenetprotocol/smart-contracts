@@ -7,36 +7,44 @@
     "doc": "docs"
   },
   "scripts": {
+    "clean": "hardhat clean",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
     "ganache": "./ganache/ganache.sh",
-    "test": "truffle test --network ganache",
-    "test:debug": "truffle test --network ganache --debug",
-    "compile": "truffle compile --all",
-    "migrate": "truffle migrate --network ganache",
-    "migrate:tn-mainnet": "truffle migrate -f 1 --to 5 --network tn_mainnet",
-    "migrate:tn-mainnet-tokenlocker": "truffle migrate -f 12 --to 12 --network tn_mainnet",
-    "migrate:tn-mainnet-bid": "truffle migrate -f 20 --to 20 --network tn_mainnet",
-    "migrate:treasurenet-tokenlocker": "truffle migrate -f 6 --to 6 --network treasurenet",
-    "migrate:treasurenetonlymigrate": "truffle migrate -f 1 --to 5 --network treasurenet",
-    "migrate:treasurenet-bid": "truffle migrate -f 20 --to 20 --network treasurenet",
-    "migrate:dev-node": "truffle migrate -f 1 --to 5 --network devmulti",
-    "migrate:dev-node-bid": "truffle migrate -f 20 --to 20 --network devmulti",
-    "migrate:testnet": "truffle migrate -f 1 --to 5 --network testnet",
-    "migrate:testnet-bid": "truffle migrate -f 20 --to 20 --network testnet",
-    "migrate:test_eth": "truffle migrate -f 1 --to 7 --network test_eth --debug",
-    "migrate:ethereumonlymigrate": "truffle migrate -f 1 --to 7 --network ethereum",
-    "migrate:ethereum-tokenlocker": "truffle migrate -f 6 --to 6 --network ethereum",
-    "migrate:ethereum-wunit-wtcash": "truffle migrate -f 7 --to 7 --network ethereum",
-    "deploy:wunit-wtcash:test_eth_sepolia": "truffle migrate -f 7 --to 7 --network test_eth_sepolia",
-    "upgrade:tcashloan:treasurenet": "truffle migrate -f 10 --to 10 --network treasurenet",
-    "upgrade:tcash:treasurenet": "truffle migrate -f 14 --to 14 --network treasurenet",
-    "upgrade:tcashauction:treasurenet": "truffle migrate -f 15 --to 15 --network treasurenet",
-    "upgrade:tcash:tn-mainnet": "truffle migrate -f 14 --to 14 --network tn_mainnet",
-   "upgrade:wtcash:test_eth": "truffle migrate -f 17 --to 17 --network test_eth",
-    "upgrade:producers:treasurenet": "truffle migrate -f 16 --to 16 --network treasurenet",
-    "upgrade:producers:tn-mainnet": "truffle migrate -f 16 --to 16 --network tn_mainnet",
-    "upgrade:18_force_import_wtcash:test_eth": "truffle migrate -f 18 --to 18 --network test_eth",
-     "upgrade:oracle:tn_mainnet": "truffle migrate -f 19 --to 19 --network tn_mainnet",
-    "query:tcash-minters": "truffle exec migrations/query_tcash_minters.js --network treasurenet",
+    "test:debug": "hardhat test --network ganache --verbose",
+
+    "deploy:base:dev": "bash ./scripts/tasks.sh --network dev --type deploy --steps base producers tcash ustn crosschain",
+    "deploy:tokenlocker:dev": "bash ./scripts/tasks.sh --network dev --type deploy --steps tokenlocker",
+    "deploy:bid:dev": "bash ./scripts/tasks.sh --network dev --type deploy --steps bid",
+
+    "deploy:base:mainnet": "bash ./scripts/tasks.sh --network tn_mainnet --type deploy --steps base producers tcash ustn crosschain",
+    "deploy:tokenlocker:mainnet": "bash ./scripts/tasks.sh --network tn_mainnet --type deploy --steps tokenlocker",
+    "deploy:bid:mainnet": "bash ./scripts/tasks.sh --network tn_mainnet --type deploy --steps bid",
+
+    "deploy:base:testnet": "bash ./scripts/tasks.sh --network testnet --type deploy --steps base producers tcash ustn crosschain",
+    "deploy:bid:testnet": "bash ./scripts/tasks.sh --network testnet --type deploy --steps bid",
+
+    "deploy:base:test_eth": "bash ./scripts/tasks.sh --network test_eth --type deploy --steps base producers tcash ustn crosschain tokenlocker wunit_wtcash",
+
+    "deploy:base:ethereum": "bash ./scripts/tasks.sh --network ethereum --type deploy --steps base producers tcash ustn crosschain tokenlocker wunit_wtcash",
+    "deploy:tokenlocker:ethereum": "bash ./scripts/tasks.sh --network ethereum --type deploy --steps tokenlocker",
+    "deploy:wunit-wtcash:ethereum": "bash ./scripts/tasks.sh --network ethereum --type deploy --steps crosschain",
+
+    "deploy:wunit-wtcash:test_eth_sepolia": "bash ./scripts/tasks.sh --network test_eth_sepolia --type deploy --steps wunit_wtcash",
+
+    "upgrade:tcashloan:treasurenet": "bash ./scripts/tasks.sh --network treasurenet --type upgrade --steps tcashloan",
+    "upgrade:tcash:treasurenet": "bash ./scripts/tasks.sh --network treasurenet --type upgrade --steps tcash",
+    "upgrade:tcashauction:treasurenet": "bash ./scripts/tasks.sh --network treasurenet --type upgrade --steps tcashauction",
+    "upgrade:tcash:tn-mainnet": "bash ./scripts/tasks.sh --network tn_mainnet --type upgrade --steps tcash",
+    "upgrade:wtcash:test_eth": "bash ./scripts/tasks.sh --network test_eth --type upgrade --steps wtcash",
+    "upgrade:producers:treasurenet": "bash ./scripts/tasks.sh --network treasurenet --type upgrade --steps producers",
+    "upgrade:producers:tn-mainnet": "bash ./scripts/tasks.sh --network tn_mainnet --type upgrade --steps producers",
+
+    "upgrade:18_force_import_wtcash:test_eth": "bash ./scripts/tasks.sh --network test_eth --type upgrade --steps force_import_wtcash",
+    "upgrade:oracle:tn_mainnet": "bash ./scripts/tasks.sh --network tn_mainnet --type upgrade --steps oracle",
+
+    "query:tcash-minters": "bash ./scripts/tasks.sh --network treasurenet --type deploy --steps query_tcash_minters",
     "lint": "eslint -c './.eslintrc.js' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
     "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol"
@@ -48,12 +56,18 @@
     "node": "20.x"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-verify": "^2.1.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.11",
+    "@nomicfoundation/hardhat-ethers": "^3.1.2",
+    "@nomiclabs/hardhat-truffle5": "^2.1.0",
     "@openzeppelin/contracts": "4.7.3",
     "@openzeppelin/contracts-upgradeable": "4.7.3",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
     "@openzeppelin/truffle-upgrades": "1.17.0",
     "@openzeppelin/upgrades-core": "1.20.2",
     "@truffle/hdwallet-provider": "^1.7.0",
     "chai": "^4.3.7",
+    "hardhat": "^2.22.15",
     "js-sha3": "^0.8.0",
     "prettier": "^2.7.1",
     "prettier-plugin-solidity": "*",
@@ -68,9 +82,9 @@
     "asn1.js": "^5.4.1",
     "aws-sdk": "^2.1692.0",
     "dotenv": "^16.0.3",
-    "ethers": "^4.0.49",
+    "ethers": "^6.14.0",
     "keccak256": "^1.0.6",
     "truffle": "^5.7.6",
-    "web3": "^4.16.0"
+    "web3": "^1.10.4"
   }
 }

@@ -4,7 +4,7 @@
  */
 
 const AWS = require('aws-sdk');
-const { Web3 } = require('web3');
+const Web3 = require('web3');
 const { keccak256 } = require('js-sha3');
 const asn1 = require('asn1.js');
 

@@ -1,260 +1,194 @@
-/**
- * Create with contracts
- * Author: ChrisChiu
- * Date: 2023/04/01
- * Desc
- */
-const OilProducer = artifacts.require("OilProducer");
-const OilData = artifacts.require("OilData");
-const TAT = artifacts.require("TAT");
+const { expect } = require('chai');
+const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
+const { ethers } = require('hardhat');
+const { deployTreasureFixture } = require('./helpers/deploy-treasures');
 
 const WELL = {
-    NICKNAME: "Well1",
-    UNIQUE_ID: "0x4872484e4579694e575a65745956524879303873690000000000000000000000",
-    REQUEST_ID: "",
-    ACCOUNT: "",
-    API: 3000n,
-    SULPHUR: 480n
-}
-const ASSETS = {
-    KIND: "OIL",
-    REQUEST_ID: "",
-}
+  NICKNAME: 'Well1',
+  UNIQUE_ID: '0x4872484e4579694e575a65745956524879303873690000000000000000000000',
+  REQUEST_ID: '',
+  API: 3000n,
+  SULPHUR: 480n
+};
+
+const ASSETS = { KIND: 'OIL', REQUEST_ID: '' };
 
 const PRODUCTION_DATA = [
-    {DATE: "240101", VOLUME: 1000n, PRICE: 100n},
-    {DATE: "240102", VOLUME: 2000n, PRICE: 200n},
-]
+  { DATE: '240101', VOLUME: 1000n, PRICE: 100n },
+  { DATE: '240102', VOLUME: 2000n, PRICE: 200n }
+];
 
-const TRUSTED_PRODUCTION_DATA = {
-    MONTH: "2401", VOLUME: 2500n
+const TRUSTED_PRODUCTION_DATA = { MONTH: '2401', VOLUME: 2500n };
+
+const EXPENSE_AMOUNT = 10n * 10n ** 18n;
+
+function findEventArgs(receipt, iface, eventName) {
+  for (const log of receipt.logs) {
+    try {
+      const parsed = iface.parseLog(log);
+      if (parsed && parsed.name === eventName) return parsed.args;
+    } catch (err) {
+      // ignore non-matching logs
+    }
+  }
+  return null;
 }
 
-const EXPENSE_AMOUNT = BigInt(10 * 1e18);
+describe('Treasure-Oil (Hardhat)', function () {
+  it('full flow', async function () {
+    const fixture = await loadFixture(deployTreasureFixture);
+    const [foundationManager, , producerOwner] = fixture.accounts;
+    const { oilProducer, oilData, tat } = fixture;
 
-contract("Treasure-Oil", async (accounts) => {
+    // Add producer (only FOUNDATION_MANAGER can call)
+    const producerTuple = [
+      WELL.NICKNAME,
+      producerOwner.address,
+      WELL.API,
+      WELL.SULPHUR,
+      ''
+    ];
+    const addTx = await oilProducer
+      .connect(foundationManager)
+      .addProducer(WELL.UNIQUE_ID, producerTuple);
+    const addReceipt = await addTx.wait();
+    const addArgs = findEventArgs(addReceipt, oilProducer.interface, 'AddProducer');
+    expect(addArgs.uniqueId).to.equal(WELL.UNIQUE_ID);
+    expect([
+      addArgs.producer.nickname,
+      addArgs.producer.owner,
+      addArgs.producer.API,
+      addArgs.producer.sulphur,
+      addArgs.producer.account
+    ]).to.deep.equal([
+      WELL.NICKNAME,
+      producerOwner.address,
+      WELL.API,
+      WELL.SULPHUR,
+      ''
+    ]);
 
-    it("Add oil producers and modify status.", async () => {
-        const oilProducer = await OilProducer.deployed();
+    // Set producer status -> register trusted data request
+    const statusTx = await oilProducer
+      .connect(foundationManager)
+      .setProducerStatus(WELL.UNIQUE_ID, 1);
+    const statusReceipt = await statusTx.wait();
+    const statusArgs = findEventArgs(statusReceipt, oilProducer.interface, 'SetProducerStatus');
+    expect(statusArgs.uniqueId).to.equal(WELL.UNIQUE_ID);
+    expect(statusArgs.status).to.equal(1);
+    WELL.REQUEST_ID = statusArgs.requestId;
 
+    // Verify producer data
+    const producerInfo = await oilProducer.getProducer(WELL.UNIQUE_ID);
+    expect(producerInfo[0]).to.equal(1); // status Active
+    expect([
+      producerInfo[1].nickname,
+      producerInfo[1].owner,
+      producerInfo[1].API,
+      producerInfo[1].sulphur,
+      producerInfo[1].account
+    ]).to.deep.equal([
+      WELL.NICKNAME,
+      producerOwner.address,
+      WELL.API,
+      WELL.SULPHUR,
+      ''
+    ]);
 
-        WELL.ACCOUNT = accounts[2];
+    // Deposit expense
+    await oilData.connect(producerOwner).prepay({ value: EXPENSE_AMOUNT });
 
-        const _producer = [WELL.NICKNAME, WELL.ACCOUNT, WELL.API.toString(), WELL.SULPHUR.toString(), '']
-        const _uniqueId = WELL.UNIQUE_ID;
+    // Register asset value request
+    const reqTx = await oilData.connect(foundationManager).registerAssetValueRequest();
+    const reqReceipt = await reqTx.wait();
+    const reqArgs = findEventArgs(reqReceipt, oilData.interface, 'RegisterAssetValueRequest');
+    expect(reqArgs.kind).to.equal(ASSETS.KIND);
+    ASSETS.REQUEST_ID = reqArgs.requestid;
 
-        /* Send the transaction and call the Add Producer function of the contract */
-        const stepAddProducer = await oilProducer.addProducer(_uniqueId, _producer, {from: WELL.ACCOUNT});
+    // Asset price submissions
+    for (const data of PRODUCTION_DATA) {
+      const priceTx = await oilData
+        .connect(foundationManager)
+        .receiveAssetValue(ASSETS.REQUEST_ID, data.DATE, data.PRICE);
+      const priceReceipt = await priceTx.wait();
+      const priceArgs = findEventArgs(priceReceipt, oilData.interface, 'ReceiveAssetValue');
+      expect(priceArgs.treasureKind).to.equal(ASSETS.KIND);
+      expect(priceArgs.date).to.equal(data.DATE);
+      expect(priceArgs.value).to.equal(data.PRICE);
 
-        for (let i = 0; i < stepAddProducer.logs.length; i++) {
-            if (stepAddProducer.logs[i].event === "AddProducer") {
-                const eventArgs = stepAddProducer.logs[i].args;
-                assert.equal(eventArgs.uniqueId, _uniqueId);
-                assert.deepEqual([eventArgs.producer.nickname, eventArgs.producer.owner, eventArgs.producer.API, eventArgs.producer.sulphur, eventArgs.producer.account], _producer);
-            }
-        }
+      const storedPrice = await oilData.getAssetValue(data.DATE);
+      expect(storedPrice).to.equal(data.PRICE);
 
-        const _newStatus = 1;
-        /* Send the transaction and call the Set Producer Status function of the contract */
-        const stepSetProducerStatus = await oilProducer.setProducerStatus(_uniqueId, _newStatus, {from: accounts[0]});
+      const productionPayload = [
+        WELL.UNIQUE_ID,
+        0,
+        producerOwner.address,
+        data.VOLUME,
+        0,
+        data.DATE,
+        data.DATE.substring(0, 4),
+        '',
+        0,
+        0,
+        0
+      ];
 
-        for (let i = 0; i < stepSetProducerStatus.logs.length; i++) {
-            if (stepSetProducerStatus.logs[i].event === "SetProducerStatus") {
-                const eventArgs = stepSetProducerStatus.logs[i].args;
-                assert.equal(eventArgs.uniqueId, _uniqueId);
-                assert.equal(eventArgs.status, _newStatus.toString());
-                WELL.REQUEST_ID = eventArgs.requestId;
-            }
-        }
-
-        /* Call the getProducer function of the contract */
-        const resultProducer = await oilProducer.getProducer.call(_uniqueId);
-
-        assert.equal(resultProducer[0].toNumber(), 1);
-        assert.deepEqual([resultProducer[1].nickname, resultProducer[1].owner, resultProducer[1].API, resultProducer[1].sulphur, resultProducer[1].account], _producer);
-    })
-
-    it("deposit expense", async () => {
-        const oilData = await OilData.deployed();
-
-        await oilData.prepay({from: WELL.ACCOUNT, value: EXPENSE_AMOUNT.toString()});
-    })
-
-    it("register asset value request", async () => {
-        const oilData = await OilData.deployed();
-
-        const stepRegisterAssetValueRequest = await oilData.registerAssetValueRequest({from: accounts[0]});
-
-        /* Event test */
-        for (let i = 0; i < stepRegisterAssetValueRequest.logs.length; i++) {
-            if (stepRegisterAssetValueRequest.logs[i].event === "RegisterAssetValueRequest") {
-                const eventArgs = stepRegisterAssetValueRequest.logs[i].args;
-                assert.equal(eventArgs.kind, ASSETS.KIND);
-                ASSETS.REQUEST_ID = eventArgs.requestid;
-            }
-        }
-    })
-
-    for (let i = 0; i < PRODUCTION_DATA.length; i++) {
-        it("send Asset Price(" + PRODUCTION_DATA[i].DATE + ")", async () => {
-            const oilData = await OilData.deployed();
-
-            /* Data */
-            const _date = PRODUCTION_DATA[i].DATE;
-            const _assetPrice = PRODUCTION_DATA[i].PRICE;
-
-            const stepReceiveAssetValue = await oilData.receiveAssetValue(ASSETS.REQUEST_ID, _date, _assetPrice.toString(), {from: accounts[0]});
-
-            /* Event test */
-            for (let j = 0; j < stepReceiveAssetValue.logs.length; j++) {
-                if (stepReceiveAssetValue.logs[j].event === "ReceiveAssetValue") {
-                    const eventArgs = stepReceiveAssetValue.logs[j].args;
-                    assert.equal(eventArgs.treasureKind, ASSETS.KIND);
-                    assert.equal(eventArgs.date, _date.toString());
-                    assert.equal(eventArgs.value, _assetPrice.toString());
-                }
-            }
-
-            /* query price */
-            const resultPrice = await oilData.getAssetValue.call(_date);
-            assert.equal(resultPrice.toNumber(), _assetPrice);
-        })
-        it("send production data(" + PRODUCTION_DATA[i].DATE + ")", async () => {
-            const oilData = await OilData.deployed();
-
-            /* Data */
-            const _volume = PRODUCTION_DATA[i].VOLUME;
-            const _date = PRODUCTION_DATA[i].DATE;
-            const _month = PRODUCTION_DATA[i].DATE.substring(0, 4);
-            const _productionData = [WELL.UNIQUE_ID, 0, WELL.ACCOUNT, _volume.toString(), 0, _date, _month, '', 0, 0, 0];
-
-
-            const stepSetProductionData = await oilData.setProductionData(WELL.UNIQUE_ID, _productionData, {from: WELL.ACCOUNT})
-
-            /* Event test */
-            for(let i = 0; i < stepSetProductionData.logs.length; i++){
-                if(stepSetProductionData.logs[i].event === "ProducerProductionData"){
-                    const eventArgs = stepSetProductionData.logs[i].args;
-                    assert.equal(eventArgs.treasureKind, ASSETS.KIND);
-                    assert.equal(eventArgs.uniqueId, WELL.UNIQUE_ID);
-                    assert.equal(eventArgs.month, _month.toString());
-                    assert.equal(eventArgs.date, _date.toString());
-                    assert.equal(eventArgs.amount, _volume.toString());
-                }
-            }
-        })
+      const prodTx = await oilData
+        .connect(producerOwner)
+        .setProductionData(WELL.UNIQUE_ID, productionPayload);
+      const prodReceipt = await prodTx.wait();
+      const prodArgs = findEventArgs(prodReceipt, oilData.interface, 'ProducerProductionData');
+      expect(prodArgs.treasureKind).to.equal(ASSETS.KIND);
+      expect(prodArgs.uniqueId).to.equal(WELL.UNIQUE_ID);
+      expect(prodArgs.date).to.equal(data.DATE);
+      expect(prodArgs.amount).to.equal(data.VOLUME);
     }
 
-    it("set trusted production data", async () => {
-        const oilData = await OilData.deployed();
+    // Trusted production data
+    const trustedPayload = [
+      WELL.UNIQUE_ID,
+      0,
+      producerOwner.address,
+      TRUSTED_PRODUCTION_DATA.VOLUME,
+      0,
+      0,
+      TRUSTED_PRODUCTION_DATA.MONTH,
+      '',
+      0,
+      0,
+      0
+    ];
+    const trustedTx = await oilData
+      .connect(foundationManager)
+      .receiveTrustedProductionData(WELL.REQUEST_ID, WELL.UNIQUE_ID, trustedPayload);
+    const trustedReceipt = await trustedTx.wait();
+    const trustedArgs = findEventArgs(trustedReceipt, oilData.interface, 'TrustedProductionData');
+    expect(trustedArgs.treasureKind).to.equal(ASSETS.KIND);
+    expect(trustedArgs.uniqueId).to.equal(WELL.UNIQUE_ID);
+    expect(trustedArgs.month).to.equal(TRUSTED_PRODUCTION_DATA.MONTH);
+    expect(trustedArgs.amount).to.equal(TRUSTED_PRODUCTION_DATA.VOLUME);
 
-        const _volume = TRUSTED_PRODUCTION_DATA.VOLUME;
-        const _month = TRUSTED_PRODUCTION_DATA.MONTH;
-        const _productionData = [WELL.UNIQUE_ID, 0, WELL.ACCOUNT, _volume.toString(), 0, 0, _month, '', 0, 0, 0];
+    // Clearing (mint TAT)
+    const beforeBalance = await tat.balanceOf(producerOwner.address);
 
-        const stepReceiveTrustedProductionData = await oilData.receiveTrustedProductionData(WELL.REQUEST_ID, WELL.UNIQUE_ID, _productionData, {from: accounts[0]});
+    let discount = 9000n;
+    if (WELL.API > 3110n && WELL.SULPHUR >= 500n) discount = 8500n;
+    if (WELL.API <= 3110n && WELL.SULPHUR < 500n) discount = 8000n;
+    if (WELL.API <= 3110n && WELL.SULPHUR >= 500n) discount = 7500n;
 
-        /* Event test */
-        for(let i = 0; i < stepReceiveTrustedProductionData.logs.length; i++){
-            if(stepReceiveTrustedProductionData.logs[i].event === "TrustedProductionData"){
-                const eventArgs = stepReceiveTrustedProductionData.logs[i].args;
-                assert.equal(eventArgs.treasureKind, ASSETS.KIND);
-                assert.equal(eventArgs.uniqueId, WELL.UNIQUE_ID);
-                assert.equal(eventArgs.month, _month.toString());
-                assert.equal(eventArgs.amount, _volume.toString());
-            }
-        }
-    })
+    let totalAmount = 0n;
+    let totalVolume = 0n;
+    for (const data of PRODUCTION_DATA) {
+      const single = (data.VOLUME * data.PRICE * discount * 10n ** 18n) / 10n ** 12n;
+      totalAmount += single;
+      totalVolume += data.VOLUME;
+    }
+    const deviation = (totalVolume - TRUSTED_PRODUCTION_DATA.VOLUME) * 100n * 100n / TRUSTED_PRODUCTION_DATA.VOLUME;
+    const finalAmount = deviation >= 500n ? (totalAmount * (10000n - deviation)) / 10000n : totalAmount;
 
-    it("clearing", async () => {
-        const oilData = await OilData.deployed();
-        const tat = await TAT.deployed();
+    await oilData.connect(foundationManager).clearing(TRUSTED_PRODUCTION_DATA.MONTH);
 
-        /* Data */
-        const _month = TRUSTED_PRODUCTION_DATA.MONTH;
-
-        /* Query TAT Balance */
-        let tatBalance_before = await tat.balanceOf(WELL.ACCOUNT);
-        tatBalance_before = tatBalance_before.toNumber();
-
-        /* Calculate Discount */
-        let discount = 9000n
-        if (WELL.API > 3110n && WELL.SULPHUR >= 500n) discount = 8500n;
-        if (WELL.API <= 3110n && WELL.SULPHUR < 500n) discount = 8000n;
-        if (WELL.API <= 3110n && WELL.SULPHUR >= 500n) discount = 7500n;
-
-        /* Calculate total minting amount and total production */
-        let _pAmount = 0n;
-        let _pVolume = 0n;
-        for (let i = 0; i < PRODUCTION_DATA.length; i++) {
-            const singleAmount = PRODUCTION_DATA[i].VOLUME * PRODUCTION_DATA[i].PRICE * discount * BigInt(1e18) / BigInt(1e12);
-            _pAmount = _pAmount + singleAmount;
-            _pVolume = _pVolume + PRODUCTION_DATA[i].VOLUME;
-        }
-
-        let _trustedVolume = TRUSTED_PRODUCTION_DATA.VOLUME
-
-        const _deviation = (_pVolume - _trustedVolume) * 100n * 100n / _trustedVolume;
-
-        /* Corrected total production and minting amount */
-        let _amount = _pAmount;
-        let _volume = _pVolume;
-        if (_pVolume > _trustedVolume) {
-            _amount = _amount * _trustedVolume / _volume;
-            _volume = _trustedVolume;
-        }
-
-        /* Calculate expense */
-        let _expense = 0n;
-        if (_deviation > 1000n && _deviation < 3000n) {
-            _expense = _amount * _deviation * 100n / 100000000n
-        }
-        if (_deviation >= 3000n) {
-            _expense = _amount * 10000n * 100n / 100000000n
-        }
-
-
-        /* compare production data */
-        const resultProductionData = await oilData.getProductionData.call(WELL.UNIQUE_ID, _month);
-        assert.equal(resultProductionData.uniqueId, WELL.UNIQUE_ID);
-        assert.equal(resultProductionData.month, _month.toString());
-        assert.equal(resultProductionData.price, _pAmount.toString());
-        assert.equal(resultProductionData.amount, _pVolume.toString());
-
-        /* Clearing */
-        const stepClearing = await oilData.clearing(WELL.UNIQUE_ID, _month, {from: WELL.ACCOUNT});
-
-        /* Event test */
-        for (let i = 0; i < stepClearing.logs.length; i++) {
-            if (stepClearing.logs[i].event === 'VerifiedProduction') {
-                const eventArgs = stepClearing.logs[i].args;
-                assert.equal(eventArgs._uniqueId, WELL.UNIQUE_ID);
-                assert.equal(eventArgs.month, _month.toString());
-                assert.equal(eventArgs.amount, _volume.toString());
-            }
-            if (stepClearing.logs[i].event === 'ClearingReward') {
-                const eventArgs = stepClearing.logs[i].args;
-                assert.equal(eventArgs.treasureKind, ASSETS.KIND);
-                assert.equal(eventArgs._uniqueId, WELL.UNIQUE_ID);
-                assert.equal(eventArgs._month, _month.toString());
-                assert.equal(eventArgs.rewardAmount, _amount.toString());
-            }
-        }
-
-        /* Get Expense balance */
-        const resultExpense = await oilData.marginOf.call(WELL.ACCOUNT);
-        assert.equal(resultExpense[0].toString(), (EXPENSE_AMOUNT - _expense).toString());
-
-        /* Query TAT Balance */
-        let tatBalance_after = await tat.balanceOf(WELL.ACCOUNT);
-        tatBalance_after = tatBalance_after.toNumber();
-
-        assert.equal(tatBalance_after - tatBalance_before, _amount);
-
-        /* Withdraw remaining expense funds */
-        await oilData.withdraw((EXPENSE_AMOUNT - _expense).toString(), {from: WELL.ACCOUNT});
-
-        /* Output Results */
-        console.log(`WELL ${WELL.UNIQUE_ID}: \n- DEVIATION: ${_deviation.toString()} \n- VOLUME: ${_volume.toString()} \n- AMOUNT: ${_amount.toString()} \n- EXPENSE: ${_expense.toString()} \n`)
-    })
-})
+    const afterBalance = await tat.balanceOf(producerOwner.address);
+    expect(afterBalance - beforeBalance).to.equal(finalAmount);
+  });
+});
