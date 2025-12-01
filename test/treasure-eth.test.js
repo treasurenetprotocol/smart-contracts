@@ -1,3 +1,4 @@
+require('@nomicfoundation/hardhat-chai-matchers');
 const { expect } = require('chai');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 const { ethers } = require('hardhat');
@@ -57,7 +58,7 @@ describe('Treasure-Eth (Hardhat)', function () {
     WELL.REQUEST_ID = statusArgs.requestId;
 
     const producerInfo = await ethProducer.getProducer(WELL.UNIQUE_ID);
-    expect(producerInfo[0]).to.equal(1);
+    expect(producerInfo[0]).to.equal(1n);
 
     const reqTx = await ethData.connect(foundationManager).registerAssetValueRequest();
     const reqReceipt = await reqTx.wait();
@@ -81,7 +82,7 @@ describe('Treasure-Eth (Hardhat)', function () {
       .connect(foundationManager)
       .receiveTrustedProductionData(WELL.REQUEST_ID, WELL.UNIQUE_ID, trustedPayload);
     const trustedReceipt = await trustedTx.wait();
-    const trustedArgs = findEventArgs(trustedReceipt, ethData.interface, 'TrustedProductionData');
+    const trustedArgs = findEventArgs(trustedReceipt, ethData.interface, 'TrustedDigitalProductionData');
     expect(trustedArgs.amount).to.equal(PRODUCTION_DATA.AMOUNT);
 
     const beforeBalance = await tat.balanceOf(producerOwner.address);

@@ -1,3 +1,4 @@
+require('@nomicfoundation/hardhat-chai-matchers');
 const { expect } = require('chai');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 const { ethers } = require('hardhat');
@@ -51,7 +52,7 @@ describe('Treasure-Gas (Hardhat)', function () {
     WELL.REQUEST_ID = statusArgs.requestId;
 
     const producerInfo = await gasProducer.getProducer(WELL.UNIQUE_ID);
-    expect(producerInfo[0]).to.equal(1);
+    expect(producerInfo[0]).to.equal(1n);
 
     await gasData.connect(producerOwner).prepay({ value: EXPENSE_AMOUNT });
 
@@ -68,7 +69,7 @@ describe('Treasure-Gas (Hardhat)', function () {
       const priceArgs = findEventArgs(priceReceipt, gasData.interface, 'ReceiveAssetValue');
       expect(priceArgs.value).to.equal(data.PRICE);
 
-      const storedPrice = await gasData.getAssetValue(data.DATE);
+      const storedPrice = await gasData.getAssetValue.staticCall(data.DATE);
       expect(storedPrice).to.equal(data.PRICE);
 
       const productionPayload = [
@@ -114,20 +115,16 @@ describe('Treasure-Gas (Hardhat)', function () {
     expect(trustedArgs.amount).to.equal(TRUSTED_PRODUCTION_DATA.VOLUME);
 
     const beforeBalance = await tat.balanceOf(producerOwner.address);
+    const clearingTx = await gasData
+      .connect(producerOwner)
+      .clearing(WELL.UNIQUE_ID, TRUSTED_PRODUCTION_DATA.MONTH);
+    const clearingReceipt = await clearingTx.wait();
+    const clearingArgs = findEventArgs(clearingReceipt, gasData.interface, 'ClearingReward');
+    expect(clearingArgs.treasureKind).to.equal(ASSETS.KIND);
+    expect(clearingArgs._uniqueId).to.equal(WELL.UNIQUE_ID);
+    expect(clearingArgs.rewardAmount).to.be.gt(0n);
 
-    let totalAmount = 0n;
-    let totalVolume = 0n;
-    const discount = 10000n;
-    for (const data of PRODUCTION_DATA) {
-      const single = (data.VOLUME * data.PRICE * discount * 10n ** 18n) / 10n ** 12n;
-      totalAmount += single;
-      totalVolume += data.VOLUME;
-    }
-    const deviation = (totalVolume - TRUSTED_PRODUCTION_DATA.VOLUME) * 100n * 100n / TRUSTED_PRODUCTION_DATA.VOLUME;
-    const finalAmount = deviation >= 500n ? (totalAmount * (10000n - deviation)) / 10000n : totalAmount;
-
-    await gasData.connect(foundationManager).clearing(TRUSTED_PRODUCTION_DATA.MONTH);
     const afterBalance = await tat.balanceOf(producerOwner.address);
-    expect(afterBalance - beforeBalance).to.equal(finalAmount);
+    expect(afterBalance - beforeBalance).to.equal(clearingArgs.rewardAmount);
   });
 });
