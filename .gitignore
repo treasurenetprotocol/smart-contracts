@@ -10,3 +10,4 @@ package-lock.json
 artifacts/
 cache/
 deployments/
+coverage-js/tmp/*

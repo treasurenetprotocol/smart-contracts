@@ -4,6 +4,9 @@ require('@nomicfoundation/hardhat-ethers');
 require('@nomiclabs/hardhat-truffle5');
 require('@openzeppelin/hardhat-upgrades');
 require('@nomicfoundation/hardhat-verify');
+require('solidity-coverage');
+
+const isCoverage = !!process.env.SOLIDITY_COVERAGE;
 
 const DEV_PRIVATE_KEYS = [
     '72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2'
