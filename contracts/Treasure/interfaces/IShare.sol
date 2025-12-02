@@ -16,18 +16,9 @@ interface IShare {
     }
 
     event SetHolder(
-        bytes32 uniqueId,
-        address holder,
-        uint256 ratio,
-        uint256 currentTotalHolders,
-        uint256 currentTotalShared
+        bytes32 uniqueId, address holder, uint256 ratio, uint256 currentTotalHolders, uint256 currentTotalShared
     );
-    event SplitHolder(
-        bytes32 uniqueId,
-        address from,
-        address to,
-        uint256 ratio
-    );
+    event SplitHolder(bytes32 uniqueId, address from, address to, uint256 ratio);
     event DeleteHolder(bytes32 uniqueId, address holder);
 
     // Share management
@@ -44,10 +35,7 @@ interface IShare {
      * @param _holder The address of the holder.
      * @return The details of the holder.
      */
-    function holder(
-        bytes32 _uniqueId,
-        address _holder
-    ) external view returns (Holder memory);
+    function holder(bytes32 _uniqueId, address _holder) external view returns (Holder memory);
 
     /**
      * @dev Checks if an address is a holder of shared ownership for a specific asset.
@@ -55,10 +43,7 @@ interface IShare {
      * @param _holder The address to check.
      * @return True if the address is a holder, false otherwise.
      */
-    function isHolder(
-        bytes32 _uniqueId,
-        address _holder
-    ) external view returns (bool);
+    function isHolder(bytes32 _uniqueId, address _holder) external view returns (bool);
 
     /**
      * @dev Sets the holders and their share ratios for a specific asset.
@@ -66,11 +51,7 @@ interface IShare {
      * @param _holders The addresses of the holders.
      * @param _ratios The share ratios corresponding to each holder.
      */
-    function setHolders(
-        bytes32 _uniqueId,
-        address[] memory _holders,
-        uint256[] memory _ratios
-    ) external;
+    function setHolders(bytes32 _uniqueId, address[] memory _holders, uint256[] memory _ratios) external;
 
     /**
      * @dev Splits a holder's share ratio and assigns the split portion to a new holder.
@@ -79,17 +60,10 @@ interface IShare {
      * @param _ratio The ratio to split.
      * @return uint256 The new ratios after splitting.
      */
-    function splitHolder(
-        bytes32 _uniqueId,
-        address _toHolder,
-        uint256 _ratio
-    ) external returns (uint256, uint256);
+    function splitHolder(bytes32 _uniqueId, address _toHolder, uint256 _ratio) external returns (uint256, uint256);
 
     // Deletes a holder and redistributes their share to the remaining holders.
     function deleteHolder(bytes32 _uniqueId, address _holder) external;
 
-    function calculateRewards(
-        bytes32 _uniqueId,
-        uint256 total
-    ) external returns (address[] memory, uint256[] memory);
+    function calculateRewards(bytes32 _uniqueId, uint256 total) external returns (address[] memory, uint256[] memory);
 }

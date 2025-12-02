@@ -43,23 +43,11 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         _;
     }
 
-    function _msgSender()
-    internal
-    view
-    virtual
-    override(ContextUpgradeable)
-    returns (address)
-    {
+    function _msgSender() internal view virtual override(ContextUpgradeable) returns (address) {
         return msg.sender;
     }
 
-    function _msgData()
-    internal
-    view
-    virtual
-    override(ContextUpgradeable)
-    returns (bytes calldata)
-    {
+    function _msgData() internal view virtual override(ContextUpgradeable) returns (bytes calldata) {
         return msg.data;
     }
 
@@ -72,11 +60,7 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
     ///    - liquidationRatio
     /// @param amount Parameter value
     /// @return bool Whether the setting was successful
-    function setPlatformConfig(string memory key, uint256 amount)
-    external override
-    onlyMulSig
-    returns (bool)
-    {
+    function setPlatformConfig(string memory key, uint256 amount) external override onlyMulSig returns (bool) {
         if (keccak256(bytes(key)) == keccak256(bytes("marginRatio"))) {
             require(0 <= amount && amount <= 10000, "overflow");
             _platformConfig[key] = amount;
@@ -106,20 +90,21 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         return _platformConfig[key];
     }
 
-    function getUSTNLoanPledgeRateWarningValue() public view override returns (uint amount){
+    function getUSTNLoanPledgeRateWarningValue() public view override returns (uint256 amount) {
         return _platformConfig["loanPledgeRate"] * warnRatio / 10000;
     }
 
     // get USTN loan liquidation rate
-    function getUSTNLoanLiquidationRate() public view override returns (uint amount){
+    function getUSTNLoanLiquidationRate() public view override returns (uint256 amount) {
         return _platformConfig["loanPledgeRate"] * liquidationRatio / 10000;
     }
 
     // Additional interfaces for querying ratios for frontend
-    function getUSTNLoanPledgeRate() public view returns (uint256){
+    function getUSTNLoanPledgeRate() public view returns (uint256) {
         return _platformConfig["loanPledgeRate"];
     }
-    function getUSTNLoanInterestRate() public view returns (uint256){
+
+    function getUSTNLoanInterestRate() public view returns (uint256) {
         return _platformConfig["loanInterestRate"];
     }
 
@@ -138,14 +123,16 @@ contract ParameterInfo is Initializable, OwnableUpgradeable, IParameterInfo {
         uint256 discount2,
         uint256 discount3,
         uint256 discount4
-    ) external override onlyMulSig returns (bool) {
+    )
+        external
+        override
+        onlyMulSig
+        returns (bool)
+    {
         require(0 <= API && API <= 10000, "overflow");
         require(0 <= sulphur && sulphur <= 10000, "overflow");
         require(0 <= discount1 && discount1 <= 10000, "overflow");
-        require(
-            discount1 > discount2 && discount2 > discount3 && discount3 > discount4,
-            "overflow"
-        );
+        require(discount1 > discount2 && discount2 > discount3 && discount3 > discount4, "overflow");
         _priceDiscountConfig.API = API;
         _priceDiscountConfig.sulphur = sulphur;
         _priceDiscountConfig.discount = [discount1, discount2, discount3, discount4];

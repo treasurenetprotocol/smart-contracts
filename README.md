@@ -4,15 +4,14 @@
   </a>
 </p>
 
- 
-# Treasurenet
 
+# Treasurenet
 
 Treasurenet proposes a solution for the critical lack of sustaining and tangible value in the crypto world. Our goal is the combine real world economic drivers and distributed ledger scalability. As a layer 1 protocol, TN will become a model for sustaining value in the fiat world and the digital world.
 
 # Treasurenet Contracts
 
-<a href="https://github.com/treasurenetprotocol/treasurenet-js-libs/blob/master/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache_2.0-blue" /></a>  <img alt="npm: v9.5.1" src="https://img.shields.io/badge/solc-0.8.10-yellow" />  ![Treasurenet CI](https://img.shields.io/badge/TreasureNet_CI-passing-brightgreen)  [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
+<a href="https://github.com/treasurenetprotocol/treasurenet-js-libs/blob/master/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache_2.0-blue" /></a>  <img alt="solc: v0.8.29" src="https://img.shields.io/badge/solc-0.8.29-yellow" />  ![Treasurenet CI](https://img.shields.io/badge/TreasureNet_CI-passing-brightgreen)  [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
 
 This contains almost all contracts officially developed and maintained by Treasurenet Foundation.
 
@@ -39,23 +38,27 @@ cd treasurenetprotocol
 
 # Install the dependencies
 npm install
-npm install truffle -g
+
+# Set up Foundry (if not already installed)
+# Run the setup script
+./setup-foundry.sh
 ```
 
 ## Usage
 
-To run the tests for this project,use the following command:
+To run the tests for this project, use the following Foundry commands:
 
-### run a ganache test network
-
-```shell
-npm run ganache
-```
-
-### run tests
+### Run tests
 
 ```shell
-npm run test
+# Run all tests
+forge test
+
+# Run tests with detailed logs
+forge test -vvv
+
+# Run a specific test file
+forge test --match-path test/foundry/TreasureOil.t.sol
 ```
 
 Make sure all tests pass before submitting a pull request.
@@ -326,7 +329,7 @@ Foundation managers and board directors can propose changes to VIP ratios. Propo
 
 ## Acknowledgements
 
-We would like to thank the developers and contributors of OpenZeppelin for their excellent upgradable contract library.
+We would like to thank the developers and contributors of OpenZeppelin for their excellent upgradable contract library and the Foundry team for their powerful Solidity testing framework.
 
 ## Contact Information
 
@@ -340,3 +343,33 @@ For questions or collaboration, please contact:
 
 -----
 _Treasurenet Foundation 2024_
+
+# TreasureNet Smart Contracts
+
+## Available NPM Scripts
+
+This project provides several npm scripts for development and testing:
+
+### Build & Test
+- `npm run build` - Build all contracts with Foundry
+- `npm test` - Run tests with verbose output
+- `npm run test:gas` - Run tests with gas reporting
+- `npm run test:coverage` - Generate test coverage report
+
+### Gas Analysis
+- `forge snapshot` - Update gas snapshots in `.gas-snapshot` file
+- `forge snapshot --check` - Compare current gas usage against snapshots
+
+### Linting & Formatting
+- `npm run lint` - Check Solidity formatting without making changes
+- `npm run lint:fix` - Format Solidity files (same as lint:sol)
+- `npm run lint:sol` - Format Solidity files
+
+### Setup
+- `npm run setup:foundry` - Install and configure Foundry
+- `npm run prepare` - Set up Git hooks (runs automatically after npm install)
+
+### Pre-commit Hooks
+- `npm run precommit` - Run linting and build checks (used by Git hooks)
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more details on the development workflow.

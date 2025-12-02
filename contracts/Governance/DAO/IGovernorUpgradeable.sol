@@ -12,9 +12,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * _Available since v4.3._
  */
 abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
-    function __IGovernor_init() internal onlyInitializing {}
+    function __IGovernor_init() internal onlyInitializing { }
 
-    function __IGovernor_init_unchained() internal onlyInitializing {}
+    function __IGovernor_init_unchained() internal onlyInitializing { }
 
     enum ProposalState {
         Pending,
@@ -59,12 +59,7 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
      *
      * Note: `support` values should be seen as buckets. Their interpretation depends on the voting module used.
      */
-    event VoteCast(
-        address indexed voter,
-        uint256 proposalId,
-        uint8 support,
-        uint256 weight
-    );
+    event VoteCast(address indexed voter, uint256 proposalId, uint8 support, uint256 weight);
 
     event Withdrawed(uint256 proposalId, address voter, uint256 amount);
 
@@ -83,7 +78,8 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
     /**
      * @notice module:voting
      * @dev A description of the possible `support` values for {castVote} and the way these votes are counted, meant to
-     * be consumed by UIs to show correct vote options and interpret the results. The string is a URL-encoded sequence of
+     * be consumed by UIs to show correct vote options and interpret the results. The string is a URL-encoded sequence
+     * of
      * key-value pairs that each describe one aspect, for example `support=bravo&quorum=for,abstain`.
      *
      * There are 2 standard keys: `support` and `quorum`.
@@ -113,15 +109,17 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
         address[] memory targets,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) public pure virtual returns (uint256);
+    )
+        public
+        pure
+        virtual
+        returns (uint256);
 
     /**
      * @notice module:core
      * @dev Current state of a proposal, following Compound's convention
      */
-    function state(
-        uint256 proposalId
-    ) public view virtual returns (ProposalState);
+    function state(uint256 proposalId) public view virtual returns (ProposalState);
 
     /**
      * @notice module:core
@@ -129,18 +127,14 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
      * ERC20Votes, the snapshot is performed at the end of this block. Hence, voting for this proposal starts at the
      * beginning of the following block.
      */
-    function proposalSnapshot(
-        uint256 proposalId
-    ) public view virtual returns (uint256);
+    function proposalSnapshot(uint256 proposalId) public view virtual returns (uint256);
 
     /**
      * @notice module:core
      * @dev Block number at which votes close. Votes close at the end of this block, so it is possible to cast a vote
      * during this block.
      */
-    function proposalDeadline(
-        uint256 proposalId
-    ) public view virtual returns (uint256);
+    function proposalDeadline(uint256 proposalId) public view virtual returns (uint256);
 
     function updateDelay(uint256 newDelay) public virtual;
 
@@ -173,10 +167,7 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
      * @notice module:voting
      * @dev Returns weither `account` has cast a vote on `proposalId`.
      */
-    function hasVoted(
-        uint256 proposalId,
-        address account
-    ) public view virtual returns (bool);
+    function hasVoted(uint256 proposalId, address account) public view virtual returns (bool);
 
     /**
      * @dev Create a new proposal. Vote start {IGovernor-votingDelay} blocks after the proposal is created and ends
@@ -188,7 +179,11 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
         address[] memory targets,
         bytes[] memory calldatas,
         string memory description
-    ) public payable virtual returns (uint256 proposalId);
+    )
+        public
+        payable
+        virtual
+        returns (uint256 proposalId);
 
     /// @dev Move the successfully voted proposal (Succeeded) to the pending execution queue
     /// @param targets Target contract address
@@ -199,12 +194,13 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
         address[] memory targets,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) public virtual returns (uint256);
+    )
+        public
+        virtual
+        returns (uint256);
 
     /* Non-execution type, only manual processing is required, mark as completed once executed */
-    function manualExecuted(
-        uint256 proposalId
-    ) public virtual returns (uint256);
+    function manualExecuted(uint256 proposalId) public virtual returns (uint256);
 
     /**
      * @dev Execute a successful proposal. This requires the quorum to be reached, the vote to be successful, and the
@@ -218,21 +214,20 @@ abstract contract IGovernorUpgradeable is Initializable, IERC165Upgradeable {
         address[] memory targets,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) public payable virtual returns (uint256 proposalId);
+    )
+        public
+        payable
+        virtual
+        returns (uint256 proposalId);
 
     /**
      * @dev Cast a vote
      *
      * Emits a {VoteCast} event.
      */
-    function castVote(
-        uint256 proposalId,
-        uint8 support
-    ) public payable virtual returns (uint256 balance);
+    function castVote(uint256 proposalId, uint8 support) public payable virtual returns (uint256 balance);
 
-    function withdraw(
-        uint256 proposalId
-    ) public payable virtual returns (uint256);
+    function withdraw(uint256 proposalId) public payable virtual returns (uint256);
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

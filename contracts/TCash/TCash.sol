@@ -39,4 +39,4 @@ contract TCash is Initializable, ERC20Upgradeable {
         _burn(account, amount);
         return true;
     }
-} 
+}

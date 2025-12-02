@@ -37,10 +37,7 @@ contract DAO is OwnableUpgradeable, GovernorUpgradeable {
 
     mapping(uint256 => ProposalVote) private _proposalVotes;
 
-    event ProposalThresholdSet(
-        uint256 oldProposalThreshold,
-        uint256 newProposalThreshold
-    );
+    event ProposalThresholdSet(uint256 oldProposalThreshold, uint256 newProposalThreshold);
 
     modifier onlyDAO() {
         require(_msgSender() == address(this), "only DAO");
@@ -52,11 +49,7 @@ contract DAO is OwnableUpgradeable, GovernorUpgradeable {
        _minTimeDelay: minimum time delay (timestamp)
        _votingPeriod: voting period
     */
-    function initialize(
-        string memory _name,
-        uint256 _minTimeDelay,
-        uint256 __votingPeriod
-    ) public initializer {
+    function initialize(string memory _name, uint256 _minTimeDelay, uint256 __votingPeriod) public initializer {
         __Ownable_init();
         __Governor_init(_name, _minTimeDelay);
 
@@ -70,19 +63,13 @@ contract DAO is OwnableUpgradeable, GovernorUpgradeable {
         _votingPeriod = __votingPeriod;
     }
 
-    receive() external payable {}
+    receive() external payable { }
 
-    fallback() external payable {}
+    fallback() external payable { }
 
     // Governor implementation
 
-    function COUNTING_MODE()
-        public
-        pure
-        virtual
-        override
-        returns (string memory)
-    {
+    function COUNTING_MODE() public pure virtual override returns (string memory) {
         return "support=bravo&quorum=for,abstain";
     }
 
@@ -91,10 +78,7 @@ contract DAO is OwnableUpgradeable, GovernorUpgradeable {
        account: address of the user
        bool: whether the user has voted
     */
-    function hasVoted(
-        uint256 proposalId,
-        address account
-    ) public view virtual override returns (bool) {
+    function hasVoted(uint256 proposalId, address account) public view virtual override returns (bool) {
         return _proposalVotes[proposalId].hasVoted[account];
     }
 
@@ -104,15 +88,9 @@ contract DAO is OwnableUpgradeable, GovernorUpgradeable {
        uint256: The number of agree votes
        uint256: The number of abstain votes
     */
-    function proposalVotes(
-        uint256 proposalId
-    ) public view virtual returns (uint256, uint256, uint256) {
+    function proposalVotes(uint256 proposalId) public view virtual returns (uint256, uint256, uint256) {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
-        return (
-            proposalvote.againstVotes,
-            proposalvote.forVotes,
-            proposalvote.abstainVotes
-        );
+        return (proposalvote.againstVotes, proposalvote.forVotes, proposalvote.abstainVotes);
     }
 
     /* update time depay (completed through DAO proposal)
@@ -130,9 +108,7 @@ contract DAO is OwnableUpgradeable, GovernorUpgradeable {
     /* updates the voting cycle (completed through DAO proposal)
        newVotingPeriod: new voting period
     */
-    function updateVotingPeriod(
-        uint256 newVotingPeriod
-    ) public virtual onlyDAO {
+    function updateVotingPeriod(uint256 newVotingPeriod) public virtual onlyDAO {
         _votingPeriod = newVotingPeriod;
     }
 
@@ -171,49 +147,30 @@ contract DAO is OwnableUpgradeable, GovernorUpgradeable {
        blockNumber: block number
        uint256: quorum
     */
-    function quorum(
-        uint256 blockNumber
-    ) public view override returns (uint256) {
+    function quorum(uint256 blockNumber) public view override returns (uint256) {
         if (blockNumber <= _deployedBlockTime) {
             return 0;
         }
         /* _blockRatio needs to be divided by 10000 to provide greater precision */
-        return
-            ((blockNumber - _deployedBlockTime) * _blockReward * _blockRatio) /
-            100 /
-            10000;
+        return ((blockNumber - _deployedBlockTime) * _blockReward * _blockRatio) / 100 / 10000;
     }
 
-    function _quorumReached(
-        uint256 proposalId
-    ) internal view virtual override returns (bool) {
+    function _quorumReached(uint256 proposalId) internal view virtual override returns (bool) {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
 
-        return
-            quorum(proposalSnapshot(proposalId)) <=
-            proposalvote.forVotes + proposalvote.abstainVotes;
+        return quorum(proposalSnapshot(proposalId)) <= proposalvote.forVotes + proposalvote.abstainVotes;
     }
 
-    function _voteSucceeded(
-        uint256 proposalId
-    ) internal view virtual override returns (bool) {
+    function _voteSucceeded(uint256 proposalId) internal view virtual override returns (bool) {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
 
         return proposalvote.forVotes > proposalvote.againstVotes;
     }
 
-    function _countVote(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        uint256 weight
-    ) internal virtual override {
+    function _countVote(uint256 proposalId, address account, uint8 support, uint256 weight) internal virtual override {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
 
-        require(
-            !proposalvote.hasVoted[account],
-            "GovernorVotingSimple: vote already cast"
-        );
+        require(!proposalvote.hasVoted[account], "GovernorVotingSimple: vote already cast");
         proposalvote.hasVoted[account] = true;
 
         if (support == uint8(VoteType.Against)) {
