@@ -13,6 +13,14 @@ contract MockOracle {
         prices[keccak256(bytes(symbol))] = value;
     }
 
+    function setCurrencyValue(bytes32 currency, uint256 value) external {
+        prices[currency] = value;
+    }
+
+    function getCurrencyValue(bytes32 currency) external view returns (uint256) {
+        return prices[currency];
+    }
+
     function getPrice(string calldata symbol) external view returns (uint256) {
         return prices[keccak256(bytes(symbol))];
     }
