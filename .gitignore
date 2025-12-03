@@ -1,7 +1,6 @@
 node_modules/*
 *.log
 build/*
-.openzeppelin/*
 .idea
 package-lock.json
 .env
@@ -11,3 +10,4 @@ artifacts/
 cache/
 deployments/
 coverage-js/
+.openzeppelin/
