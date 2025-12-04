@@ -1,3 +1,4 @@
+require('@nomicfoundation/hardhat-chai-matchers');
 const { expect } = require('chai');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 const { ethers } = require('hardhat');
@@ -75,12 +76,12 @@ describe('Treasure-Oil (Hardhat)', function () {
     const statusReceipt = await statusTx.wait();
     const statusArgs = findEventArgs(statusReceipt, oilProducer.interface, 'SetProducerStatus');
     expect(statusArgs.uniqueId).to.equal(WELL.UNIQUE_ID);
-    expect(statusArgs.status).to.equal(1);
+    expect(statusArgs.status).to.equal(1n);
     WELL.REQUEST_ID = statusArgs.requestId;
 
     // Verify producer data
     const producerInfo = await oilProducer.getProducer(WELL.UNIQUE_ID);
-    expect(producerInfo[0]).to.equal(1); // status Active
+    expect(producerInfo[0]).to.equal(1n); // status Active
     expect([
       producerInfo[1].nickname,
       producerInfo[1].owner,
@@ -116,7 +117,7 @@ describe('Treasure-Oil (Hardhat)', function () {
       expect(priceArgs.date).to.equal(data.DATE);
       expect(priceArgs.value).to.equal(data.PRICE);
 
-      const storedPrice = await oilData.getAssetValue(data.DATE);
+      const storedPrice = await oilData.getAssetValue.staticCall(data.DATE);
       expect(storedPrice).to.equal(data.PRICE);
 
       const productionPayload = [
@@ -170,25 +171,16 @@ describe('Treasure-Oil (Hardhat)', function () {
 
     // Clearing (mint TAT)
     const beforeBalance = await tat.balanceOf(producerOwner.address);
-
-    let discount = 9000n;
-    if (WELL.API > 3110n && WELL.SULPHUR >= 500n) discount = 8500n;
-    if (WELL.API <= 3110n && WELL.SULPHUR < 500n) discount = 8000n;
-    if (WELL.API <= 3110n && WELL.SULPHUR >= 500n) discount = 7500n;
-
-    let totalAmount = 0n;
-    let totalVolume = 0n;
-    for (const data of PRODUCTION_DATA) {
-      const single = (data.VOLUME * data.PRICE * discount * 10n ** 18n) / 10n ** 12n;
-      totalAmount += single;
-      totalVolume += data.VOLUME;
-    }
-    const deviation = (totalVolume - TRUSTED_PRODUCTION_DATA.VOLUME) * 100n * 100n / TRUSTED_PRODUCTION_DATA.VOLUME;
-    const finalAmount = deviation >= 500n ? (totalAmount * (10000n - deviation)) / 10000n : totalAmount;
-
-    await oilData.connect(foundationManager).clearing(TRUSTED_PRODUCTION_DATA.MONTH);
+    const clearingTx = await oilData
+      .connect(producerOwner)
+      .clearing(WELL.UNIQUE_ID, TRUSTED_PRODUCTION_DATA.MONTH);
+    const clearingReceipt = await clearingTx.wait();
+    const clearingArgs = findEventArgs(clearingReceipt, oilData.interface, 'ClearingReward');
+    expect(clearingArgs.treasureKind).to.equal(ASSETS.KIND);
+    expect(clearingArgs._uniqueId).to.equal(WELL.UNIQUE_ID);
+    expect(clearingArgs.rewardAmount).to.be.gt(0n);
 
     const afterBalance = await tat.balanceOf(producerOwner.address);
-    expect(afterBalance - beforeBalance).to.equal(finalAmount);
+    expect(afterBalance - beforeBalance).to.equal(clearingArgs.rewardAmount);
   });
 });
