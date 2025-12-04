@@ -27,7 +27,7 @@ async function deployAuctionFixture() {
   const auction = await upgrades.deployProxy(
     USTNAuction,
     [await roles.getAddress(), await ustn.getAddress(), await financeContract.getAddress()],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   return {
@@ -35,12 +35,12 @@ async function deployAuctionFixture() {
     roles,
     ustn,
     financeContract,
-    accounts: { mulSig, foundation, auctionManager, finance: financeEOA, financeContract, bidder1, bidder2 }
+    accounts: { mulSig, foundation, auctionManager, finance: financeEOA, financeContract, bidder1, bidder2 },
   };
 }
 
-describe('USTNAuction', function () {
-  it('starts auctions by finance and tracks metadata', async function () {
+describe('USTNAuction', () => {
+  it('starts auctions by finance and tracks metadata', async () => {
     const { auction, financeContract } = await loadFixture(deployAuctionFixture);
     const receipt = await (await financeContract.startAuction(await auction.getAddress(), 100, 50, 5)).wait();
     const parsed = receipt.logs
@@ -59,7 +59,7 @@ describe('USTNAuction', function () {
     expect((await auction.queryAuctions())[0].state).to.equal(1);
   });
 
-  it('handles bidding, withdrawal, and settlement', async function () {
+  it('handles bidding, withdrawal, and settlement', async () => {
     const { auction, ustn, financeContract, roles, accounts } = await loadFixture(deployAuctionFixture);
     await financeContract.startAuction(await auction.getAddress(), 100, 50, 5);
 
@@ -70,7 +70,7 @@ describe('USTNAuction', function () {
     expect(await ustn.balanceOf(accounts.bidder1.address)).to.equal(1_000n);
 
     await expect(auction.connect(accounts.bidder2).bidWithdrawal(0)).to.be.revertedWith(
-      'USTNAuction: you are owner of bid'
+      'USTNAuction: you are owner of bid',
     );
 
     await time.increase(11 * 60);
@@ -83,7 +83,7 @@ describe('USTNAuction', function () {
     expect(await roles.getRoleMember(auctionRole, 0)).to.equal(accounts.auctionManager.address);
   });
 
-  it('allows foundation manager to revive expired auctions with no bids', async function () {
+  it('allows foundation manager to revive expired auctions with no bids', async () => {
     const { auction, financeContract, accounts } = await loadFixture(deployAuctionFixture);
     await financeContract.startAuction(await auction.getAddress(), 10, 5, 1);
     const before = (await auction.queryAuctions())[0].timeOver;

@@ -1,7 +1,6 @@
 require('@nomicfoundation/hardhat-chai-matchers');
 const { expect } = require('chai');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
-const { ethers } = require('hardhat');
 const { deployTreasureFixture } = require('./helpers/deploy-treasures');
 
 const WELL = {
@@ -9,14 +8,14 @@ const WELL = {
   UNIQUE_ID: '0x4872484e4579694e575a65745956524879303873690000000000000000000000',
   REQUEST_ID: '',
   API: 3000n,
-  SULPHUR: 480n
+  SULPHUR: 480n,
 };
 
 const ASSETS = { KIND: 'OIL', REQUEST_ID: '' };
 
 const PRODUCTION_DATA = [
   { DATE: '240101', VOLUME: 1000n, PRICE: 100n },
-  { DATE: '240102', VOLUME: 2000n, PRICE: 200n }
+  { DATE: '240102', VOLUME: 2000n, PRICE: 200n },
 ];
 
 const TRUSTED_PRODUCTION_DATA = { MONTH: '2401', VOLUME: 2500n };
@@ -35,8 +34,8 @@ function findEventArgs(receipt, iface, eventName) {
   return null;
 }
 
-describe('Treasure-Oil (Hardhat)', function () {
-  it('full flow', async function () {
+describe('Treasure-Oil (Hardhat)', () => {
+  it('full flow', async () => {
     const fixture = await loadFixture(deployTreasureFixture);
     const [foundationManager, , producerOwner] = fixture.accounts;
     const { oilProducer, oilData, tat } = fixture;
@@ -47,7 +46,7 @@ describe('Treasure-Oil (Hardhat)', function () {
       producerOwner.address,
       WELL.API,
       WELL.SULPHUR,
-      ''
+      '',
     ];
     const addTx = await oilProducer
       .connect(foundationManager)
@@ -60,13 +59,13 @@ describe('Treasure-Oil (Hardhat)', function () {
       addArgs.producer.owner,
       addArgs.producer.API,
       addArgs.producer.sulphur,
-      addArgs.producer.account
+      addArgs.producer.account,
     ]).to.deep.equal([
       WELL.NICKNAME,
       producerOwner.address,
       WELL.API,
       WELL.SULPHUR,
-      ''
+      '',
     ]);
 
     // Set producer status -> register trusted data request
@@ -87,13 +86,13 @@ describe('Treasure-Oil (Hardhat)', function () {
       producerInfo[1].owner,
       producerInfo[1].API,
       producerInfo[1].sulphur,
-      producerInfo[1].account
+      producerInfo[1].account,
     ]).to.deep.equal([
       WELL.NICKNAME,
       producerOwner.address,
       WELL.API,
       WELL.SULPHUR,
-      ''
+      '',
     ]);
 
     // Deposit expense
@@ -131,7 +130,7 @@ describe('Treasure-Oil (Hardhat)', function () {
         '',
         0,
         0,
-        0
+        0,
       ];
 
       const prodTx = await oilData
@@ -157,7 +156,7 @@ describe('Treasure-Oil (Hardhat)', function () {
       '',
       0,
       0,
-      0
+      0,
     ];
     const trustedTx = await oilData
       .connect(foundationManager)

@@ -16,9 +16,9 @@ async function deployGovernanceFixture() {
       [], // auction managers
       [], // feeders
       [], // crosschain senders
-      [] // tcash managers
+      [], // tcash managers
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   const Governance = await ethers.getContractFactory('Governance');
@@ -31,32 +31,32 @@ async function deployGovernanceFixture() {
       stranger.address, // parameterInfo not used in current tests
       ['OIL'],
       [producerA.address],
-      [dataA.address]
+      [dataA.address],
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   return { gov, roles, accounts: { dao, mulSig, fm1, fm2, fm3, producerA, dataA, producerB, dataB, stranger } };
 }
 
-describe('Governance', function () {
-  it('computes fmThreshold based on foundation managers', async function () {
+describe('Governance', () => {
+  it('computes fmThreshold based on foundation managers', async () => {
     const { gov } = await loadFixture(deployGovernanceFixture);
     // 3 managers => 3/2 + 1 = 2
     expect(await gov.fmThreshold()).to.equal(2);
   });
 
-  it('initializes treasures and allows retrieval by kind', async function () {
+  it('initializes treasures and allows retrieval by kind', async () => {
     const { gov, accounts } = await loadFixture(deployGovernanceFixture);
     const [producer, data] = await gov.getTreasureByKind('OIL');
     expect(producer).to.equal(accounts.producerA.address);
     expect(data).to.equal(accounts.dataA.address);
   });
 
-  it('only mulSig can add new treasures and emits event', async function () {
+  it('only mulSig can add new treasures and emits event', async () => {
     const { gov, accounts } = await loadFixture(deployGovernanceFixture);
     await expect(
-      gov.connect(accounts.mulSig).addTreasure('GAS', accounts.producerB.address, accounts.dataB.address)
+      gov.connect(accounts.mulSig).addTreasure('GAS', accounts.producerB.address, accounts.dataB.address),
     )
       .to.emit(gov, 'AddTreasure')
       .withArgs('GAS', accounts.producerB.address, accounts.dataB.address);
@@ -66,23 +66,23 @@ describe('Governance', function () {
     expect(data).to.equal(accounts.dataB.address);
 
     await expect(
-      gov.connect(accounts.dao).addTreasure('ETH', accounts.producerB.address, accounts.dataB.address)
+      gov.connect(accounts.dao).addTreasure('ETH', accounts.producerB.address, accounts.dataB.address),
     ).to.be.reverted;
   });
 
-  it('rejects duplicate treasure types and zero addresses', async function () {
+  it('rejects duplicate treasure types and zero addresses', async () => {
     const { gov, accounts } = await loadFixture(deployGovernanceFixture);
 
     await expect(
-      gov.connect(accounts.mulSig).addTreasure('OIL', accounts.producerB.address, accounts.dataB.address)
+      gov.connect(accounts.mulSig).addTreasure('OIL', accounts.producerB.address, accounts.dataB.address),
     ).to.be.revertedWith('treasure type already exists');
 
     await expect(
-      gov.connect(accounts.mulSig).addTreasure('BTC', ethers.ZeroAddress, accounts.dataB.address)
+      gov.connect(accounts.mulSig).addTreasure('BTC', ethers.ZeroAddress, accounts.dataB.address),
     ).to.be.revertedWith('empty producer contract');
 
     await expect(
-      gov.connect(accounts.mulSig).addTreasure('BTC', accounts.producerB.address, ethers.ZeroAddress)
+      gov.connect(accounts.mulSig).addTreasure('BTC', accounts.producerB.address, ethers.ZeroAddress),
     ).to.be.revertedWith('empty production data contract');
   });
 });

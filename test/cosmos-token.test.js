@@ -2,7 +2,7 @@ require('@nomicfoundation/hardhat-chai-matchers');
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
-describe('CosmosERC20', function () {
+describe('CosmosERC20', () => {
   async function deploy() {
     const [gravity, user, other] = await ethers.getSigners();
     const CosmosERC20 = await ethers.getContractFactory('CosmosERC20');
@@ -10,13 +10,13 @@ describe('CosmosERC20', function () {
     return { token, accounts: { gravity, user, other } };
   }
 
-  it('sets decimals and initial supply anchored to gravity balance', async function () {
+  it('sets decimals and initial supply anchored to gravity balance', async () => {
     const { token } = await deploy();
     expect(await token.decimals()).to.equal(6);
     expect(await token.totalSupply()).to.equal(0);
   });
 
-  it('tracks totalSupply as MAX - gravity balance when gravity distributes tokens', async function () {
+  it('tracks totalSupply as MAX - gravity balance when gravity distributes tokens', async () => {
     const { token, accounts } = await deploy();
     const amount = 1000n;
     await token.connect(accounts.gravity).transfer(accounts.user.address, amount);

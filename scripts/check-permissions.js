@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 
 const Web3 = require('web3');
 const fs = require('fs');
@@ -10,100 +11,99 @@ const path = require('path');
 
 // ===== Configuration Section =====
 const CONFIG = {
-    RPC_URL: "http://127.0.0.1:8555",
-    ROLES_ADDRESS: "0xa1Bf87580F2bfb1e3FC1ecC6bB773DBA48DF136C",
-    PRIVATE_KEY: "0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2"
+  RPC_URL: 'http://127.0.0.1:8555',
+  ROLES_ADDRESS: '0xa1Bf87580F2bfb1e3FC1ecC6bB773DBA48DF136C',
+  PRIVATE_KEY: '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2',
 };
 
 // Load contract ABI
 function loadContractABI(contractName) {
-    try {
-        const buildPath = path.join(__dirname, '..', 'build', 'contracts', `${contractName}.json`);
-        const contractJson = JSON.parse(fs.readFileSync(buildPath, 'utf8'));
-        return contractJson.abi;
-    } catch (error) {
-        console.error(`Failed to load ABI for ${contractName}:`, error.message);
-        process.exit(1);
-    }
+  try {
+    const buildPath = path.join(__dirname, '..', 'build', 'contracts', `${contractName}.json`);
+    const contractJson = JSON.parse(fs.readFileSync(buildPath, 'utf8'));
+    return contractJson.abi;
+  } catch (error) {
+    logger.error(`Failed to load ABI for ${contractName}:`, error.message);
+    process.exit(1);
+  }
 }
 
 async function checkPermissions() {
-    try {
-        console.log('Checking Account Permissions');
-        console.log('===========================');
+  try {
+    logger.info('Checking Account Permissions');
+    logger.info('===========================');
 
-        // Initialize Web3
-        const web3 = new Web3(CONFIG.RPC_URL);
-        
-        // Current account
-        const account = web3.eth.accounts.privateKeyToAccount(CONFIG.PRIVATE_KEY);
-        console.log(`Checking account: ${account.address}`);
+    // Initialize Web3
+    const web3 = new Web3(CONFIG.RPC_URL);
 
-        // Load Roles contract
-        const rolesABI = loadContractABI('Roles');
-        const roles = new web3.eth.Contract(rolesABI, CONFIG.ROLES_ADDRESS);
+    // Current account
+    const account = web3.eth.accounts.privateKeyToAccount(CONFIG.PRIVATE_KEY);
+    logger.info(`Checking account: ${account.address}`);
 
-        // Get all role constants
-        const FOUNDATION_MANAGER = await roles.methods.FOUNDATION_MANAGER().call();
-        const ADMIN = await roles.methods.get_ADMIN().call();
-        const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    // Load Roles contract
+    const rolesABI = loadContractABI('Roles');
+    const roles = new web3.eth.Contract(rolesABI, CONFIG.ROLES_ADDRESS);
 
-        console.log('\n📋 Role Check:');
-        
-        // Check FOUNDATION_MANAGER role
-        const isFoundationManager = await roles.methods.hasRole(FOUNDATION_MANAGER, account.address).call();
-        console.log(`FOUNDATION_MANAGER: ${isFoundationManager ? '✅ YES' : '❌ NO'}`);
-        
-        // Check ADMIN role
-        const isAdmin = await roles.methods.hasRole(ADMIN, account.address).call();
-        console.log(`ADMIN: ${isAdmin ? '✅ YES' : '❌ NO'}`);
-        
-        // Check DEFAULT_ADMIN_ROLE
-        const isDefaultAdmin = await roles.methods.hasRole(DEFAULT_ADMIN_ROLE, account.address).call();
-        console.log(`DEFAULT_ADMIN_ROLE: ${isDefaultAdmin ? '✅ YES' : '❌ NO'}`);
+    // Get all role constants
+    const FOUNDATION_MANAGER = await roles.methods.FOUNDATION_MANAGER().call();
+    const ADMIN = await roles.methods.get_ADMIN().call();
+    const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-        console.log('\n🔍 Role Hierarchy Check:');
-        
-        // Check what role is the admin of FOUNDATION_MANAGER
-        const fmAdmin = await roles.methods.getRoleAdmin(FOUNDATION_MANAGER).call();
-        console.log(`FOUNDATION_MANAGER admin role: ${fmAdmin}`);
-        console.log(`ADMIN role hash: ${ADMIN}`);
-        console.log(`Can manage FOUNDATION_MANAGER: ${fmAdmin === ADMIN && isAdmin ? '✅ YES' : '❌ NO'}`);
+    logger.info('\n📋 Role Check:');
 
-        console.log('\n👥 Current Foundation Managers:');
-        const fmCount = await roles.methods.getRoleMemberCount(FOUNDATION_MANAGER).call();
-        console.log(`Total count: ${fmCount}`);
-        
-        for (let i = 0; i < fmCount; i++) {
-            const manager = await roles.methods.getRoleMember(FOUNDATION_MANAGER, i).call();
-            console.log(`${i + 1}. ${manager}`);
-        }
+    // Check FOUNDATION_MANAGER role
+    const isFoundationManager = await roles.methods.hasRole(FOUNDATION_MANAGER, account.address).call();
+    logger.info(`FOUNDATION_MANAGER: ${isFoundationManager ? '✅ YES' : '❌ NO'}`);
 
-        console.log('\n💡 Solutions:');
-        
-        if (isAdmin && fmAdmin === ADMIN) {
-            console.log('✅ You have ADMIN role and can directly add foundation managers!');
-            console.log('   Run: node scripts/add-foundation-manager.js');
-        } else if (isDefaultAdmin) {
-            console.log('✅ You have DEFAULT_ADMIN_ROLE and can grant any role!');
-            console.log('   Run: node scripts/add-foundation-manager.js');
-        } else {
-            console.log('❌ You cannot directly add foundation managers.');
-            console.log('   You need one of the following:');
-            console.log('   - ADMIN role');
-            console.log('   - DEFAULT_ADMIN_ROLE');
-            console.log('   - Contact someone with these roles');
-        }
+    // Check ADMIN role
+    const isAdmin = await roles.methods.hasRole(ADMIN, account.address).call();
+    logger.info(`ADMIN: ${isAdmin ? '✅ YES' : '❌ NO'}`);
 
-    } catch (error) {
-        console.error('❌ Error:', error.message);
-        process.exit(1);
+    // Check DEFAULT_ADMIN_ROLE
+    const isDefaultAdmin = await roles.methods.hasRole(DEFAULT_ADMIN_ROLE, account.address).call();
+    logger.info(`DEFAULT_ADMIN_ROLE: ${isDefaultAdmin ? '✅ YES' : '❌ NO'}`);
+
+    logger.info('\n🔍 Role Hierarchy Check:');
+
+    // Check what role is the admin of FOUNDATION_MANAGER
+    const fmAdmin = await roles.methods.getRoleAdmin(FOUNDATION_MANAGER).call();
+    logger.info(`FOUNDATION_MANAGER admin role: ${fmAdmin}`);
+    logger.info(`ADMIN role hash: ${ADMIN}`);
+    logger.info(`Can manage FOUNDATION_MANAGER: ${fmAdmin === ADMIN && isAdmin ? '✅ YES' : '❌ NO'}`);
+
+    logger.info('\n👥 Current Foundation Managers:');
+    const fmCount = await roles.methods.getRoleMemberCount(FOUNDATION_MANAGER).call();
+    logger.info(`Total count: ${fmCount}`);
+
+    for (let i = 0; i < fmCount; i++) {
+      const manager = await roles.methods.getRoleMember(FOUNDATION_MANAGER, i).call();
+      logger.info(`${i + 1}. ${manager}`);
     }
+
+    logger.info('\n💡 Solutions:');
+
+    if (isAdmin && fmAdmin === ADMIN) {
+      logger.info('✅ You have ADMIN role and can directly add foundation managers!');
+      logger.info('   Run: node scripts/add-foundation-manager.js');
+    } else if (isDefaultAdmin) {
+      logger.info('✅ You have DEFAULT_ADMIN_ROLE and can grant any role!');
+      logger.info('   Run: node scripts/add-foundation-manager.js');
+    } else {
+      logger.info('❌ You cannot directly add foundation managers.');
+      logger.info('   You need one of the following:');
+      logger.info('   - ADMIN role');
+      logger.info('   - DEFAULT_ADMIN_ROLE');
+      logger.info('   - Contact someone with these roles');
+    }
+  } catch (error) {
+    logger.error('❌ Error:', error.message);
+    process.exit(1);
+  }
 }
 
 // Run the script
 if (require.main === module) {
-    checkPermissions();
+  checkPermissions();
 }
 
-module.exports = checkPermissions; 
+module.exports = checkPermissions;

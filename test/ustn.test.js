@@ -22,14 +22,14 @@ async function deployUSTNFixture() {
   const ustn = await upgrades.deployProxy(
     USTN,
     [await roles.getAddress(), await oracle.getAddress(), auctionContract.address, finance.address],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   return { ustn, roles, oracle, accounts: { deployer, auctionManager, auctionContract, finance, user, spender } };
 }
 
-describe('USTN', function () {
-  it('initializes and mints to caller, tracking supply and balances', async function () {
+describe('USTN', () => {
+  it('initializes and mints to caller, tracking supply and balances', async () => {
     const { ustn, accounts } = await loadFixture(deployUSTNFixture);
     await ustn.connect(accounts.user).mint(1000);
     expect(await ustn.totalSupply()).to.equal(1000);
@@ -40,13 +40,13 @@ describe('USTN', function () {
       .withArgs(accounts.user.address, accounts.spender.address, 200n);
   });
 
-  it('computes mint rates from oracle prices', async function () {
+  it('computes mint rates from oracle prices', async () => {
     const { ustn } = await loadFixture(deployUSTNFixture);
     expect(await ustn.mintRate(100)).to.equal(200);
     expect(await ustn.mintBackRate(100)).to.equal(50);
   });
 
-  it('supports allowance flow via approve and transferFrom', async function () {
+  it('supports allowance flow via approve and transferFrom', async () => {
     const { ustn, accounts } = await loadFixture(deployUSTNFixture);
     await ustn.connect(accounts.user).mint(500);
     await ustn.connect(accounts.user).approve(accounts.spender.address, 300);
@@ -55,11 +55,11 @@ describe('USTN', function () {
     expect(await ustn.balanceOf(accounts.deployer.address)).to.equal(200);
   });
 
-  it('bidCost/bidBack move balances via auction manager path and validate balances', async function () {
+  it('bidCost/bidBack move balances via auction manager path and validate balances', async () => {
     const { ustn, accounts } = await loadFixture(deployUSTNFixture);
     await ustn.connect(accounts.user).mint(1000);
     await expect(
-      ustn.connect(accounts.auctionContract).bidCost(accounts.user.address, 1100)
+      ustn.connect(accounts.auctionContract).bidCost(accounts.user.address, 1100),
     ).to.be.revertedWith('USTN: balances not enough');
 
     await ustn.connect(accounts.auctionContract).bidCost(accounts.user.address, 400);
@@ -71,10 +71,10 @@ describe('USTN', function () {
     expect(await ustn.balanceOf(accounts.auctionManager.address)).to.equal(250);
   });
 
-  it('reduceBalance validates input and reduces totals', async function () {
+  it('reduceBalance validates input and reduces totals', async () => {
     const { ustn, accounts } = await loadFixture(deployUSTNFixture);
     await expect(ustn.reduceBalance(accounts.user.address, 0)).to.be.revertedWith(
-      'Amount must be greater than zero'
+      'Amount must be greater than zero',
     );
     await ustn.connect(accounts.user).mint(100);
     await expect(ustn.reduceBalance(accounts.user.address, 200)).to.be.revertedWith('Insufficient balance');

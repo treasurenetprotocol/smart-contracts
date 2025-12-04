@@ -1,24 +1,84 @@
 name: CI
+
 on:
   push:
     branches:
       - main
       - release/**
+      - feature/**
+      - develop
   pull_request:
   merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+env:
+  NODE_VERSION: 20
 
-      - uses: actions/setup-node@v4
+jobs:
+  quality:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - run: |
-          npm install
-          npm run ganache
-          npm run test 
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: ESLint
+        run: npm run lint:check
+        continue-on-error: true
+
+      - name: Solhint
+        run: npm run solhint:check
+        continue-on-error: true
+
+      - name: Prettier
+        run: npm run prettier:check
+        continue-on-error: true
+
+  test:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run tests
+        env:
+          CI: true
+        run: npm run test
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-js
+          path: coverage-js
+          if-no-files-found: ignore

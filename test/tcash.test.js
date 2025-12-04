@@ -17,14 +17,14 @@ async function deployTCashFixture() {
       [], // auction managers
       [], // feeders
       [], // crosschain senders
-      [tcashManager.address] // tcash managers (minter & burner)
+      [tcashManager.address], // tcash managers (minter & burner)
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   const TCash = await ethers.getContractFactory('TCash');
   const tcash = await upgrades.deployProxy(TCash, [user.address], {
-    initializer: 'initialize'
+    initializer: 'initialize',
   });
   await tcash.setRoles(await roles.getAddress());
   await tcash.setAuctionContract(auctionContract.address);
@@ -35,8 +35,8 @@ async function deployTCashFixture() {
   return { tcash, roles, oracle, accounts: { mulSig, tcashManager, auctionContract, user, other } };
 }
 
-describe('TCash', function () {
-  it('initializes supply and metadata', async function () {
+describe('TCash', () => {
+  it('initializes supply and metadata', async () => {
     const { tcash, accounts } = await loadFixture(deployTCashFixture);
     expect(await tcash.name()).to.equal('TCash');
     expect(await tcash.symbol()).to.equal('TCash');
@@ -44,20 +44,20 @@ describe('TCash', function () {
     expect(await tcash.balanceOf(accounts.user.address)).to.equal(ethers.parseEther('1000000'));
   });
 
-  it('mints and burns with role checks and oracle gate', async function () {
+  it('mints and burns with role checks and oracle gate', async () => {
     const { tcash, roles, oracle, accounts } = await loadFixture(deployTCashFixture);
     await tcash.setOracle(await oracle.getAddress());
 
     const minterRole = await roles.TCASH_MINTER();
     await expect(tcash.connect(accounts.other).mint(accounts.other.address, 1)).to.be.revertedWith(
-      'Not authorized to mint'
+      'Not authorized to mint',
     );
 
     // Roles already set in fixture; grant minter to other
     await roles.connect(accounts.mulSig).grantRole(minterRole, accounts.other.address);
 
     await expect(tcash.connect(accounts.other).mint(accounts.other.address, 1)).to.be.revertedWith(
-      'TCash minting is currently disabled'
+      'TCash minting is currently disabled',
     );
 
     await oracle.setStatus(true);
@@ -68,14 +68,14 @@ describe('TCash', function () {
     const burnerRole = await roles.TCASH_BURNER();
     await roles.connect(accounts.mulSig).grantRole(burnerRole, accounts.other.address);
     await expect(
-      tcash.connect(accounts.other).burnFrom(accounts.mulSig.address, 1)
+      tcash.connect(accounts.other).burnFrom(accounts.mulSig.address, 1),
     ).to.be.revertedWith('Insufficient balance');
     await expect(tcash.connect(accounts.other).burnFrom(accounts.other.address, 1))
       .to.emit(tcash, 'Transfer')
       .withArgs(accounts.other.address, ethers.ZeroAddress, 1n);
   });
 
-  it('locks balances for bids and prevents transferring locked amounts', async function () {
+  it('locks balances for bids and prevents transferring locked amounts', async () => {
     const { tcash, accounts } = await loadFixture(deployTCashFixture);
     const bidder = accounts.user;
 
@@ -87,7 +87,7 @@ describe('TCash', function () {
     await tcash.connect(accounts.auctionContract).bidCost(accounts.other.address, ethers.parseEther('5'));
     expect(await tcash.getLockedBalance(accounts.other.address)).to.equal(ethers.parseEther('5'));
     await expect(
-      tcash.connect(accounts.other).transfer(accounts.user.address, ethers.parseEther('7'))
+      tcash.connect(accounts.other).transfer(accounts.user.address, ethers.parseEther('7')),
     ).to.be.revertedWith('Transfer amount exceeds unlocked balance');
 
     // Unlock 3, transfer remaining unlocked

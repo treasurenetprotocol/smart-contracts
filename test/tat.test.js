@@ -4,7 +4,7 @@ const { loadFixture, time } = require('@nomicfoundation/hardhat-network-helpers'
 const { ethers, network } = require('hardhat');
 const { deployTreasureFixture } = require('./helpers/deploy-treasures');
 
-describe('TAT', function () {
+describe('TAT', () => {
   const secondsInYear = 365 * 24 * 60 * 60;
   const calcYearMonth = (timestamp) => {
     const secondsInDay = 86400;
@@ -18,16 +18,16 @@ describe('TAT', function () {
     return year * 100 + month;
   };
 
-  it('records faucet mints and maintains a 3-entry history', async function () {
+  it('records faucet mints and maintains a 3-entry history', async () => {
     const fixture = await loadFixture(deployTreasureFixture);
     const { tat } = fixture;
     const [, , , user] = fixture.accounts;
 
     await expect(
-      tat.setTATRecord(ethers.ZeroAddress, 1)
+      tat.setTATRecord(ethers.ZeroAddress, 1),
     ).to.be.revertedWith('User address cannot be zero');
     await expect(
-      tat.setTATRecord(user.address, 0)
+      tat.setTATRecord(user.address, 0),
     ).to.be.revertedWith('Mint amount must be greater than 0');
 
     const start = await time.latest();
@@ -46,7 +46,7 @@ describe('TAT', function () {
     const expectedMonths = [
       calcYearMonth(start + secondsInYear + 1),
       calcYearMonth(start + secondsInYear * 2 + 1),
-      calcYearMonth(start + secondsInYear * 3 + 1)
+      calcYearMonth(start + secondsInYear * 3 + 1),
     ];
 
     const [months, amounts] = await tat.getTATRecord(user.address);
@@ -55,7 +55,7 @@ describe('TAT', function () {
     expect(months.map((m) => Number(m))).to.have.members(expectedMonths);
   });
 
-  it('stakes and withdraws with balance checks', async function () {
+  it('stakes and withdraws with balance checks', async () => {
     const fixture = await loadFixture(deployTreasureFixture);
     const { tat } = fixture;
     const [, , , user] = fixture.accounts;
@@ -73,15 +73,15 @@ describe('TAT', function () {
     await tat.withdraw(user.address, withdrawAmount);
     expect(await tat.stakeOf(user.address)).to.equal(stakeAmount - withdrawAmount);
     expect(await tat.balanceOf(user.address)).to.equal(
-      beforeBalance - stakeAmount + withdrawAmount
+      beforeBalance - stakeAmount + withdrawAmount,
     );
 
     await expect(
-      tat.withdraw(user.address, stakeAmount)
+      tat.withdraw(user.address, stakeAmount),
     ).to.be.revertedWith('Withdrawal amount exceeds staked amount');
   });
 
-  it('only allows production data contracts to mint', async function () {
+  it('only allows production data contracts to mint', async () => {
     const fixture = await loadFixture(deployTreasureFixture);
     const { tat, oilData } = fixture;
     const recipient = fixture.accounts[4];
@@ -89,17 +89,17 @@ describe('TAT', function () {
     const amount = ethers.parseEther('1');
 
     await expect(
-      tat.mint('OIL', uniqueId, recipient.address, amount)
+      tat.mint('OIL', uniqueId, recipient.address, amount),
     ).to.be.revertedWith('Unauthorized caller');
 
     const oilDataAddr = await oilData.getAddress();
     await network.provider.request({
       method: 'hardhat_setBalance',
-      params: [oilDataAddr, '0x56BC75E2D63100000'] // 100 ETH
+      params: [oilDataAddr, '0x56BC75E2D63100000'], // 100 ETH
     });
     await network.provider.request({
       method: 'hardhat_impersonateAccount',
-      params: [oilDataAddr]
+      params: [oilDataAddr],
     });
     const oilDataSigner = await ethers.getSigner(oilDataAddr);
 
@@ -108,11 +108,11 @@ describe('TAT', function () {
 
     await network.provider.request({
       method: 'hardhat_stopImpersonatingAccount',
-      params: [oilDataAddr]
+      params: [oilDataAddr],
     });
   });
 
-  it('pauses and unpauses transfers by the owner', async function () {
+  it('pauses and unpauses transfers by the owner', async () => {
     const fixture = await loadFixture(deployTreasureFixture);
     const { tat } = fixture;
     const [owner, , , user, other] = fixture.accounts;
@@ -122,7 +122,7 @@ describe('TAT', function () {
 
     await tat.connect(owner).pause();
     await expect(
-      tat.connect(user).transfer(other.address, amount / 2n)
+      tat.connect(user).transfer(other.address, amount / 2n),
     ).to.be.revertedWith('ERC20Pausable: token transfer while paused');
 
     await tat.connect(owner).unpause();

@@ -1,20 +1,19 @@
 require('@nomicfoundation/hardhat-chai-matchers');
 const { expect } = require('chai');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
-const { ethers } = require('hardhat');
 const { deployTreasureFixture } = require('./helpers/deploy-treasures');
 
 const WELL = {
   NICKNAME: 'Well2',
   UNIQUE_ID: '0x4872484e4579694e575a65745956524879303873690000000000000000000001',
-  REQUEST_ID: ''
+  REQUEST_ID: '',
 };
 
 const ASSETS = { KIND: 'GAS', REQUEST_ID: '' };
 
 const PRODUCTION_DATA = [
   { DATE: '240101', VOLUME: 1000n, PRICE: 100n },
-  { DATE: '240102', VOLUME: 2000n, PRICE: 200n }
+  { DATE: '240102', VOLUME: 2000n, PRICE: 200n },
 ];
 
 const TRUSTED_PRODUCTION_DATA = { MONTH: '2401', VOLUME: 2500n };
@@ -30,8 +29,8 @@ function findEventArgs(receipt, iface, eventName) {
   return null;
 }
 
-describe('Treasure-Gas (Hardhat)', function () {
-  it('full flow', async function () {
+describe('Treasure-Gas (Hardhat)', () => {
+  it('full flow', async () => {
     const fixture = await loadFixture(deployTreasureFixture);
     const [foundationManager, , producerOwner] = fixture.accounts;
     const { gasProducer, gasData, tat } = fixture;
@@ -83,7 +82,7 @@ describe('Treasure-Gas (Hardhat)', function () {
         '',
         0,
         0,
-        0
+        0,
       ];
 
       const prodTx = await gasData
@@ -105,7 +104,7 @@ describe('Treasure-Gas (Hardhat)', function () {
       '',
       0,
       0,
-      0
+      0,
     ];
     const trustedTx = await gasData
       .connect(foundationManager)

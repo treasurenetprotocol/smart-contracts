@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 const { network } = require('hardhat');
 const { getPaths, loadState, record } = require('./utils');
 const { ethers, upgrades } = require('hardhat');
@@ -14,10 +15,10 @@ async function main() {
   const address = await instance.getAddress();
 
   state = record(paths, state, 'BID', address, receipt.blockNumber, tx.hash);
-  console.log('Bid deployed.');
+  logger.info('Bid deployed.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

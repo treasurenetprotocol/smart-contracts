@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const { getPaths, loadState, currentEntry, resolveContract, record } = require('./utils');
 
@@ -68,7 +69,7 @@ async function main() {
     resolveContract(entry, state, 'PARAMETER_INFO'),
     ['OIL', 'GAS', 'ETH', 'BTC'],
     [opAddr, gpAddr, epAddr, bpAddr],
-    [odAddr, gdAddr, edAddr, bdAddr]
+    [odAddr, gdAddr, edAddr, bdAddr],
   ];
   const { instance: gov, address: govAddr, blockNumber: govBlock, txHash: govTx } = await deployProxyWithInfo(Governance, govArgs, { initializer: 'initialize' });
   state = record(paths, state, 'GOVERNANCE', govAddr, govBlock, govTx);
@@ -93,10 +94,10 @@ async function main() {
   await btcProducer.initialize(mulSigAddr, rolesAddr, 'BTC', bdAddr, [], []);
   await btcData.initialize('BTC', oracleAddr, rolesAddr, parameterInfoAddr, bpAddr, tatAddr);
 
-  console.log('Producers/Data/Governance/TAT deployed and initialized.');
+  logger.info('Producers/Data/Governance/TAT deployed and initialized.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

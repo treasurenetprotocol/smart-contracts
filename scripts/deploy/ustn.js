@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const { getPaths, loadState, currentEntry, resolveContract, record } = require('./utils');
 
@@ -43,10 +44,10 @@ async function main() {
   await ustnFinance.initialize(rolesAddr, parameterInfoAddr, oracleAddr, ustnAddr, ustnAuctionAddr);
   await ustn.initialize(rolesAddr, oracleAddr, ustnAuctionAddr, ustnFinanceAddr);
 
-  console.log('Step 4 complete. USTN stack deployed and initialized.');
+  logger.info('Step 4 complete. USTN stack deployed and initialized.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

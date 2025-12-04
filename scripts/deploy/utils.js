@@ -1,3 +1,4 @@
+const { logger } = require('@treasurenet/logging-middleware');
 const fs = require('fs');
 const path = require('path');
 
@@ -7,7 +8,7 @@ function getPaths(network) {
     fs.mkdirSync(deployDir);
   }
   return {
-    json: path.join(deployDir, `${network}.json`)
+    json: path.join(deployDir, `${network}.json`),
   };
 }
 
@@ -24,7 +25,7 @@ function loadState(paths, network) {
           contracts[key] = {
             address: addr,
             block: data.blocks ? data.blocks[k] : undefined,
-            tx: data.txs ? data.txs[k] : undefined
+            tx: data.txs ? data.txs[k] : undefined,
           };
         }
         return {
@@ -32,9 +33,9 @@ function loadState(paths, network) {
             {
               network: data.network || network,
               generatedAt: data.generatedAt || new Date().toISOString(),
-              contracts
-            }
-          ]
+              contracts,
+            },
+          ],
         };
       }
       if (data.entries) return data;
@@ -54,7 +55,7 @@ function startNewEntry(state, network) {
   state.entries.unshift({
     network,
     generatedAt: new Date().toISOString(),
-    contracts: {}
+    contracts: {},
   });
   return state;
 }
@@ -82,7 +83,7 @@ function record(paths, state, name, address, blockNumber, txHash) {
   const entry = currentEntry(state);
   const key = name.endsWith('_ADDRESS') ? name.replace(/_ADDRESS$/, '') : name;
   entry.contracts[key] = { address, block: blockNumber, tx: txHash };
-  console.log(`${key}: ${address} | tx: ${txHash} | block: ${blockNumber}`);
+  logger.info(`${key}: ${address} | tx: ${txHash} | block: ${blockNumber}`);
   saveState(paths, state);
   return state;
 }
@@ -93,5 +94,5 @@ module.exports = {
   currentEntry,
   resolveContract,
   loadState,
-  record
+  record,
 };

@@ -3,8 +3,8 @@ const { expect } = require('chai');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 const { deployCoreFixture } = require('./helpers/deploy-core');
 
-describe('ParameterInfo', function () {
-  it('sets up default ratios and getters', async function () {
+describe('ParameterInfo', () => {
+  it('sets up default ratios and getters', async () => {
     const { parameterInfo } = await loadFixture(deployCoreFixture);
 
     expect(await parameterInfo.getPlatformConfig('marginRatio')).to.equal(100n);
@@ -19,39 +19,39 @@ describe('ParameterInfo', function () {
     expect(await parameterInfo.getUSTNLoanLiquidationRate()).to.equal(13500n);
   });
 
-  it('enforces mulSig-only updates and validates ranges', async function () {
+  it('enforces mulSig-only updates and validates ranges', async () => {
     const { accounts, parameterInfo } = await loadFixture(deployCoreFixture);
 
     await expect(
-      parameterInfo.connect(accounts.other).setPlatformConfig('marginRatio', 200)
+      parameterInfo.connect(accounts.other).setPlatformConfig('marginRatio', 200),
     ).to.be.reverted;
 
     await expect(
-      parameterInfo.connect(accounts.mulSig).setPlatformConfig('loanInterestRate', 200)
+      parameterInfo.connect(accounts.mulSig).setPlatformConfig('loanInterestRate', 200),
     ).to.be.revertedWith('overflow');
 
     await parameterInfo.connect(accounts.mulSig).setPlatformConfig('loanInterestRate', 50);
     expect(await parameterInfo.getPlatformConfig('loanInterestRate')).to.equal(50n);
 
     await expect(
-      parameterInfo.connect(accounts.mulSig).setPlatformConfig('loanPledgeRate', 10000)
+      parameterInfo.connect(accounts.mulSig).setPlatformConfig('loanPledgeRate', 10000),
     ).to.be.revertedWith('overflow');
 
     await expect(
-      parameterInfo.connect(accounts.mulSig).setPlatformConfig('TCASHLT', 6000000)
+      parameterInfo.connect(accounts.mulSig).setPlatformConfig('TCASHLT', 6000000),
     ).to.be.revertedWith('Invalid liquidation threshold');
 
     await parameterInfo.connect(accounts.mulSig).setPlatformConfig('TCASHLT', 600000);
     expect(await parameterInfo.getPlatformConfig('TCASHLT')).to.equal(600000n);
   });
 
-  it('manages discount config with validation', async function () {
+  it('manages discount config with validation', async () => {
     const { accounts, parameterInfo } = await loadFixture(deployCoreFixture);
 
     await expect(
       parameterInfo
         .connect(accounts.mulSig)
-        .setPriceDiscountConfig(3000, 400, 8000, 9000, 7000, 6000)
+        .setPriceDiscountConfig(3000, 400, 8000, 9000, 7000, 6000),
     ).to.be.revertedWith('overflow');
 
     await parameterInfo
@@ -64,7 +64,7 @@ describe('ParameterInfo', function () {
     expect(await parameterInfo.getPriceDiscountConfig(3000, 800)).to.equal(7500n);
 
     await expect(
-      parameterInfo.getPriceDiscountConfig(0, 0)
+      parameterInfo.getPriceDiscountConfig(0, 0),
     ).to.be.revertedWith('this mine data is error or not exist this mine.');
   });
 });

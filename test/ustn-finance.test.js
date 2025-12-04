@@ -43,14 +43,14 @@ async function deployFinanceFixture() {
     await params.getAddress(),
     await oracle.getAddress(),
     await ustn.getAddress(),
-    await ustnAuction.getAddress()
+    await ustnAuction.getAddress(),
   );
 
   return { finance, roles, params, oracle, ustn, ustnAuction, accounts: { mulSig, foundationManager, user, auctionMgr } };
 }
 
-describe('USTNFinance', function () {
-  it('accepts deposits/withdrawals and updates bank loan limit', async function () {
+describe('USTNFinance', () => {
+  it('accepts deposits/withdrawals and updates bank loan limit', async () => {
     const { finance, ustn, accounts } = await loadFixture(deployFinanceFixture);
     const depositAmount = 10_000_000_000n;
 
@@ -64,7 +64,7 @@ describe('USTNFinance', function () {
     expect(await finance.connect(accounts.user).queryDepositBalance()).to.equal(8_000_000_000n);
   });
 
-  it('creates loans backed by UNIT collateral and records debt', async function () {
+  it('creates loans backed by UNIT collateral and records debt', async () => {
     const { finance, ustn, params, oracle, accounts } = await loadFixture(deployFinanceFixture);
 
     await finance.connect(accounts.user).deposit(10_000_000_000n);
@@ -83,7 +83,7 @@ describe('USTNFinance', function () {
     expect(await finance.loanPossible()).to.equal(5_000_000_000n - loanAmount); // bankLoanLimit decreased
   });
 
-  it('allows full repayment and returns proportional collateral', async function () {
+  it('allows full repayment and returns proportional collateral', async () => {
     const { finance, ustn, accounts } = await loadFixture(deployFinanceFixture);
     await finance.connect(accounts.user).deposit(10_000_000_000n);
     await finance.connect(accounts.user).loans({ value: 1_000_000_000n });
@@ -101,7 +101,7 @@ describe('USTNFinance', function () {
     expect(await ustn.balanceOf(accounts.user.address)).to.be.lt(beforeBalance); // spent to repay
   });
 
-  it('distributes accumulated loan interest to depositors by FoundationManager', async function () {
+  it('distributes accumulated loan interest to depositors by FoundationManager', async () => {
     const { finance, accounts } = await loadFixture(deployFinanceFixture);
     await finance.connect(accounts.user).deposit(10_000_000_000n);
     await finance.connect(accounts.user).loans({ value: 1_000_000_000n }); // accrues interest

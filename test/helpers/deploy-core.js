@@ -17,30 +17,30 @@ async function deployCoreFixture() {
       [], // AUCTION_MANAGER
       [feeder.address], // FEEDER
       [], // CROSSCHAIN_SENDER
-      [] // TCASH managers
+      [], // TCASH managers
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   const ParameterInfo = await ethers.getContractFactory('ParameterInfo');
   const parameterInfo = await upgrades.deployProxy(
     ParameterInfo,
     [mulSig.address],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   const Oracle = await ethers.getContractFactory('Oracle');
   const oracle = await upgrades.deployProxy(
     Oracle,
     [await roles.getAddress()],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   return {
     accounts: { mulSig, foundationManager, feeder, other },
     roles,
     parameterInfo,
-    oracle
+    oracle,
   };
 }
 

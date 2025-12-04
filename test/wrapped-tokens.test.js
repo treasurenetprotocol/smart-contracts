@@ -23,10 +23,10 @@ function missingRoleMsg(account, role) {
 
 [
   { name: 'WTCASH', display: 'wrapped tcash token', symbol: 'wTCash' },
-  { name: 'WUNIT', display: 'wrapped unit token', symbol: 'wUnit' }
+  { name: 'WUNIT', display: 'wrapped unit token', symbol: 'wUnit' },
 ].forEach(({ name, display, symbol }) => {
-  describe(name, function () {
-    it('initializes metadata, admin and operator roles', async function () {
+  describe(name, () => {
+    it('initializes metadata, admin and operator roles', async () => {
       const { token, accounts } = await loadFixture(fixtureFor(name));
       const adminRole = await token.DEFAULT_ADMIN_ROLE();
       const opRole = await token.OPERATOR_ROLE();
@@ -37,29 +37,29 @@ function missingRoleMsg(account, role) {
       expect(await token.hasRole(opRole, accounts.operator.address)).to.equal(true);
     });
 
-    it('allows only operators to mint/burn/add/reduce and checks balances', async function () {
+    it('allows only operators to mint/burn/add/reduce and checks balances', async () => {
       const { token, accounts } = await loadFixture(fixtureFor(name));
       const opRole = await token.OPERATOR_ROLE();
 
       await expect(token.connect(accounts.user).mint(accounts.user.address, 1)).to.be.revertedWith(
-        missingRoleMsg(accounts.user.address, opRole)
+        missingRoleMsg(accounts.user.address, opRole),
       );
 
       await expect(token.connect(accounts.operator).mint(accounts.user.address, 1000)).to.emit(
         token,
-        'Transfer'
+        'Transfer',
       );
 
       await expect(token.connect(accounts.user).reduceBalance(accounts.user.address, 1)).to.be.revertedWith(
-        missingRoleMsg(accounts.user.address, opRole)
+        missingRoleMsg(accounts.user.address, opRole),
       );
 
       await expect(
-        token.connect(accounts.operator).reduceBalance(accounts.user.address, 0)
+        token.connect(accounts.operator).reduceBalance(accounts.user.address, 0),
       ).to.be.revertedWith('Amount must be greater than zero');
 
       await expect(
-        token.connect(accounts.operator).reduceBalance(accounts.user.address, 2000)
+        token.connect(accounts.operator).reduceBalance(accounts.user.address, 2000),
       ).to.be.revertedWith('Insufficient balance');
 
       await expect(token.connect(accounts.operator).reduceBalance(accounts.user.address, 500))
@@ -72,13 +72,13 @@ function missingRoleMsg(account, role) {
         .withArgs(accounts.operator.address, ethers.ZeroAddress, 100n);
     });
 
-    it('admin can add/remove operators; non-admin cannot', async function () {
+    it('admin can add/remove operators; non-admin cannot', async () => {
       const { token, accounts } = await loadFixture(fixtureFor(name));
       const opRole = await token.OPERATOR_ROLE();
       const adminRole = await token.DEFAULT_ADMIN_ROLE();
 
       await expect(
-        token.connect(accounts.newOperator).addOperator(accounts.newOperator.address)
+        token.connect(accounts.newOperator).addOperator(accounts.newOperator.address),
       ).to.be.revertedWith(missingRoleMsg(accounts.newOperator.address, adminRole));
 
       await token.connect(accounts.admin).addOperator(accounts.newOperator.address);
