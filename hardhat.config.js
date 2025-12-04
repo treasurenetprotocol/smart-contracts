@@ -11,7 +11,7 @@ require('@nomicfoundation/hardhat-verify');
 require('solidity-coverage');
 
 const DEFAULT_PRIVATE_KEYS = [
-  '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2'
+  '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2',
 ];
 
 const normalizeKey = (key) => {
@@ -40,46 +40,46 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200
-      }
-    }
+        runs: 200,
+      },
+    },
   },
   networks: {
     hardhat: {
-      chainId: 1337
+      chainId: 1337,
     },
     ganache: {
       url: process.env.RPC || 'http://127.0.0.1:8545',
       chainId: 1337,
-      accounts: loadAccounts('PRIVATE_KEY')
+      accounts: loadAccounts('PRIVATE_KEY'),
     },
     dev: {
       url: process.env.RPC || 'https://dev.testnet.treasurenet.io',
       chainId: 6666,
-      accounts: loadAccounts('PRIVATE_KEY')
+      accounts: loadAccounts('PRIVATE_KEY'),
     },
     dev2: {
       url: process.env.RPC || 'https://dev2.testnet.treasurenet.io',
       chainId: 6566,
-      accounts: loadAccounts('PRIVATE_KEY')
+      accounts: loadAccounts('PRIVATE_KEY'),
     },
     testnet: {
       url: process.env.RPC || 'http://172.31.2.234:8555',
       chainId: 5005,
-      accounts: loadAccounts('PRIVATE_KEY')
+      accounts: loadAccounts('PRIVATE_KEY'),
     },
     mainnet: {
       url: process.env.RPC || 'https://rpc.treasurenet.io',
       chainId: 5002,
-      accounts: loadAccounts('PRIVATE_KEY')
+      accounts: loadAccounts('PRIVATE_KEY'),
     },
     ethereum: {
       url: process.env.RPC || 'http://127.0.0.1:8545',
       chainId: 1,
-      accounts: loadAccounts('PRIVATE_KEY')
-    }
+      accounts: loadAccounts('PRIVATE_KEY'),
+    },
   },
   mocha: {
-    timeout: 200000
-  }
+    timeout: 200000,
+  },
 };
