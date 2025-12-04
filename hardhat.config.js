@@ -6,7 +6,6 @@ require('@openzeppelin/hardhat-upgrades');
 require('@nomicfoundation/hardhat-verify');
 require('solidity-coverage');
 
-// 默认私钥（仅用于本地/CI），需要时可通过 PRIVATE_KEY 或 PRIVATE_KEYS 覆盖
 const DEFAULT_PRIVATE_KEYS = [
     '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2'
 ];
