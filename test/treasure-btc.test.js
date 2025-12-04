@@ -1,14 +1,13 @@
 require('@nomicfoundation/hardhat-chai-matchers');
 const { expect } = require('chai');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
-const { ethers } = require('hardhat');
 const { deployTreasureFixture } = require('./helpers/deploy-treasures');
 
 const WELL = {
   NICKNAME: 'Treasure-Btc',
   UNIQUE_ID: '0x4872484e4579694e575a65745956524879303873690000000000000000000003',
   MINTING_ACCOUNT: 'tb1qsgx55dp6gn53tsmyjjv4c2ye403hgxynxs0dnm',
-  REQUEST_ID: ''
+  REQUEST_ID: '',
 };
 
 const ASSETS = { KIND: 'BTC', REQUEST_ID: '' };
@@ -17,7 +16,7 @@ const PRODUCTION_DATA = {
   AMOUNT: 1000n,
   PRICE: 10n,
   BLOCKNUMBER: 180,
-  BLOCKREWARD: 100
+  BLOCKREWARD: 100,
 };
 
 function findEventArgs(receipt, iface, eventName) {
@@ -30,8 +29,8 @@ function findEventArgs(receipt, iface, eventName) {
   return null;
 }
 
-describe('Treasure-Btc (Hardhat)', function () {
-  it('full flow', async function () {
+describe('Treasure-Btc (Hardhat)', () => {
+  it('full flow', async () => {
     const fixture = await loadFixture(deployTreasureFixture);
     const [foundationManager, , producerOwner] = fixture.accounts;
     const { btcProducer, btcData, tat } = fixture;
@@ -41,7 +40,7 @@ describe('Treasure-Btc (Hardhat)', function () {
       producerOwner.address,
       0,
       0,
-      WELL.MINTING_ACCOUNT
+      WELL.MINTING_ACCOUNT,
     ];
     const addTx = await btcProducer
       .connect(foundationManager)
@@ -76,7 +75,7 @@ describe('Treasure-Btc (Hardhat)', function () {
       WELL.MINTING_ACCOUNT,
       PRODUCTION_DATA.BLOCKNUMBER,
       PRODUCTION_DATA.BLOCKREWARD,
-      0
+      0,
     ];
     const trustedTx = await btcData
       .connect(foundationManager)

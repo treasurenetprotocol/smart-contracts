@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const { getPaths, loadState, startNewEntry, record } = require('./utils');
 
@@ -39,11 +40,11 @@ async function main() {
   await (await dao.initialize('DAO', 2, 10)).wait();
   await (await parameterInfo.initialize(mulSigAddr)).wait();
   await (await oracle.initialize(rolesAddr)).wait();
-  console.log('Base components initialized');
-  console.log('Base step complete. Entry recorded to deployments JSON.');
+  logger.info('Base components initialized');
+  logger.info('Base step complete. Entry recorded to deployments JSON.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

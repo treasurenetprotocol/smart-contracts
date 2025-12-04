@@ -23,7 +23,7 @@ async function deployBridgeFixture() {
   const bridge = await upgrades.deployProxy(
     CrosschainBridge,
     [await crosschainTokens.getAddress(), await roles.getAddress()],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   // Configure token on mock crosschain registry
@@ -34,7 +34,7 @@ async function deployBridgeFixture() {
     await token.getAddress(),
     31337,
     1,
-    100 // 1% fee
+    100, // 1% fee
   );
   await crosschainTokens.setInfo(
     0,
@@ -43,14 +43,14 @@ async function deployBridgeFixture() {
     await token.getAddress(),
     0,
     1,
-    100
+    100,
   );
 
   return { bridge, crosschainTokens, roles, token, accounts: { owner, crossSender, user, feeRecipient } };
 }
 
-describe('CrosschainBridge', function () {
-  it('locks ERC20 on crossToEth and stores transaction metadata', async function () {
+describe('CrosschainBridge', () => {
+  it('locks ERC20 on crossToEth and stores transaction metadata', async () => {
     const { bridge, token, accounts } = await loadFixture(deployBridgeFixture);
 
     const fee = 100n;
@@ -73,7 +73,7 @@ describe('CrosschainBridge', function () {
         feeAmount,
         anyValue,
         anyValue,
-        Number(chainId)
+        Number(chainId),
       );
 
     // User balance decreased, bridge balance increased
@@ -88,7 +88,7 @@ describe('CrosschainBridge', function () {
     expect(expiration).to.be.gt(0);
   });
 
-  it('mints target token on crossFromEth for authorized sender', async function () {
+  it('mints target token on crossFromEth for authorized sender', async () => {
     const { bridge, token, roles, accounts } = await loadFixture(deployBridgeFixture);
 
     await roles.setRole(await roles.CROSSCHAIN_SENDER(), accounts.crossSender.address, true);
@@ -99,8 +99,8 @@ describe('CrosschainBridge', function () {
         'USTN',
         ethers.parseEther('5'),
         accounts.user.address,
-        31337
-      )
+        31337,
+      ),
     )
       .to.emit(bridge, 'CrossFromEth')
       .withArgs(1, accounts.user.address, 'USTN', ethers.parseEther('5'));
@@ -108,7 +108,7 @@ describe('CrosschainBridge', function () {
     expect(await token.balanceOf(accounts.user.address)).to.equal(ethers.parseEther('1005'));
   });
 
-  it('rolls back ERC20 and marks transaction processed in cleanup', async function () {
+  it('rolls back ERC20 and marks transaction processed in cleanup', async () => {
     const { bridge, token, roles, accounts } = await loadFixture(deployBridgeFixture);
     await roles.setRole(await roles.CROSSCHAIN_SENDER(), accounts.crossSender.address, true);
 
@@ -128,7 +128,7 @@ describe('CrosschainBridge', function () {
     const current = await ethers.provider.getBlockNumber();
     const delta = targetBlock - BigInt(current);
     if (delta > 0) {
-      const hex = '0x' + delta.toString(16);
+      const hex = `0x${delta.toString(16)}`;
       await network.provider.send('hardhat_mine', [hex]);
     }
 
@@ -137,7 +137,7 @@ describe('CrosschainBridge', function () {
     expect(processed).to.equal(true);
   });
 
-  it('withdraws accumulated fees by owner', async function () {
+  it('withdraws accumulated fees by owner', async () => {
     const { bridge, token, accounts } = await loadFixture(deployBridgeFixture);
     const fee = 100n;
     const base = 10n ** 12n;
@@ -148,11 +148,11 @@ describe('CrosschainBridge', function () {
     await expect(
       bridge
         .connect(accounts.owner)
-        .withdrawFee(await token.getAddress(), feeAmount, accounts.feeRecipient.address)
+        .withdrawFee(await token.getAddress(), feeAmount, accounts.feeRecipient.address),
     ).to.changeTokenBalances(
       token,
       [bridge, accounts.feeRecipient],
-      [-feeAmount, feeAmount]
+      [-feeAmount, feeAmount],
     );
   });
 });

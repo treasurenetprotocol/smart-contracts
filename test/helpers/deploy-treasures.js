@@ -23,19 +23,16 @@ async function deployTreasureFixture() {
       [deployer.address], // AUCTION_MANAGER
       [deployer.address], // FEEDER
       [deployer.address], // CROSSCHAIN_SENDER
-      [deployer.address] // TCASH managers
+      [deployer.address], // TCASH managers
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
-  // quick sanity logs for debug in tests
-  // console.log('roles', roles.address);
-
   // ParameterInfo
   const ParameterInfo = await ethers.getContractFactory('ParameterInfo');
   const parameterInfo = await upgrades.deployProxy(
     ParameterInfo,
     [mulSigAddress],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   // Oracle
@@ -43,7 +40,7 @@ async function deployTreasureFixture() {
   const oracle = await upgrades.deployProxy(
     Oracle,
     [await roles.getAddress()],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   // Producers
@@ -82,16 +79,16 @@ async function deployTreasureFixture() {
         await oilProducer.getAddress(),
         await gasProducer.getAddress(),
         await ethProducer.getAddress(),
-        await btcProducer.getAddress()
+        await btcProducer.getAddress(),
       ],
       [
         await oilData.getAddress(),
         await gasData.getAddress(),
         await ethData.getAddress(),
-        await btcData.getAddress()
-      ]
+        await btcData.getAddress(),
+      ],
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   // TAT token
@@ -99,10 +96,10 @@ async function deployTreasureFixture() {
   const tat = await upgrades.deployProxy(
     TAT,
     ['TAT Token', 'TAT', await governance.getAddress()],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
-  // console.debug('deploy addresses', {
+  // logger.debug('deploy addresses', {
   //   roles: roles.address,
   //   parameterInfo: parameterInfo.address,
   //   oracle: oracle.address,
@@ -140,7 +137,7 @@ async function deployTreasureFixture() {
     oilData,
     gasData,
     ethData,
-    btcData
+    btcData,
   };
 }
 

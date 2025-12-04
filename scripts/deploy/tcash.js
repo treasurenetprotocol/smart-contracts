@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const { getPaths, loadState, currentEntry, resolveContract, record } = require('./utils');
 
@@ -35,7 +36,7 @@ async function main() {
   const oracleAddr = resolveContract(entry, state, 'ORACLE');
   const tatAddr = resolveContract(entry, state, 'TAT');
 
-  const { instance: tcash, address: tcashAddr, blockNumber: tcashBlock, txHash: tcashTx } = await deployProxyWithInfo(TCash, [ (await ethers.getSigners())[0].address ], { initializer: 'initialize' });
+  const { instance: tcash, address: tcashAddr, blockNumber: tcashBlock, txHash: tcashTx } = await deployProxyWithInfo(TCash, [(await ethers.getSigners())[0].address], { initializer: 'initialize' });
   state = record(paths, state, 'TCASH', tcashAddr, tcashBlock, tcashTx);
 
   const { instance: wtcash, address: wtcashAddr, blockNumber: wtcashBlock, txHash: wtcashTx } = await deployProxyWithInfo(WTCASH, [[]], { initializer: 'initialize' });
@@ -53,17 +54,17 @@ async function main() {
   const { instance: tcashAuction, address: tcashAuctionAddr, blockNumber: tcashAuctionBlock, txHash: tcashAuctionTx } = await deployProxyWithInfo(
     TCashAuction,
     [rolesAddr, tcashAddr, tcashLoanAddr],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
   state = record(paths, state, 'TCASH_AUCTION', tcashAuctionAddr, tcashAuctionBlock, tcashAuctionTx);
 
   await (await tcash.setRoles(rolesAddr)).wait();
   await (await tcash.setOracle(oracleAddr)).wait();
 
-  console.log('Step 3 complete. TCash stack deployed; tcashLoan remains uninitialized for later wiring.');
+  logger.info('Step 3 complete. TCash stack deployed; tcashLoan remains uninitialized for later wiring.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

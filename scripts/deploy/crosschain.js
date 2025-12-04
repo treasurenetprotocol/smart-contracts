@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const { getPaths, loadState, currentEntry, resolveContract, record } = require('./utils');
 
@@ -45,14 +46,14 @@ async function main() {
   const { instance: crosschainTokens, address: cctAddr, blockNumber: cctBlock, txHash: cctTx } = await deployProxyWithInfo(
     CrosschainTokens,
     ['0x0000000000000000000000000000000000000000'],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
   state = record(paths, state, 'CROSSCHAIN_TOKENS', cctAddr, cctBlock, cctTx);
 
   const { instance: crosschainBridge, address: ccbAddr, blockNumber: ccbBlock, txHash: ccbTx } = await deployProxyWithInfo(
     CrosschainBridge,
     [cctAddr, resolveContract(entry, state, 'ROLES')],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
   state = record(paths, state, 'CROSSCHAIN_BRIDGE', ccbAddr, ccbBlock, ccbTx);
 
@@ -64,29 +65,29 @@ async function main() {
     resolveContract(entry, state, 'ROLES'),
     resolveContract(entry, state, 'PARAMETER_INFO'),
     cctAddr,
-    5
+    5,
   );
-  console.log('MulSig initialized');
+  logger.info('MulSig initialized');
 
   await roles.initialize(
     entry.contracts.MULSIG.address,
     [
       '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9'
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
     ],
     [
       '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9'
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
     ],
     [
       entry.contracts.ORACLE.address,
       '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9'
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
     ],
     [
       ccbAddr,
       '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9'
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
     ],
     [
       entry.contracts.TCASH.address,
@@ -95,17 +96,17 @@ async function main() {
       '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
       '0x09eda46ffcec4656235391dd298875b82aa458a9',
       ccbAddr,
-      cctAddr
-    ]
+      cctAddr,
+    ],
   );
-  console.log('Roles initialized');
+  logger.info('Roles initialized');
 
   await tcashLoan.initialize(
     resolveContract(entry, state, 'TCASH'),
     resolveContract(entry, state, 'ROLES'),
     resolveContract(entry, state, 'PARAMETER_INFO'),
     resolveContract(entry, state, 'ORACLE'),
-    resolveContract(entry, state, 'TAT')
+    resolveContract(entry, state, 'TAT'),
   );
 
   // ensure setAuctionContract is sent from owner
@@ -120,17 +121,17 @@ async function main() {
   const FOUNDATION_MANAGER_ROLE = await roles.FOUNDATION_MANAGER();
   if (!(await roles.hasRole(FOUNDATION_MANAGER_ROLE, (await ethers.getSigners())[0].address))) {
     await roles.grantRole(FOUNDATION_MANAGER_ROLE, (await ethers.getSigners())[0].address);
-    console.log(`Granted FOUNDATION_MANAGER to ${(await ethers.getSigners())[0].address}`);
+    logger.info(`Granted FOUNDATION_MANAGER to ${(await ethers.getSigners())[0].address}`);
   }
 
   await oracle.updatePrice('UNIT', ethers.parseEther('0.5'));
   await oracle.updatePrice('TCASH', ethers.parseEther('0.5'));
-  console.log('Oracle prices initialized');
+  logger.info('Oracle prices initialized');
 
-  console.log('Step 5 complete. Crosschain stack deployed and initialized.');
+  logger.info('Step 5 complete. Crosschain stack deployed and initialized.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

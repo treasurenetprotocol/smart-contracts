@@ -17,9 +17,9 @@ async function deployRolesFixture() {
       [auctionManager.address],
       [feeder.address],
       [crossSender.address],
-      [tcashManager.address]
+      [tcashManager.address],
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   return {
@@ -31,13 +31,13 @@ async function deployRolesFixture() {
       feeder,
       crossSender,
       tcashManager,
-      other
-    }
+      other,
+    },
   };
 }
 
-describe('Roles', function () {
-  it('initializes roles and admins correctly', async function () {
+describe('Roles', () => {
+  it('initializes roles and admins correctly', async () => {
     const { roles, accounts } = await loadFixture(deployRolesFixture);
 
     const adminRole = await roles.ADMIN();
@@ -63,18 +63,18 @@ describe('Roles', function () {
     expect(await roles.getRoleAdmin(burnerRole)).to.equal(adminRole);
   });
 
-  it('enforces role admins when granting roles', async function () {
+  it('enforces role admins when granting roles', async () => {
     const { roles, accounts } = await loadFixture(deployRolesFixture);
     const auctionRole = await roles.AUCTION_MANAGER();
     const foundationRole = await roles.FOUNDATION_MANAGER();
 
     const missingMsg = `AccessControl: account ${accounts.other.address.toLowerCase()} is missing role ${foundationRole}`;
     await expect(
-      roles.connect(accounts.other).grantRole(auctionRole, accounts.other.address)
+      roles.connect(accounts.other).grantRole(auctionRole, accounts.other.address),
     ).to.be.revertedWith(missingMsg);
 
     await expect(
-      roles.connect(accounts.foundationManager).grantRole(auctionRole, accounts.other.address)
+      roles.connect(accounts.foundationManager).grantRole(auctionRole, accounts.other.address),
     )
       .to.emit(roles, 'RoleGranted')
       .withArgs(auctionRole, accounts.other.address, accounts.foundationManager.address);
@@ -82,7 +82,7 @@ describe('Roles', function () {
     expect(await roles.hasRole(auctionRole, accounts.other.address)).to.equal(true);
   });
 
-  it('returns complete membership arrays after updates', async function () {
+  it('returns complete membership arrays after updates', async () => {
     const { roles, accounts } = await loadFixture(deployRolesFixture);
     const crossRole = await roles.CROSSCHAIN_SENDER();
 
@@ -90,7 +90,7 @@ describe('Roles', function () {
     const members = await roles.getRoleMemberArray(crossRole);
 
     expect(members.map((a) => a.toLowerCase())).to.have.members(
-      [accounts.crossSender.address, accounts.other.address].map((a) => a.toLowerCase())
+      [accounts.crossSender.address, accounts.other.address].map((a) => a.toLowerCase()),
     );
   });
 });

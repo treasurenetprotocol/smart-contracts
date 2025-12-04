@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const { getPaths, loadState, currentEntry, record } = require('./utils');
 
@@ -24,10 +25,10 @@ async function main() {
   const wunitAddr = await wunit.getAddress();
   state = record(paths, state, 'WUNIT', wunitAddr, wunitReceipt.blockNumber, wunitTx.hash);
 
-  console.log('WTCASH and WUNIT deployed.');
+  logger.info('WTCASH and WUNIT deployed.');
 }
 
 main().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

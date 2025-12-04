@@ -16,9 +16,9 @@ async function deployAuctionFixture() {
       [auctionManager.address],
       [], // feeders
       [], // crosschain senders
-      [tcashManager.address] // tcash minter/burner
+      [tcashManager.address], // tcash minter/burner
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   const MockOracle = await ethers.getContractFactory('MockOracle');
@@ -26,7 +26,7 @@ async function deployAuctionFixture() {
 
   const TCash = await ethers.getContractFactory('TCash');
   const tcash = await upgrades.deployProxy(TCash, [tcashManager.address], {
-    initializer: 'initialize'
+    initializer: 'initialize',
   });
   await tcash.setRoles(await roles.getAddress());
   await tcash.setOracle(await oracle.getAddress());
@@ -39,7 +39,7 @@ async function deployAuctionFixture() {
   const auction = await upgrades.deployProxy(
     TCashAuction,
     [await roles.getAddress(), await tcash.getAddress(), await loan.getAddress()],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
   await tcash.setAuctionContract(await auction.getAddress());
 
@@ -56,16 +56,16 @@ async function deployAuctionFixture() {
     tcash,
     roles,
     loan,
-    accounts: { mulSig, foundation, auctionManager, tcashManager, bidder1, bidder2, other }
+    accounts: { mulSig, foundation, auctionManager, tcashManager, bidder1, bidder2, other },
   };
 }
 
-describe('TCashAuction', function () {
-  it('enforces duration updates to foundation manager and emits event', async function () {
+describe('TCashAuction', () => {
+  it('enforces duration updates to foundation manager and emits event', async () => {
     const { auction, accounts } = await loadFixture(deployAuctionFixture);
 
     await expect(auction.connect(accounts.other).updateBidDuration(100)).to.be.revertedWith(
-      'only FoundationManager allowed'
+      'only FoundationManager allowed',
     );
 
     const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
@@ -76,7 +76,7 @@ describe('TCashAuction', function () {
     expect(await auction.queryBidDuration()).to.equal(1234);
   });
 
-  it('runs a full auction lifecycle with bids, withdraws and settlement', async function () {
+  it('runs a full auction lifecycle with bids, withdraws and settlement', async () => {
     const { auction, tcash, loan, roles, accounts } = await loadFixture(deployAuctionFixture);
     const minterRole = await roles.TCASH_MINTER();
     expect(await roles.hasRole(minterRole, accounts.tcashManager.address)).to.equal(true);
@@ -96,7 +96,7 @@ describe('TCashAuction', function () {
 
     await expect(auction.connect(accounts.bidder1).bidWithdrawal(0)).to.not.be.reverted;
     await expect(auction.connect(accounts.bidder2).bidWithdrawal(0)).to.be.revertedWith(
-      'TCashAuction: you are owner of bid'
+      'TCashAuction: you are owner of bid',
     );
 
     // fast forward and settle by highest bidder
@@ -111,11 +111,11 @@ describe('TCashAuction', function () {
 
     // auction manager burned startValue
     expect(await tcash.balanceOf(accounts.auctionManager.address)).to.equal(
-      ethers.parseEther('100') - 50n
+      ethers.parseEther('100') - 50n,
     );
   });
 
-  it('restarts expired auctions without bids via upgradeState', async function () {
+  it('restarts expired auctions without bids via upgradeState', async () => {
     const { auction, loan, accounts } = await loadFixture(deployAuctionFixture);
     await loan.startAuction(await auction.getAddress(), 10, 5, 1);
     const before = (await auction.queryAuctions())[0].timeOver;

@@ -1,9 +1,10 @@
-const Web3 = require("web3");
+const { logger } = require('@treasurenet/logging-middleware');
+const Web3 = require('web3');
 
 // Import contract ABIs
-const MulSig = require("../build/contracts/MulSig.json");
-const Roles = require("../build/contracts/Roles.json");
-const CrosschainTokens = require("../build/contracts/CrosschainTokens.json");
+const MulSig = require('../build/contracts/MulSig.json');
+const Roles = require('../build/contracts/Roles.json');
+const CrosschainTokens = require('../build/contracts/CrosschainTokens.json');
 
 // Encapsulate multisig proposal workflow
 async function proposeCrosschainToken(
@@ -13,9 +14,9 @@ async function proposeCrosschainToken(
   params,
   FOUNDATION_MANAGER,
   sender,
-  web3Instance
+  web3Instance,
 ) {
-  console.log("Creating proposal with params:", {
+  logger.info('Creating proposal with params:', {
     token: params[0],
     sourceERC20: params[1],
     sourceCrosschain: params[2],
@@ -28,7 +29,7 @@ async function proposeCrosschainToken(
   });
 
   // Validate contract addresses
-  console.log("Contract addresses:", {
+  logger.info('Contract addresses:', {
     mulSig: mulSig.options.address,
     roles: roles.options.address,
     crosschainTokens: crosschainTokens.options.address,
@@ -41,7 +42,7 @@ async function proposeCrosschainToken(
   if (!hasRole) {
     throw new Error(`Account ${sender} does not have FOUNDATION_MANAGER role`);
   }
-  console.log(`Account ${sender} has FOUNDATION_MANAGER role`);
+  logger.info(`Account ${sender} has FOUNDATION_MANAGER role`);
 
   // Submit proposal
   try {
@@ -57,18 +58,18 @@ async function proposeCrosschainToken(
         params[5], // targetCrosschainAddress
         params[6], // targetchainid
         params[7], // fee
-        params[8] // chainId
+        params[8], // chainId
       )
       .send({
         from: sender,
         gas: 500000,
         gasPrice: '700000000', // 0.4 gwei
       });
-    console.log("Proposal created successfully:", tx.transactionHash);
+    logger.info('Proposal created successfully:', tx.transactionHash);
   } catch (error) {
-    console.error("Error details:", error);
-    if (error.message.includes("revert")) {
-      console.error("Revert reason:", error.message);
+    logger.error('Error details:', error);
+    if (error.message.includes('revert')) {
+      logger.error('Revert reason:', error.message);
     }
     throw error;
   }
@@ -82,7 +83,7 @@ async function proposeCrosschainToken(
     .call({ from: sender });
   if (pendingProposals.length > 0) {
     const proposalId = pendingProposals[pendingProposals.length - 1];
-    console.log("Got proposal ID:", proposalId.toString());
+    logger.info('Got proposal ID:', proposalId.toString());
 
     // Get all foundation managers
     const managers = await roles.methods
@@ -101,13 +102,13 @@ async function proposeCrosschainToken(
           await mulSig.methods.signTransaction(proposalId).send({
             from: manager,
             gas: 500000,
-            gasPrice: gasPrice,
+            gasPrice,
           });
-          console.log(`Manager ${manager} signed successfully`);
+          logger.info(`Manager ${manager} signed successfully`);
         } catch (error) {
-          console.error(
+          logger.error(
             `Failed to get signature from manager ${manager}:`,
-            error.message
+            error.message,
           );
         }
       }
@@ -118,7 +119,7 @@ async function proposeCrosschainToken(
 
     // Execute the proposal
     try {
-      console.log("Executing proposal:", proposalId.toString());
+      logger.info('Executing proposal:', proposalId.toString());
       const gasPrice = await web3Instance.eth.getGasPrice();
 
       const result = await mulSig.methods.executeProposal(proposalId).send({
@@ -126,17 +127,17 @@ async function proposeCrosschainToken(
         gas: 500000,
         gasPrice: '700000000', // 0.4 gwei
       });
-      console.log("Proposal executed successfully:", result.transactionHash);
+      logger.info('Proposal executed successfully:', result.transactionHash);
 
       // Verify the configuration
-      console.log("Verifying configuration...");
+      logger.info('Verifying configuration...');
       const tokenInfo = await crosschainTokens.methods
         .getCrosschainTokenByChainId(params[0], params[8])
         .call();
       if (!tokenInfo[0]) {
-        throw new Error("Token info is empty after execution");
+        throw new Error('Token info is empty after execution');
       }
-      console.log(`${params[0]} token info after execution:`, {
+      logger.info(`${params[0]} token info after execution:`, {
         token: tokenInfo[0],
         sourceERC20: tokenInfo[1],
         sourceCrosschain: tokenInfo[2],
@@ -147,7 +148,7 @@ async function proposeCrosschainToken(
         fee: tokenInfo[7].toString(),
       });
     } catch (error) {
-      console.error("Failed to execute proposal:", error);
+      logger.error('Failed to execute proposal:', error);
       throw error;
     }
   }
@@ -166,7 +167,7 @@ async function setupCrosschainTokens(addresses) {
     const web3 = new Web3(addresses.rpcUrl);
 
     // Add the private key
-    const privateKey = "";
+    const privateKey = '';
     await web3.eth.accounts.wallet.add(privateKey);
 
     // Create contract instances
@@ -174,15 +175,15 @@ async function setupCrosschainTokens(addresses) {
     const rolesInstance = new web3.eth.Contract(Roles.abi, addresses.roles);
     const crosschainTokensInstance = new web3.eth.Contract(
       CrosschainTokens.abi,
-      addresses.crosschainTokens
+      addresses.crosschainTokens,
     );
 
     // Get the FOUNDATION_MANAGER role
-    const FOUNDATION_MANAGER = web3.utils.keccak256("FOUNDATION_MANAGER");
+    const FOUNDATION_MANAGER = web3.utils.keccak256('FOUNDATION_MANAGER');
     const fManagers = await rolesInstance.methods
       .getRoleMemberArray(FOUNDATION_MANAGER)
       .call();
-    console.log("All members under FOUNDATION_MANAGER:", fManagers);
+    logger.info('All members under FOUNDATION_MANAGER:', fManagers);
 
     // Set the cross-chain token mapping
     await proposeCrosschainToken(
@@ -190,7 +191,7 @@ async function setupCrosschainTokens(addresses) {
       rolesInstance,
       crosschainTokensInstance,
       [
-        addresses.sourceNetworkName === "treasurenet" ? "UNIT" : "WUNIT",
+        addresses.sourceNetworkName === 'treasurenet' ? 'UNIT' : 'WUNIT',
         addresses.sourceChain.unit,
         addresses.sourceChain.bridge,
         addresses.sourceChainId,
@@ -202,7 +203,7 @@ async function setupCrosschainTokens(addresses) {
       ],
       FOUNDATION_MANAGER,
       fManagers[0],
-      web3
+      web3,
     );
 
     // 2. Chain2 wUNIT -> Chain1 UNIT (reverse mapping)
@@ -211,7 +212,7 @@ async function setupCrosschainTokens(addresses) {
       rolesInstance,
       crosschainTokensInstance,
       [
-        addresses.sourceNetworkName === "treasurenet" ? "WUNIT" : "UNIT",
+        addresses.sourceNetworkName === 'treasurenet' ? 'WUNIT' : 'UNIT',
         addresses.targetChain.unit, // Chain2 wUNIT address
         addresses.targetChain.bridge, // Chain2 bridge address
         addresses.targetChainId, // Chain2 chainId
@@ -223,7 +224,7 @@ async function setupCrosschainTokens(addresses) {
       ],
       FOUNDATION_MANAGER,
       fManagers[0], // use the first account to send transactions
-      web3
+      web3,
     );
 
     // 3. Chain1 TCash -> Chain2 wTCash
@@ -232,7 +233,7 @@ async function setupCrosschainTokens(addresses) {
       rolesInstance,
       crosschainTokensInstance,
       [
-        addresses.sourceNetworkName === "treasurenet" ? "TCASH" : "WTCASH",
+        addresses.sourceNetworkName === 'treasurenet' ? 'TCASH' : 'WTCASH',
         addresses.sourceChain.tcash, // Chain1 TCash address
         addresses.sourceChain.bridge, // Chain1 bridge address
         addresses.sourceChainId, // Chain1 chainId
@@ -244,7 +245,7 @@ async function setupCrosschainTokens(addresses) {
       ],
       FOUNDATION_MANAGER,
       fManagers[0],
-      web3
+      web3,
     );
 
     // 4. Chain2 wTCash -> Chain1 TCash (reverse mapping)
@@ -253,7 +254,7 @@ async function setupCrosschainTokens(addresses) {
       rolesInstance,
       crosschainTokensInstance,
       [
-        addresses.sourceNetworkName === "treasurenet" ? "WTCASH" : "TCASH",
+        addresses.sourceNetworkName === 'treasurenet' ? 'WTCASH' : 'TCASH',
         addresses.targetChain.tcash, // Chain2 wTCash address
         addresses.targetChain.bridge, // Chain2 bridge address
         addresses.targetChainId, // Chain2 chainId
@@ -265,11 +266,10 @@ async function setupCrosschainTokens(addresses) {
       ],
       FOUNDATION_MANAGER,
       fManagers[0],
-      web3
+      web3,
     );
-
   } catch (error) {
-    console.error("Setup failed:", error);
+    logger.error('Setup failed:', error);
     throw error;
   }
 }

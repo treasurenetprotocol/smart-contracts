@@ -17,9 +17,9 @@ async function deployLoanFixture() {
       [], // auction managers
       [], // feeders
       [], // crosschain senders
-      [tcashManager.address] // TCASH minter/burner
+      [tcashManager.address], // TCASH minter/burner
     ],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   // ParameterInfo with minimal config (no interest for simpler repayment)
@@ -27,7 +27,7 @@ async function deployLoanFixture() {
   const parameterInfo = await upgrades.deployProxy(
     ParameterInfo,
     [mulSig.address],
-    { initializer: 'initialize' }
+    { initializer: 'initialize' },
   );
 
   // Oracle mock
@@ -44,7 +44,7 @@ async function deployLoanFixture() {
   // TCash token
   const TCash = await ethers.getContractFactory('TCash');
   const tcash = await upgrades.deployProxy(TCash, [tcashManager.address], {
-    initializer: 'initialize'
+    initializer: 'initialize',
   });
   await tcash.setRoles(await roles.getAddress());
   await tcash.setOracle(await oracle.getAddress());
@@ -64,7 +64,7 @@ async function deployLoanFixture() {
     await roles.getAddress(),
     await parameterInfo.getAddress(),
     await oracle.getAddress(),
-    await tat.getAddress()
+    await tat.getAddress(),
   );
 
   // Auction mock
@@ -80,18 +80,18 @@ async function deployLoanFixture() {
     tcash,
     loan,
     auction,
-    accounts: { mulSig, foundationManager, tcashManager, user, other }
+    accounts: { mulSig, foundationManager, tcashManager, user, other },
   };
 }
 
-describe('TCashLoan', function () {
-  it('creates loans and mints tcash using collateral', async function () {
+describe('TCashLoan', () => {
+  it('creates loans and mints tcash using collateral', async () => {
     const { loan, tcash, accounts } = await loadFixture(deployLoanFixture);
 
     const beforeBalance = await tcash.balanceOf(accounts.user.address);
     const tx = await loan.connect(accounts.user).createLoan({ value: ethers.parseEther('1') });
     const receipt = await tx.wait();
-    const loanID = receipt.logs.find((l) => l.fragment?.name === 'LoanRecord').args.loanID;
+    const { loanID } = receipt.logs.find((l) => l.fragment?.name === 'LoanRecord').args;
 
     const afterBalance = await tcash.balanceOf(accounts.user.address);
     expect(afterBalance).to.be.gt(beforeBalance); // minted
@@ -103,10 +103,10 @@ describe('TCashLoan', function () {
     expect(await loan.getUserLoanCount(accounts.user.address)).to.equal(1);
   });
 
-  it('repays loan and clears status with collateral return', async function () {
+  it('repays loan and clears status with collateral return', async () => {
     const { loan, tcash, accounts } = await loadFixture(deployLoanFixture);
     const tx = await loan.connect(accounts.user).createLoan({ value: ethers.parseEther('1') });
-    const loanID = (await tx.wait()).logs.find((l) => l.fragment?.name === 'LoanRecord').args.loanID;
+    const { loanID } = (await tx.wait()).logs.find((l) => l.fragment?.name === 'LoanRecord').args;
 
     const loanData = await loan.getLoan(loanID);
     const repayAmount = loanData.amounts[1];
@@ -116,10 +116,9 @@ describe('TCashLoan', function () {
     }
 
     await expect(() =>
-      loan.connect(accounts.user).repay(loanID, repayAmount)
-    ).to.changeEtherBalances(
+      loan.connect(accounts.user).repay(loanID, repayAmount)).to.changeEtherBalances(
       [loan, accounts.user],
-      [ethers.parseEther('-1'), ethers.parseEther('1')]
+      [ethers.parseEther('-1'), ethers.parseEther('1')],
     );
 
     const updated = await loan.getLoan(loanID);
@@ -127,19 +126,19 @@ describe('TCashLoan', function () {
     expect(updated.amounts[0]).to.equal(0); // collateral released
   });
 
-  it('allows foundation manager to start liquidation and triggers auction', async function () {
+  it('allows foundation manager to start liquidation and triggers auction', async () => {
     const { loan, auction, oracle, accounts } = await loadFixture(deployLoanFixture);
 
     // create loan
     const tx = await loan.connect(accounts.user).createLoan({ value: ethers.parseEther('1') });
-    const loanID = (await tx.wait()).logs.find((l) => l.fragment?.name === 'LoanRecord').args.loanID;
+    const { loanID } = (await tx.wait()).logs.find((l) => l.fragment?.name === 'LoanRecord').args;
 
     // tweak prices to avoid reverts and set config if needed
     await oracle.setPrice('UNIT', ethers.parseEther('1'));
     await oracle.setPrice('TCASH', ethers.parseEther('1'));
 
     await expect(
-      loan.connect(accounts.foundationManager).startLiquidation(loanID)
+      loan.connect(accounts.foundationManager).startLiquidation(loanID),
     ).to.not.be.reverted;
 
     const call = await auction.lastCall();
