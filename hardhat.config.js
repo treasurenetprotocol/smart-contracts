@@ -34,39 +34,34 @@ module.exports = {
             chainId: 1337
         },
         ganache: {
-            url: process.env.GANACHE_RPC || 'http://127.0.0.1:8545',
+            url: process.env.RPC || 'http://127.0.0.1:8545',
             chainId: 1337,
-            accounts: loadAccounts('GANACHE_PRIVATE_KEYS', PRIVATE_KEY)
+            accounts: loadAccounts('PRIVATE_KEY', PRIVATE_KEY)
         },
         dev: {
-            url: process.env.DEV_RPC || 'http://127.0.0.1:8555',
+            url: process.env.RPC || 'https://dev.testnet.treasurenet.io',
             chainId: 6666,
-            accounts: loadAccounts('TREASURENET_PRIVATE_KEYS', PRIVATE_KEY)
+            accounts: loadAccounts('PRIVATE_KEY', PRIVATE_KEY)
         },
-        tn: {
-            url: process.env.TN_RPC || 'http://127.0.0.1:8555',
-            chainId: 6666,
-            accounts: loadAccounts('TN_PRIVATE_KEYS', PRIVATE_KEY)
-        },
-        tn2: {
-            url: process.env.TN2_RPC || 'http://127.0.0.1:8545',
+        dev2: {
+            url: process.env.RPC || 'https://dev2.testnet.treasurenet.io',
             chainId: 6566,
-            accounts: loadAccounts('TN2_PRIVATE_KEYS', PRIVATE_KEY)
+            accounts: loadAccounts('PRIVATE_KEY', PRIVATE_KEY)
         },
-        tn_testnet: {
-            url: process.env.TN_TESTNET_RPC || 'http://172.31.2.234:8555',
+        testnet: {
+            url: process.env.RPC || 'http://172.31.2.234:8555',
             chainId: 5005,
-            accounts: loadAccounts('TN_TESTNET_PRIVATE_KEYS', PRIVATE_KEY)
+            accounts: loadAccounts('PRIVATE_KEY', PRIVATE_KEY)
         },
-        tn_mainnet: {
-            url: process.env.TN_MAINNET_RPC || 'http://node1.treasurenet.io:8555',
+        mainnet: {
+            url: process.env.RPC || 'https://rpc.treasurenet.io',
             chainId: 5002,
-            accounts: loadAccounts('TN_MAINNET_PRIVATE_KEYS', PRIVATE_KEY)
+            accounts: loadAccounts('PRIVATE_KEY', PRIVATE_KEY)
         },
         ethereum: {
-            url: process.env.ETHEREUM_RPC || 'http://127.0.0.1:8545',
-            chainId: 6566,
-            accounts: loadAccounts('EPRIVATE_KEY', PRIVATE_KEY)
+            url: process.env.RPC,
+            chainId: 1,
+            accounts: loadAccounts('PRIVATE_KEY', PRIVATE_KEY)
         }
     },
     mocha: {
