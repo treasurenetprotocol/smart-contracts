@@ -10,7 +10,6 @@
     "clean": "hardhat clean",
     "compile": "hardhat compile",
     "test": "c8 --reporter=text-summary --reporter=lcov --reports-dir=coverage-js hardhat test",
-    "posttest": "",
     "coverage:js": "npm run test",
     "coverage:solidity": "hardhat coverage",
     "node": "hardhat node",
