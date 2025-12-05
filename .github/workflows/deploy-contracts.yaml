@@ -70,8 +70,13 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund --omit=optional
+      - name: Remove lockfile (avoid mac-only deps like fsevents)
+        run: rm -f package-lock.json
+
+      - name: Install dependencies (fresh lock)
+        env:
+          NPM_CONFIG_OPTIONAL: "false"
+        run: npm install --no-audit --no-fund --omit=optional
 
       - name: Compile contracts
         run: npm run compile
