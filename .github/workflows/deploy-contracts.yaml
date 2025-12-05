@@ -1,9 +1,6 @@
 name: Deploy Contracts
 
 on:
-  push:
-    branches:
-      - feature/**
   workflow_dispatch:
     inputs:
       action:
