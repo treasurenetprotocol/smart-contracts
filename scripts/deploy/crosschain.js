@@ -56,60 +56,60 @@ async function main() {
   const tcashLoan = TCashLoan.attach(tcashLoanAddr);
 
   const { instance: crosschainTokens, address: cctAddr, blockNumber: cctBlock, txHash: cctTx } = await deployProxyWithInfo(
-      CrosschainTokens,
-      ['0x0000000000000000000000000000000000000000'],
-      { initializer: 'initialize' },
+    CrosschainTokens,
+    ['0x0000000000000000000000000000000000000000'],
+    { initializer: 'initialize' },
   );
   state = record(paths, state, 'CROSSCHAIN_TOKENS', cctAddr, cctBlock, cctTx);
 
   const { instance: crosschainBridge, address: ccbAddr, blockNumber: ccbBlock, txHash: ccbTx } = await deployProxyWithInfo(
-      CrosschainBridge,
-      [cctAddr, rolesAddr],
-      { initializer: 'initialize' },
+    CrosschainBridge,
+    [cctAddr, rolesAddr],
+    { initializer: 'initialize' },
   );
   state = record(paths, state, 'CROSSCHAIN_BRIDGE', ccbAddr, ccbBlock, ccbTx);
 
   await (await crosschainTokens.setMulSig(mulSigAddr)).wait();
 
   await (await mulSig.initialize(
-      resolveContract(entry, state, 'DAO'),
-      resolveContract(entry, state, 'GOVERNANCE'),
-      rolesAddr,
-      parameterInfoAddr,
-      cctAddr,
-      5,
+    resolveContract(entry, state, 'DAO'),
+    resolveContract(entry, state, 'GOVERNANCE'),
+    rolesAddr,
+    parameterInfoAddr,
+    cctAddr,
+    5,
   )).wait();
   logger.info('MulSig initialized');
 
   await (await roles.initialize(
-      mulSigAddr,
-      [
-        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-        '0x09eda46ffcec4656235391dd298875b82aa458a9',
-      ],
-      [
-        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-        '0x09eda46ffcec4656235391dd298875b82aa458a9',
-      ],
-      [
-        oracleAddr,
-        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-        '0x09eda46ffcec4656235391dd298875b82aa458a9',
-      ],
-      [
-        ccbAddr,
-        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-        '0x09eda46ffcec4656235391dd298875b82aa458a9',
-      ],
-      [
-        tcashAddr,
-        tcashLoanAddr,
-        tcashAuctionAddr,
-        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-        '0x09eda46ffcec4656235391dd298875b82aa458a9',
-        ccbAddr,
-        cctAddr,
-      ],
+    mulSigAddr,
+    [
+      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+    ],
+    [
+      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+    ],
+    [
+      oracleAddr,
+      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+    ],
+    [
+      ccbAddr,
+      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+    ],
+    [
+      tcashAddr,
+      tcashLoanAddr,
+      tcashAuctionAddr,
+      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      ccbAddr,
+      cctAddr,
+    ],
   )).wait();
 
   const tcashMinterRole = await roles.TCASH_MINTER();
@@ -121,11 +121,11 @@ async function main() {
   logger.info('Roles initialized');
 
   await (await tcashLoan.initialize(
-      tcashAddr,
-      rolesAddr,
-      parameterInfoAddr,
-      oracleAddr,
-      tatAddr,
+    tcashAddr,
+    rolesAddr,
+    parameterInfoAddr,
+    oracleAddr,
+    tatAddr,
   )).wait();
 
   // ensure setAuctionContract is sent from owner

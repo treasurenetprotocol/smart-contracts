@@ -16,9 +16,6 @@ async function main() {
   let state = loadState(paths, network.name);
   if (!state.entries || state.entries.length === 0) throw new Error('No deployment entry; run base and producers.');
 
-  const Roles = await ethers.getContractFactory('Roles');
-  const Oracle = await ethers.getContractFactory('Oracle');
-  const TAT = await ethers.getContractFactory('TAT');
   const TCash = await ethers.getContractFactory('TCash');
   const WTCASH = await ethers.getContractFactory('WTCASH');
   const WUNIT = await ethers.getContractFactory('WUNIT');
