@@ -41,7 +41,7 @@ on:
 
 jobs:
   deploy:
-    uses: treasurenetprotocol/reusable-workflows/.github/workflows/reuseable-contracts-deploy.yml@main
+    uses: treasurenetprotocol/reusable-workflows/.github/workflows/reuseable-contracts-deploy.yml@feature/add-contracts-deploy-DEV-749
     with:
       action: ${{ inputs.action }}
       target: ${{ inputs.target }}
