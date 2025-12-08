@@ -19,10 +19,7 @@ async function main() {
   const MulSig = await ethers.getContractFactory('MulSig');
   const Roles = await ethers.getContractFactory('Roles');
   const Oracle = await ethers.getContractFactory('Oracle');
-  const ParameterInfo = await ethers.getContractFactory('ParameterInfo');
   const TCashLoan = await ethers.getContractFactory('TCashLoan');
-  const TCash = await ethers.getContractFactory('TCash');
-  const TAT = await ethers.getContractFactory('TAT');
   const CrosschainTokens = await ethers.getContractFactory('CrosschainTokens');
   const CrosschainBridge = await ethers.getContractFactory('CrosschainBridge');
 
@@ -35,79 +32,101 @@ async function main() {
     }
   });
 
-  const mulSig = MulSig.attach(resolveContract(entry, state, 'MULSIG'));
-  const roles = Roles.attach(resolveContract(entry, state, 'ROLES'));
-  const oracle = Oracle.attach(resolveContract(entry, state, 'ORACLE'));
-  const parameterInfo = ParameterInfo.attach(resolveContract(entry, state, 'PARAMETER_INFO'));
-  const tcash = TCash.attach(resolveContract(entry, state, 'TCASH'));
-  const tcashLoan = TCashLoan.attach(resolveContract(entry, state, 'TCASH_LOAN'));
-  const tat = TAT.attach(resolveContract(entry, state, 'TAT'));
+  const provider = ethers.provider;
+  for (const key of required) {
+    const addr = resolveContract(entry, state, key);
+    const code = await provider.getCode(addr);
+    if (!code || code === '0x') {
+      throw new Error(`Address for ${key} (${addr}) has no contract code on ${network.name}; rerun earlier steps`);
+    }
+  }
+
+  const mulSigAddr = resolveContract(entry, state, 'MULSIG');
+  const rolesAddr = resolveContract(entry, state, 'ROLES');
+  const oracleAddr = resolveContract(entry, state, 'ORACLE');
+  const parameterInfoAddr = resolveContract(entry, state, 'PARAMETER_INFO');
+  const tcashAddr = resolveContract(entry, state, 'TCASH');
+  const tcashLoanAddr = resolveContract(entry, state, 'TCASH_LOAN');
+  const tcashAuctionAddr = resolveContract(entry, state, 'TCASH_AUCTION');
+  const tatAddr = resolveContract(entry, state, 'TAT');
+
+  const mulSig = MulSig.attach(mulSigAddr);
+  const roles = Roles.attach(rolesAddr);
+  const oracle = Oracle.attach(oracleAddr);
+  const tcashLoan = TCashLoan.attach(tcashLoanAddr);
 
   const { instance: crosschainTokens, address: cctAddr, blockNumber: cctBlock, txHash: cctTx } = await deployProxyWithInfo(
-    CrosschainTokens,
-    ['0x0000000000000000000000000000000000000000'],
-    { initializer: 'initialize' },
+      CrosschainTokens,
+      ['0x0000000000000000000000000000000000000000'],
+      { initializer: 'initialize' },
   );
   state = record(paths, state, 'CROSSCHAIN_TOKENS', cctAddr, cctBlock, cctTx);
 
   const { instance: crosschainBridge, address: ccbAddr, blockNumber: ccbBlock, txHash: ccbTx } = await deployProxyWithInfo(
-    CrosschainBridge,
-    [cctAddr, resolveContract(entry, state, 'ROLES')],
-    { initializer: 'initialize' },
+      CrosschainBridge,
+      [cctAddr, rolesAddr],
+      { initializer: 'initialize' },
   );
   state = record(paths, state, 'CROSSCHAIN_BRIDGE', ccbAddr, ccbBlock, ccbTx);
 
-  await crosschainTokens.setMulSig(resolveContract(entry, state, 'MULSIG'));
+  await (await crosschainTokens.setMulSig(mulSigAddr)).wait();
 
-  await mulSig.initialize(
-    resolveContract(entry, state, 'DAO'),
-    resolveContract(entry, state, 'GOVERNANCE'),
-    resolveContract(entry, state, 'ROLES'),
-    resolveContract(entry, state, 'PARAMETER_INFO'),
-    cctAddr,
-    5,
-  );
+  await (await mulSig.initialize(
+      resolveContract(entry, state, 'DAO'),
+      resolveContract(entry, state, 'GOVERNANCE'),
+      rolesAddr,
+      parameterInfoAddr,
+      cctAddr,
+      5,
+  )).wait();
   logger.info('MulSig initialized');
 
-  await roles.initialize(
-    entry.contracts.MULSIG.address,
-    [
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
-    ],
-    [
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
-    ],
-    [
-      entry.contracts.ORACLE.address,
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
-    ],
-    [
-      ccbAddr,
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
-    ],
-    [
-      entry.contracts.TCASH.address,
-      entry.contracts.TCASH_LOAN.address,
-      entry.contracts.TCASH_AUCTION.address,
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
-      ccbAddr,
-      cctAddr,
-    ],
-  );
+  await (await roles.initialize(
+      mulSigAddr,
+      [
+        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+        '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      ],
+      [
+        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+        '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      ],
+      [
+        oracleAddr,
+        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+        '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      ],
+      [
+        ccbAddr,
+        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+        '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      ],
+      [
+        tcashAddr,
+        tcashLoanAddr,
+        tcashAuctionAddr,
+        '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
+        '0x09eda46ffcec4656235391dd298875b82aa458a9',
+        ccbAddr,
+        cctAddr,
+      ],
+  )).wait();
+
+  const tcashMinterRole = await roles.TCASH_MINTER();
+  const tcashBurnerRole = await roles.TCASH_BURNER();
+  if (!(await roles.hasRole(tcashMinterRole, tcashLoanAddr)) || !(await roles.hasRole(tcashBurnerRole, tcashLoanAddr))) {
+    throw new Error(`TCashLoan ${tcashLoanAddr} missing TCASH_MINTER/TCASH_BURNER after Roles.initialize`);
+  }
+  logger.info(`Roles initialized; TCashLoan granted minter/burner at ${tcashLoanAddr}`);
   logger.info('Roles initialized');
 
-  await tcashLoan.initialize(
-    resolveContract(entry, state, 'TCASH'),
-    resolveContract(entry, state, 'ROLES'),
-    resolveContract(entry, state, 'PARAMETER_INFO'),
-    resolveContract(entry, state, 'ORACLE'),
-    resolveContract(entry, state, 'TAT'),
-  );
+  await (await tcashLoan.initialize(
+      tcashAddr,
+      rolesAddr,
+      parameterInfoAddr,
+      oracleAddr,
+      tatAddr,
+  )).wait();
 
   // ensure setAuctionContract is sent from owner
   const loanOwner = await tcashLoan.owner();
@@ -116,16 +135,16 @@ async function main() {
   if (!ownerSigner) {
     throw new Error(`Owner ${loanOwner} not available in local signers; cannot setAuctionContract`);
   }
-  await tcashLoan.connect(ownerSigner).setAuctionContract(resolveContract(entry, state, 'TCASH_AUCTION'));
+  await (await tcashLoan.connect(ownerSigner).setAuctionContract(resolveContract(entry, state, 'TCASH_AUCTION'))).wait();
 
   const FOUNDATION_MANAGER_ROLE = await roles.FOUNDATION_MANAGER();
   if (!(await roles.hasRole(FOUNDATION_MANAGER_ROLE, (await ethers.getSigners())[0].address))) {
-    await roles.grantRole(FOUNDATION_MANAGER_ROLE, (await ethers.getSigners())[0].address);
+    await (await roles.grantRole(FOUNDATION_MANAGER_ROLE, (await ethers.getSigners())[0].address)).wait();
     logger.info(`Granted FOUNDATION_MANAGER to ${(await ethers.getSigners())[0].address}`);
   }
 
-  await oracle.updatePrice('UNIT', ethers.parseEther('0.5'));
-  await oracle.updatePrice('TCASH', ethers.parseEther('0.5'));
+  await (await oracle.updatePrice('UNIT', ethers.parseEther('0.5'))).wait();
+  await (await oracle.updatePrice('TCASH', ethers.parseEther('0.5'))).wait();
   logger.info('Oracle prices initialized');
 
   logger.info('Step 5 complete. Crosschain stack deployed and initialized.');
