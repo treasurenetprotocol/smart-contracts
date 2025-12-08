@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -10,7 +10,7 @@ import "./MulSig.sol";
 
 /// @title Cross-chain Token Management Contract
 /// @author qiangwei
-contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessControlUpgradeable, ICrosschainTokens {
+contract CrosschainTokens is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ICrosschainTokens {
     // Double mapping: chainId => token => info
     mapping(uint256 => mapping(string => CrosschainTokenInfo)) private _crosschainTokens;
 
@@ -36,11 +36,11 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         _;
     }
 
-    function _msgSender() internal view virtual override(Context, ContextUpgradeable) returns (address) {
+    function _msgSender() internal view virtual override returns (address) {
         return msg.sender;
     }
 
-    function _msgData() internal view virtual override(Context, ContextUpgradeable) returns (bytes calldata) {
+    function _msgData() internal view virtual override returns (bytes calldata) {
         return msg.data;
     }
 
@@ -63,10 +63,10 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         address targetCrosschainAddress,
         uint256 targetchainid,
         uint256 fee,
-        uint256 chainId
+        uint256 chainId    
     ) external onlyMulSig {
         require(bytes(token).length > 0, "Token name cannot be empty");
-
+        
         _crosschainTokens[chainId][token] = CrosschainTokenInfo({
             token: token,
             sourceERC20address: sourceERC20address,
@@ -77,7 +77,7 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
             targetchainid: targetchainid,
             fee: fee
         });
-
+        
 
         emit ICrosschainTokens.CrosschainToken(
             token,
@@ -125,14 +125,14 @@ contract CrosschainTokens is Context, Initializable, OwnableUpgradeable, AccessC
         );
     }
 
-
+ 
     function setMulSig(address mulSigAddress) external onlyOwner {
         require(mulSigAddress != address(0), "Invalid MulSig address");
         require(address(_mulSig) == address(0), "MulSig already set");
         _mulSig = MulSig(mulSigAddress);
     }
 
-
+   
     function getCrosschainTokenByChainId(
         string memory token,
         uint256 chainId

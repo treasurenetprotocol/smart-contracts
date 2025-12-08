@@ -60,6 +60,26 @@ npm run test
 
 Make sure all tests pass before submitting a pull request.
 
+## Hardhat (default)
+
+Hardhat is now the default toolchain. Common commands:
+
+```bash
+# switch node version (requires nvm)
+source ~/.nvm/nvm.sh && nvm use 20
+
+# clean & compile
+npm run clean
+npm run compile
+
+# run tests
+npm run test
+
+# optional: legacy Truffle commands
+npm run test:truffle
+npm run compile:truffle
+```
+
 ## Introduction and APIs
 
 ### Airdrop module

@@ -1,0 +1,57 @@
+name: Deploy Contracts
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Choose deploy or upgrade script family (matches package.json prefix)
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - upgrade
+      target:
+        description: Contract bundle/step (matches package.json middle segment)
+        required: true
+        default: base
+        type: choice
+        options:
+          - base
+          - tokenlocker
+          - bid
+          - wunit-wtcash
+          - tcash
+          - tcashauction
+          - tcashloan
+          - wtcash
+          - producers
+          - oracle
+      network:
+        description: Network to deploy to (must exist in package.json script)
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - dev2
+          - testnet
+          - mainnet
+          - ethereum
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    uses: treasurenetprotocol/reusable-workflows/.github/workflows/reuseable-contracts-deploy.yml@feature/add-contracts-deploy-DEV-749
+    with:
+      action: ${{ inputs.action }}
+      target: ${{ inputs.target }}
+      network: ${{ inputs.network }}
+      aws_region: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'us-west-1' }}
+    secrets:
+      rpc: ${{ inputs.network == 'dev' && vars.RPC_DEV || inputs.network == 'dev2' && vars.RPC_DEV2 || inputs.network == 'testnet' && vars.RPC_TESTNET || inputs.network == 'mainnet' && vars.RPC_MAINNET || inputs.network == 'ethereum' && vars.RPC_ETHEREUM || '' }}
+      private_key: ${{ inputs.network == 'dev' && secrets.DEPLOYER_PRIVATE_KEY_DEV || inputs.network == 'dev2' && secrets.DEPLOYER_PRIVATE_KEY_DEV2 || inputs.network == 'testnet' && secrets.DEPLOYER_PRIVATE_KEY_TESTNET || inputs.network == 'mainnet' && secrets.DEPLOYER_PRIVATE_KEY_MAINNET || inputs.network == 'ethereum' && secrets.DEPLOYER_PRIVATE_KEY_ETHEREUM || secrets.DEPLOYER_PRIVATE_KEY }}
+      sm_secret_id: ${{ secrets.SECRETS_MANAGER_CONTRACTS_ID }}

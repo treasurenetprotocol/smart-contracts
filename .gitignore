@@ -1,7 +1,12 @@
 node_modules/*
 *.log
 build/*
-.openzeppelin/*
 .idea
-package-lock.json
 .env
+.env.*
+*.txt
+artifacts/
+cache/
+deployments/
+coverage-js/
+.openzeppelin/

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "../TAT/ITAT.sol";
 import "../Governance/IRoles.sol";
@@ -68,8 +68,8 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
         address _producerContract,
         address _tatContract
     ) internal onlyInitializing {
-        __ExpenseInitialize(_parameterInfoContract);
         __oracleClientInitialize(_oracleContract);
+        __ExpenseInitialize(_parameterInfoContract);
 
         TREASURE_KIND = _treasureKind;
 
@@ -330,10 +330,51 @@ abstract contract ProductionData is Context, Initializable, OracleClient, IProdu
     function _reward(bytes32 uniqueId, address[] memory accounts, uint256[] memory amounts) internal virtual returns (uint256){
         uint256 total;
         require(accounts.length == amounts.length, "accounts and amounts must have same length");
+        
+        // Get owner for the given uniqueId
+        IProducer.ProducerCore memory producer = _getProducer(uniqueId);
+        address owner = producer.owner;
+        
         for (uint256 i = 0; i < accounts.length; i++) {
             _tat.mint(TREASURE_KIND, uniqueId, accounts[i], amounts[i]);
+            _tat.setTATRecord(accounts[i], amounts[i]);
             total = total + amounts[i];
         }
         return total;
+    }
+
+    function reward(bytes32 uniqueId, address[] memory accounts, uint256[] memory amounts) public returns (uint256){
+       return _reward(uniqueId, accounts, amounts);
+    }
+
+
+
+    /**
+     * @dev Get current year-month in YYYYMM format
+     * @return Current year-month, e.g., 202407 means July 2024
+     */
+    function getCurrentYearMonth() internal view returns (uint256) {
+        // Get current timestamp
+        uint256 timestamp = block.timestamp;
+        
+        // Convert to date (simplified)
+        uint256 secondsInDay = 86400; // 24 hours * 60 minutes * 60 seconds
+        uint256 secondsInYear = secondsInDay * 365; // simplified, ignores leap years
+        
+        uint256 yearsSince1970 = timestamp / secondsInYear;
+        uint256 year = 1970 + yearsSince1970;
+        
+        // Calculate month
+        uint256 secondsRemainingInYear = timestamp % secondsInYear;
+        uint256 daysRemainingInYear = secondsRemainingInYear / secondsInDay;
+        
+        // Approximate month
+        uint256 month = (daysRemainingInYear * 12) / 365 + 1;
+        
+        // Clamp month range
+        if (month > 12) month = 12;
+        
+        // Combine into YYYYMM
+        return year * 100 + month;
     }
 }

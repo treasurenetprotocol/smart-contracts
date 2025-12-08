@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+//import "hardhat/console.sol";
 
 contract AirDrop is Initializable, OwnableUpgradeable {
     // FoundationManager
@@ -238,6 +239,49 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         return (amount, currentStage);
     }
 
+    //DebugLog
+    event DebugLog(uint256 value, string message);
+    //DebugBool
+    event DebugBool(bool value, string message);
+
+    // For debugging; not a view function
+    function calculateAmountDebug(uint256 perMonthTotal, uint256 ratio, bool isFirstMonth) internal returns (uint256) {
+        emit DebugLog(perMonthTotal, "Calculated Amount");
+        emit DebugLog(ratio, "perMonthTotal");
+        emit DebugBool(isFirstMonth, "ratio");
+
+//        uint256 adjustedRatio = isFirstMonth ? ratio / 100 : ratio / 100 / 1e6;
+        uint256 adjustedRatio = ratio / 100 / 1e6;
+
+        uint256 amount = perMonthTotal * adjustedRatio;
+        require(amount / perMonthTotal == adjustedRatio, "Overflow detected");
+        return amount;
+        emit DebugLog(amount, "amount");
+
+        return amount;
+    }
+
+    struct CalculationResult {
+        uint256 totalPerMonth;
+        uint256 actualRatio;
+        bool isFirstMonth;
+    }
+    function getValues() public view returns (uint256, uint256, uint256, CalculationResult[] memory, uint256) {
+        address vip = msg.sender;
+        uint256 current = _currentMonth();
+        uint256 claimedMonth = _vipClaimedMonth[vip];
+        CalculationResult[] memory results = new CalculationResult[](current - claimedMonth);
+
+        for (uint256 i = claimedMonth + 1; i <= current; i++) {
+            uint256 actualRatio = _getActualRatio(vip, i);
+            bool isFirstMonth = i == 1;
+            // Store the result of each iteration
+            results[i - (claimedMonth + 1)] = CalculationResult(_totalPerMonth[i], actualRatio, isFirstMonth);
+        }
+
+    return (current, RELEASE_PERIODS, claimedMonth,results,_remainedToVips);
+    }
+
     function _vipClaimable(address vip) internal view returns (uint256, uint256, uint256) {
         // Determine if the withdrawal has been completed
         if (_remainedToVips == 0) {
@@ -259,30 +303,151 @@ contract AirDrop is Initializable, OwnableUpgradeable {
         }
 
         // Calculate between the current unwithdrawn month and the current withdrawable month
-        uint256 totalClaimable;
-        for (uint256 i = claimedMonth + 1; i <= current; i++) {
-            //Calculate the amount withdrawable for that month (total amount withdrawable for that month * withdrawal ratio)
-            uint256 actualRatio;
-            for (uint256 j = i; j > 0; j--) {
-                // Find the most recent update as the actual ratio for the current month
-                if (_vipChangedAtMonth[vip][j]) {
-                    actualRatio = _vipHistoryRatios[vip][j];
-                    break;
-                }
-            }
+//        uint256 totalClaimable;
+//        for (uint256 i = claimedMonth + 1; i <= current; i++) {
+//            //Calculate the amount withdrawable for that month (total amount withdrawable for that month * withdrawal ratio)
+//            uint256 actualRatio;
+//            for (uint256 j = i; j > 0; j--) {
+//                // Find the most recent update as the actual ratio for the current month
+//                if (_vipChangedAtMonth[vip][j]) {
+//                    actualRatio = _vipHistoryRatios[vip][j];
+//                    break;
+//                }
+//            }
+//
+//            uint256 amount = 0;
+//            /*amount = (_totalPerMonth[i] * actualRatio) / 100;*/
+//            if (i == 1) {
+//                amount = (_totalPerMonth[i] * actualRatio) / 100;
+//            }
+//            else {
+//                amount = _totalPerMonth[i] * actualRatio / 100 / 1e6;
+//                //1e6 actualRatio 1e6 decimal issue,from the second period onwards
+//            }
+//            totalClaimable = totalClaimable + amount;
+//        }
 
-            uint256 amount = 0;
-            /*amount = (_totalPerMonth[i] * actualRatio) / 100;*/
-            if (i == 1) {
-                amount = (_totalPerMonth[i] * actualRatio) / 100;
-            }
-            else {
-                amount = _totalPerMonth[i] * actualRatio / 100 / 1e6;
-                //1e6 actualRatio 1e6 decimal issue,from the second period onwards
-            }
-            totalClaimable = totalClaimable + amount;
+        uint256 totalClaimable = 0;
+        for (uint256 i = claimedMonth + 1; i <= current; i++) {
+            // Get the actual ratio for the current month using the helper function
+            uint256 actualRatio = _getActualRatio(vip, i);
+
+            // Calculate the amount for the month using the helper function
+            bool isFirstMonth = i == 1;
+            // uint256 adjustedRatio = isFirstMonth ? ratio / 100 : ratio / 100 / 1e6;
+
+//            emit DebugLog(_totalPerMonth[i], "_totalPerMonth[i]");
+//            emit DebugLog(actualRatio, "actualRatio");
+//            emit DebugLog(isFirstMonth, "isFirstMonth");
+
+//            calculateAmountDebug(_totalPerMonth[i], actualRatio, isFirstMonth);
+            uint256 amount = _calculateAmount(_totalPerMonth[i], actualRatio, isFirstMonth);
+
+            // Accumulate the total claimable amount
+            totalClaimable += amount;
         }
+
+    return (totalClaimable, claimedMonth + 1, current);
+    }
+
+    function waVipClaimable(address vip) public view returns (uint256, uint256, uint256) {
+        // Determine if the withdrawal has been completed
+        if (_remainedToVips == 0) {
+            return (0, 0, 0);
+        }
+
+        // Calculate the total amount that can be withdrawn from the last withdrawal month to the current month
+        uint256 current = _currentMonth();
+
+        // The maximum month is 12
+        if (current > RELEASE_PERIODS) {
+            current = RELEASE_PERIODS;
+        }
+
+        uint256 claimedMonth = _vipClaimedMonth[vip];
+        // Determine if the withdrawal has reached the current month
+        if (claimedMonth == current) {
+            return (0, 0, 0);
+        }
+
+        // Calculate between the current unwithdrawn month and the current withdrawable month
+//        uint256 totalClaimable;
+//        for (uint256 i = claimedMonth + 1; i <= current; i++) {
+//            //Calculate the amount withdrawable for that month (total amount withdrawable for that month * withdrawal ratio)
+//            uint256 actualRatio;
+//            for (uint256 j = i; j > 0; j--) {
+//                // Find the most recent update as the actual ratio for the current month
+//                if (_vipChangedAtMonth[vip][j]) {
+//                    actualRatio = _vipHistoryRatios[vip][j];
+//                    break;
+//                }
+//            }
+//
+//            uint256 amount = 0;
+//            /*amount = (_totalPerMonth[i] * actualRatio) / 100;*/
+//            if (i == 1) {
+//                amount = (_totalPerMonth[i] * actualRatio) / 100;
+//            }
+//            else {
+//                amount = _totalPerMonth[i] * actualRatio / 100 / 1e6;
+//                //1e6 actualRatio 1e6 decimal issue,from the second period onwards
+//            }
+//            totalClaimable = totalClaimable + amount;
+//        }
+
+        uint256 totalClaimable = 0;
+        for (uint256 i = claimedMonth + 1; i <= current; i++) {
+            // Get the actual ratio for the current month using the helper function
+            uint256 actualRatio = _getActualRatio(vip, i);
+
+            // Calculate the amount for the month using the helper function
+            bool isFirstMonth = i == 1;
+            // uint256 adjustedRatio = isFirstMonth ? ratio / 100 : ratio / 100 / 1e6;
+
+//            emit DebugLog(_totalPerMonth[i], "_totalPerMonth[i]");
+//            emit DebugLog(actualRatio, "actualRatio");
+//            emit DebugLog(isFirstMonth, "isFirstMonth");
+
+//            calculateAmountDebug(_totalPerMonth[i], actualRatio, isFirstMonth);
+            uint256 amount = _calculateAmount(_totalPerMonth[i], actualRatio, isFirstMonth);
+
+            // Accumulate the total claimable amount
+            totalClaimable += amount;
+        }
+
         return (totalClaimable, claimedMonth + 1, current);
+    }
+
+    // Helper function to get the actual ratio
+    function _getActualRatio(address vip, uint256 month) internal view returns (uint256) {
+        uint256 actualRatio = 0;
+        for (uint256 j = month; j > 0; j--) {
+            if (_vipChangedAtMonth[vip][j]) {
+                actualRatio = _vipHistoryRatios[vip][j];
+                break;
+            }
+        }
+        return actualRatio;
+    }
+
+//    // Helper function to calculate amount
+//    function _calculateAmount(uint256 perMonthTotal, uint256 ratio) internal pure returns (uint256) {
+//        if (perMonthTotal == 0 || ratio == 0) return 0;
+//        uint256 amount = perMonthTotal * ratio / 100;
+//        require(amount / perMonthTotal == ratio / 100, "Overflow detected");
+//        return amount;
+//    }
+
+    // Helper function to calculate amount
+    function _calculateAmount(uint256 perMonthTotal, uint256 ratio, bool isFirstMonth) internal pure returns (uint256) {
+        if (perMonthTotal == 0 || ratio == 0) return 0;
+        // If it's the first month, use the ratio directly divided by 100
+        // For subsequent months, divide the ratio further by 1e6 to handle high precision ratios
+//uint256 adjustedRatio = isFirstMonth ? ratio / 100 : ratio / 100 / 1e6;
+        uint256 adjustedRatio = ratio  / 1e6;
+        uint256 amount = perMonthTotal * adjustedRatio;
+        require(amount / perMonthTotal == adjustedRatio, "Overflow detected");
+        return amount;
     }
 
     event Claimed(
@@ -334,6 +499,33 @@ contract AirDrop is Initializable, OwnableUpgradeable {
 
     function _vipClaim()
     internal
+    returns (
+        uint256,
+        uint256,
+        uint256
+    )
+    {
+        // Calculate the current withdrawable amount
+        (uint256 amount, uint256 sinceMonth, uint256 toMonth) = _vipClaimable(msg.sender);
+
+        require(amount > 0, "this vip is unclaimable");
+
+        // Update the current unwithdrawn amount
+        _remainedToVips = _remainedToVips - amount;
+
+        // Update the withdrawal records for VIPs
+        _vipClaimedMonth[msg.sender] = toMonth;
+        _vipClaimedAmount[msg.sender] += amount;
+
+        payable(msg.sender).transfer(amount);
+
+        emit VIPClaimed(msg.sender, sinceMonth, toMonth, amount);
+
+        return (amount, sinceMonth, toMonth);
+    }
+
+    function waVipClaim()
+    public
     returns (
         uint256,
         uint256,

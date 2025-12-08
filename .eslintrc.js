@@ -1,38 +1,51 @@
 'use strict';
 
 module.exports = {
+  root: true,
+  extends: ['eslint-config-treasurenet/node'],
   env: {
-    node: true,
-    es6: true,
-    mocha: true
+    mocha: true,
+    es2020: true
   },
   parserOptions: {
-    ecmaVersion: 2020,
-    sourceType: 'script',
+    ecmaVersion: 2022
   },
-  extends: 'eslint:recommended',
-  rules: {
-    indent: ['error', 4],
-    'linebreak-style': ['error', 'unix'],
-    quotes: ['error', 'single'],
-    semi: ['error', 'always'],
-    'no-unused-vars': ['error', {args: 'none'}],
-    'no-console': 'off',
-    curly: 'error',
-    eqeqeq: 'warn',
-    'no-throw-literal': 'error',
-    'no-useless-escape': 'warn',
-    'no-var': 'warn',
-    'dot-notation': 'error',
-    'no-tabs': 'error',
-    'no-trailing-spaces': 'error',
-    'no-use-before-define': 'error',
-    'no-useless-call': 'error',
-    'no-with': 'error',
-    'operator-linebreak': 'error',
-    'no-async-promise-executor': 'off',
-    yoda: 'error',
-    'quote-props': ['error', 'as-needed'],
-    'no-constant-condition': ['error', {checkLoops: false}]
-  }
+  overrides: [
+    {
+      files: ['scripts/**/*.js'],
+      globals: {
+        artifacts: 'readonly',
+        web3: 'readonly'
+      },
+      rules: {
+        'no-await-in-loop': 'off',
+        'require-atomic-updates': 'off',
+        radix: 'off',
+        'prefer-destructuring': 'off',
+        'no-param-reassign': 'off',
+        'no-unused-vars': 'off',
+        'no-nested-ternary': 'off'
+      }
+    },
+    {
+      files: ['scripts/upgrade/**/*.js'],
+      globals: {
+        artifacts: 'readonly'
+      },
+      rules: {
+        'no-undef': 'off'
+      }
+    },
+    {
+      files: ['test/**/*.js'],
+      rules: {
+        'no-await-in-loop': 'off',
+        'no-bitwise': 'off',
+        'no-empty': 'off',
+        'no-mixed-operators': 'off',
+        'no-nested-ternary': 'off',
+        'require-atomic-updates': 'off'
+      }
+    }
+  ]
 };

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -91,6 +91,31 @@ contract MulSig is Initializable, OwnableUpgradeable {
         _crosschainTokens = ICrosschainTokens(_crosschainTokensContract);
     }
 
+    /// @dev Get current initialization parameters
+    /// @return daoAddress DAO contract address
+    /// @return governanceAddress Governance contract address
+    /// @return rolesAddress Roles contract address
+    /// @return parameterInfoAddress ParameterInfo contract address
+    /// @return crosschainTokensAddress CrosschainTokens contract address
+    /// @return _confirmDuration Confirmation duration in seconds
+    function getCurrentValues() public view returns (
+        address daoAddress,
+        address governanceAddress,
+        address rolesAddress,
+        address parameterInfoAddress,
+        address crosschainTokensAddress,
+        uint256 _confirmDuration
+    ) {
+        return (
+            address(_dao),
+            address(_governance),
+            address(_roles),
+            address(_parameterInfo),
+            address(_crosschainTokens),
+            confirmDuration / 1 seconds
+        );
+    }
+
     modifier onlyDAO() {
         require(_msgSender() == address(_dao), "only DAO");
         _;
@@ -110,8 +135,18 @@ contract MulSig is Initializable, OwnableUpgradeable {
     /// @param _name: Operation type, including:
     /// - FMD: Revoke FoundationManager permission
     /// - FMA: Add FoundationManager permission
-    /// - FEEDERD: Add FEEDER permission
-    /// - FEEDERA: Revoke FEEDER permission
+    /// - FEEDERD: Revoke FEEDER permission
+    /// - FEEDERA: Add FEEDER permission
+    /// - ADMIND: Revoke ADMIN permission
+    /// - ADMINA: Add ADMIN permission
+    /// - AUCTION_MANAGERD: Revoke AUCTION_MANAGER permission
+    /// - AUCTION_MANAGERA: Add AUCTION_MANAGER permission
+    /// - CROSSCHAIN_SENDERD: Revoke CROSSCHAIN_SENDER permission
+    /// - CROSSCHAIN_SENDERA: Add CROSSCHAIN_SENDER permission
+    /// - TCASH_MINTERD: Revoke TCASH_MINTER permission
+    /// - TCASH_MINTERA: Add TCASH_MINTER permission
+    /// - TCASH_BURNERD: Revoke TCASH_BURNER permission
+    /// - TCASH_BURNERA: Add TCASH_BURNER permission
     /// @param _account Account address
     /// @return bool Whether the proposal is successfully initiated
     function proposeToManagePermission(string memory _name, address _account) public onlyFoundationManager returns (bool) {
@@ -222,7 +257,7 @@ contract MulSig is Initializable, OwnableUpgradeable {
     ///         uint256 API;
     ///         uint256 sulphur;
     ///         uint256[4] discount;
-    ///       }
+    ///       }         
     /// @param b1 API data
     /// @param b2 sulphur acidity data
     /// @param b3 discount[0]
@@ -323,70 +358,88 @@ contract MulSig is Initializable, OwnableUpgradeable {
 /// @dev Executed by the FoundationManager for a specific proposal (with completed voting)
 /// @param _proposalId The ID of the corresponding proposal
 /// @return bool Whether the request was successful
-    function executeProposal(uint256 _proposalId) public onlyFoundationManager returns (bool) {
-        proposal storage pro = proposals[_proposalId];
-        // Ensure the execution time has been reached
-        require(pro.excuteTime <= block.timestamp, "executeTime not meet");
+function executeProposal(uint256 _proposalId) public onlyFoundationManager returns (bool) {
+    proposal storage pro = proposals[_proposalId];
+    // Ensure the execution time has been reached
+    require(pro.excuteTime <= block.timestamp, "executeTime not meet");
 
-        if (pro._type == 1) {
-            // Role management: grant or revoke Foundation Manager role
-            if (keccak256(bytes(pro.name)) == keccak256(bytes("FMD"))) {
-                _roles.revokeRole(FOUNDATION_MANAGER, pro._add);
-            } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FMA"))) {
-                _roles.grantRole(FOUNDATION_MANAGER, pro._add);
-            }
-            // Role management: grant or revoke Feeder role
-            if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
-                _roles.revokeRole(FEEDER, pro._add);
-            } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
-                _roles.grantRole(FEEDER, pro._add);
-            }
-        } else if (pro._type == 2) {
-            // Treasury management: add a new treasure
-            _governance.addTreasure(pro.name, pro.producer, pro.productionData);
-        } else if (pro._type == 3) {
-            // Update platform configuration parameters
-            _parameterInfo.setPlatformConfig(pro.name, pro.value);
-        } else if (pro._type == 4) {
-            // Update price discount configuration
-            _parameterInfo.setPriceDiscountConfig(
-                pro.data.API,
-                pro.data.sulphur,
-                pro.data.discount[0],
-                pro.data.discount[1],
-                pro.data.discount[2],
-                pro.data.discount[3]
-            );
-        } else if (pro._type == 5) {
-            // Register DApp connection for a producer
-            (address producerAddr,) = _governance.getTreasureByKind(pro.treasureKind);
-            require(producerAddr != address(0), "treasure not found with proposal's treasure kind");
-            IProducer _producer = IProducer(producerAddr);
-            _producer.registerDAppConnect(pro.name, pro.payee);
-        } else if (pro._type == PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN) {
-            // 检查 _crosschainTokens 是否已初始化
-            require(address(_crosschainTokens) != address(0), "CrosschainTokens not initialized");
-
-            // 调用 CrosschainTokens 合约的 setCrosschainToken 函数
-            _crosschainTokens.setCrosschainToken(
-                pro.token,
-                pro.sourceERC20,
-                pro.sourceCrosschain,
-                pro.sourceChainId,
-                pro.targetERC20,
-                pro.targetCrosschain,
-                pro.targetChainId,
-                pro.fee,
-                pro.chainId
-            );
+    if (pro._type == 1) {
+        // Role management
+        if (keccak256(bytes(pro.name)) == keccak256(bytes("FMD"))) {
+            _roles.revokeRole(FOUNDATION_MANAGER, pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FMA"))) {
+            _roles.grantRole(FOUNDATION_MANAGER, pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERD"))) {
+            _roles.revokeRole(FEEDER, pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("FEEDERA"))) {
+            _roles.grantRole(FEEDER, pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("ADMIND"))) {
+            _roles.revokeRole(_roles.get_ADMIN(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("ADMINA"))) {
+            _roles.grantRole(_roles.get_ADMIN(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("AUCTION_MANAGERD"))) {
+            _roles.revokeRole(_roles.get_AUCTION_MANAGER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("AUCTION_MANAGERA"))) {
+            _roles.grantRole(_roles.get_AUCTION_MANAGER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("CROSSCHAIN_SENDERD"))) {
+            _roles.revokeRole(_roles.CROSSCHAIN_SENDER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("CROSSCHAIN_SENDERA"))) {
+            _roles.grantRole(_roles.CROSSCHAIN_SENDER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_MINTERD"))) {
+            _roles.revokeRole(_roles.TCASH_MINTER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_MINTERA"))) {
+            _roles.grantRole(_roles.TCASH_MINTER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_BURNERD"))) {
+            _roles.revokeRole(_roles.TCASH_BURNER(), pro._add);
+        } else if (keccak256(bytes(pro.name)) == keccak256(bytes("TCASH_BURNERA"))) {
+            _roles.grantRole(_roles.TCASH_BURNER(), pro._add);
         }
-        // Remove the executed proposal from storage
-        deleteProposals(_proposalId);
-
-        emit ProposalExecuted(_proposalId);
-
-        return true;
+    } else if (pro._type == 2) {
+        // Treasury management: add a new treasure
+        _governance.addTreasure(pro.name, pro.producer, pro.productionData);
+    } else if (pro._type == 3) {
+        // Update platform configuration parameters
+        _parameterInfo.setPlatformConfig(pro.name, pro.value);
+    } else if (pro._type == 4) {
+        // Update price discount configuration
+        _parameterInfo.setPriceDiscountConfig(
+            pro.data.API,
+            pro.data.sulphur,
+            pro.data.discount[0],
+            pro.data.discount[1],
+            pro.data.discount[2],
+            pro.data.discount[3]
+        );
+    } else if (pro._type == 5) {
+        // Register DApp connection for a producer
+        (address producerAddr,) = _governance.getTreasureByKind(pro.treasureKind);
+        require(producerAddr != address(0), "treasure not found with proposal's treasure kind");
+        IProducer _producer = IProducer(producerAddr);
+        _producer.registerDAppConnect(pro.name, pro.payee);
+    } else if (pro._type == PROPOSAL_TYPE_SET_CROSSCHAIN_TOKEN) {
+        // Ensure _crosschainTokens is initialized
+        require(address(_crosschainTokens) != address(0), "CrosschainTokens not initialized");
+        
+        // Call setCrosschainToken on CrosschainTokens contract
+        _crosschainTokens.setCrosschainToken(
+            pro.token,
+            pro.sourceERC20,
+            pro.sourceCrosschain,
+            pro.sourceChainId,
+            pro.targetERC20,
+            pro.targetCrosschain,
+            pro.targetChainId,
+            pro.fee,
+            pro.chainId
+        );
     }
+    // Remove the executed proposal from storage
+    deleteProposals(_proposalId);
+
+    emit ProposalExecuted(_proposalId);
+
+    return true;
+}
 
     struct ProposalResponse {
         string name;
