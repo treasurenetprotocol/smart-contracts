@@ -1,6 +1,4 @@
 name: Deploy Contracts
-permissions:
-  contents: read
 
 on:
   workflow_dispatch:
@@ -40,6 +38,10 @@ on:
           - testnet
           - mainnet
           - ethereum
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   deploy:
