@@ -54,4 +54,5 @@ jobs:
     secrets:
       rpc: ${{ inputs.network == 'dev' && vars.RPC_DEV || inputs.network == 'dev2' && vars.RPC_DEV2 || inputs.network == 'testnet' && vars.RPC_TESTNET || inputs.network == 'mainnet' && vars.RPC_MAINNET || inputs.network == 'ethereum' && vars.RPC_ETHEREUM || '' }}
       private_key: ${{ inputs.network == 'dev' && secrets.DEPLOYER_PRIVATE_KEY_DEV || inputs.network == 'dev2' && secrets.DEPLOYER_PRIVATE_KEY_DEV2 || inputs.network == 'testnet' && secrets.DEPLOYER_PRIVATE_KEY_TESTNET || inputs.network == 'mainnet' && secrets.DEPLOYER_PRIVATE_KEY_MAINNET || inputs.network == 'ethereum' && secrets.DEPLOYER_PRIVATE_KEY_ETHEREUM || secrets.DEPLOYER_PRIVATE_KEY }}
-      sm_secret_id: ${{ secrets.SECRETS_MANAGER_CONTRACTS_ID }}
+      access_key_id: ${{ inputs.network == 'mainnet' && secrets.MAINNET_CONTRACT_DEPLOYER_ACCESS_KEY_ID || secrets.TESTNET_CONTRACT_DEPLOYER_ACCESS_KEY_ID }}
+      secret_access_key: ${{ inputs.network == 'mainnet' && secrets.MAINNET_CONTRACT_DEPLOYER_SECRET_ACCESS_KEY || secrets.TESTNET_CONTRACT_DEPLOYER_SECRET_ACCESS_KEY }}
