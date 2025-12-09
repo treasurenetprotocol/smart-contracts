@@ -1,7 +1,21 @@
 #!/usr/bin/env node
+require('dotenv').config();
+
 const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const { getPaths, loadState, currentEntry, resolveContract, record } = require('./utils');
+
+const normalizeAddress = (value, label, fallback) => {
+  const target = (value || '').trim() || fallback;
+  try {
+    return ethers.getAddress(target);
+  } catch (err) {
+    throw new Error(`Invalid ${label} address: ${target}`);
+  }
+};
+
+const deployerAddr = normalizeAddress(process.env.DEPLOYER_ADDR, 'DEPLOYER_ADDR', '0x6A79824E6be14b7e5Cb389527A02140935a76cD5');
+const userAddr = normalizeAddress(process.env.USER_ADDR, 'USER_ADDR', '0x09eda46ffcec4656235391dd298875b82aa458a9');
 
 async function deployProxyWithInfo(factory, args, opts) {
   const instance = await upgrades.deployProxy(factory, args, opts);
@@ -84,29 +98,29 @@ async function main() {
   await (await roles.initialize(
     mulSigAddr,
     [
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      deployerAddr,
+      userAddr,
     ],
     [
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      deployerAddr,
+      userAddr,
     ],
     [
       oracleAddr,
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      deployerAddr,
+      userAddr,
     ],
     [
       ccbAddr,
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      deployerAddr,
+      userAddr,
     ],
     [
       tcashAddr,
       tcashLoanAddr,
       tcashAuctionAddr,
-      '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-      '0x09eda46ffcec4656235391dd298875b82aa458a9',
+      deployerAddr,
+      userAddr,
       ccbAddr,
       cctAddr,
     ],
@@ -117,7 +131,6 @@ async function main() {
   if (!(await roles.hasRole(tcashMinterRole, tcashLoanAddr)) || !(await roles.hasRole(tcashBurnerRole, tcashLoanAddr))) {
     throw new Error(`TCashLoan ${tcashLoanAddr} missing TCASH_MINTER/TCASH_BURNER after Roles.initialize`);
   }
-  logger.info(`Roles initialized; TCashLoan granted minter/burner at ${tcashLoanAddr}`);
   logger.info('Roles initialized');
 
   await (await tcashLoan.initialize(
