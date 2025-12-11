@@ -39,6 +39,11 @@ on:
           - testnet
           - mainnet
           - ethereum
+      custom_target:
+        description: Custom target when target is set to custom
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
