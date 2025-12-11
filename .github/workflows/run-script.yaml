@@ -1,0 +1,34 @@
+name: Run Hardhat Script
+
+on:
+  workflow_dispatch:
+    inputs:
+      script_path:
+        description: Path to script (e.g., scripts/add_user_to_roles.js)
+        required: true
+        type: string
+      network:
+        description: Network to run against
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - dev2
+          - testnet
+          - mainnet
+          - ethereum
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  run-script:
+    uses: treasurenetprotocol/reusable-workflows/.github/workflows/reuseable-contracts-run-script.yml@feature/add-contracts-deploy-DEV-749
+    with:
+      script_path: ${{ inputs.script_path }}
+      network: ${{ inputs.network }}
+    secrets:
+      rpc: ${{ inputs.network == 'dev' && vars.RPC_DEV || inputs.network == 'dev2' && vars.RPC_DEV2 || inputs.network == 'testnet' && vars.RPC_TESTNET || inputs.network == 'mainnet' && vars.RPC_MAINNET || inputs.network == 'ethereum' && vars.RPC_ETHEREUM || '' }}
+      private_key: ${{ inputs.network == 'dev' && secrets.DEPLOYER_PRIVATE_KEY_DEV || inputs.network == 'dev2' && secrets.DEPLOYER_PRIVATE_KEY_DEV2 || inputs.network == 'testnet' && secrets.DEPLOYER_PRIVATE_KEY_TESTNET || inputs.network == 'mainnet' && secrets.DEPLOYER_PRIVATE_KEY_MAINNET || inputs.network == 'ethereum' && secrets.DEPLOYER_PRIVATE_KEY_ETHEREUM || secrets.DEPLOYER_PRIVATE_KEY }}

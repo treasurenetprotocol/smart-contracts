@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+node scripts/update-workflow-options.js
+git add .github/workflows/deploy-contracts.yaml
