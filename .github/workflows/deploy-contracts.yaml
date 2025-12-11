@@ -18,15 +18,16 @@ on:
         type: choice
         options:
           - base
-          - tokenlocker
           - bid
-          - wunit-wtcash
+          - oracle
+          - producers
           - tcash
           - tcashauction
           - tcashloan
+          - tokenlocker
           - wtcash
-          - producers
-          - oracle
+          - wunit-wtcash
+          - custom
       network:
         description: Network to deploy to (must exist in package.json script)
         required: true
@@ -48,7 +49,7 @@ jobs:
     uses: treasurenetprotocol/reusable-workflows/.github/workflows/reuseable-contracts-deploy.yml@feature/add-contracts-deploy-DEV-749
     with:
       action: ${{ inputs.action }}
-      target: ${{ inputs.target }}
+      target: ${{ inputs.target == 'custom' && inputs.custom_target || inputs.target }}
       network: ${{ inputs.network }}
       aws_region: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'us-west-1' }}
     secrets:
