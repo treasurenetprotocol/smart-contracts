@@ -40,7 +40,8 @@
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol --fix",
     "solhint:check": "./node_modules/.bin/solhint -f table contracts/**/**/*.sol",
     "prettier": "./node_modules/.bin/prettier --write contracts/**/**/*.sol",
-    "prettier:check": "./node_modules/.bin/prettier --check \"contracts/**/**/*.sol\""
+    "prettier:check": "./node_modules/.bin/prettier --check \"contracts/**/**/*.sol\"",
+    "prepare": "husky install"
   },
   "keywords": [],
   "author": "",
