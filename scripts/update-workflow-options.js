@@ -41,5 +41,3 @@ if (!optionsRegex.test(workflow)) {
 
 const updated = workflow.replace(optionsRegex, `$1${newOptionsBlock}\n      network:`);
 fs.writeFileSync(workflowPath, updated);
-
-console.log('Updated target options:', allTargets.join(', '));
