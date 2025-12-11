@@ -18,7 +18,6 @@ async function main() {
 
   const MulSig = await ethers.getContractFactory('MulSig');
   const Roles = await ethers.getContractFactory('Roles');
-  const ParameterInfo = await ethers.getContractFactory('ParameterInfo');
   const Oracle = await ethers.getContractFactory('Oracle');
   const Governance = await ethers.getContractFactory('Governance');
   const TAT = await ethers.getContractFactory('TAT');
@@ -39,7 +38,6 @@ async function main() {
   });
   const mulSig = MulSig.attach(resolveContract(entry, state, 'MULSIG'));
   const roles = Roles.attach(resolveContract(entry, state, 'ROLES'));
-  const parameterInfo = ParameterInfo.attach(resolveContract(entry, state, 'PARAMETER_INFO'));
   const oracle = Oracle.attach(resolveContract(entry, state, 'ORACLE'));
 
   const { instance: oilProducer, address: opAddr, blockNumber: opBlock, txHash: opTx } = await deployProxyWithInfo(OilProducer, [], { initializer: false });
