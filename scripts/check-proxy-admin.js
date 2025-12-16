@@ -1,27 +1,21 @@
 #!/usr/bin/env node
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
-
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
+const {
+  getRpcUrl,
+  getNetwork,
+  requireContracts,
+  loadContractABI,
+  getPrivateKey,
+} = require('./common/config');
 
 /**
  * Check Proxy Admin information for Producer contracts
  * Usage: node scripts/check-proxy-admin.js
  */
-
-// ===== Configuration Section =====
-const CONFIG = {
-  // Network configuration
-  RPC_URL: 'http://127.0.0.1:8555',
-
-  // Contract addresses
-  GOVERNANCE_ADDRESS: '0xA0e2caF71782DC0e3D03EF1D3cd7CEA036ce9Fb7',
-
-  // Foundation manager address
-  FOUNDATION_MANAGER_ADDRESS: '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-  FOUNDATION_MANAGER_PRIVATE_KEY: '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2',
-};
 
 // Transparent Proxy ABI
 const TRANSPARENT_PROXY_ABI = [
@@ -41,35 +35,28 @@ const TRANSPARENT_PROXY_ABI = [
   },
 ];
 
-// Load contract ABI
-function loadContractABI(contractName) {
-  try {
-    const buildPath = path.join(__dirname, '..', 'build', 'contracts', `${contractName}.json`);
-    const contractJson = JSON.parse(fs.readFileSync(buildPath, 'utf8'));
-    return contractJson.abi;
-  } catch (error) {
-    logger.error(`Failed to load ABI for ${contractName}:`, error.message);
-    process.exit(1);
-  }
-}
-
 async function checkProxyAdmin() {
   try {
-    logger.info('Checking Proxy Admin info for Producer contracts');
-    logger.info('==================================');
-    logger.info(`Current account: ${CONFIG.FOUNDATION_MANAGER_ADDRESS}`);
-    logger.info('');
+    const network = getNetwork();
+    const { GOVERNANCE } = requireContracts(['GOVERNANCE'], network);
 
     // Initialize Web3
-    const web3 = new Web3(CONFIG.RPC_URL);
+    const web3 = new Web3(getRpcUrl());
 
     // Add the foundation manager account
-    const account = web3.eth.accounts.privateKeyToAccount(CONFIG.FOUNDATION_MANAGER_PRIVATE_KEY);
+    const account = web3.eth.accounts.privateKeyToAccount(getPrivateKey());
     web3.eth.accounts.wallet.add(account);
+    const FOUNDATION_MANAGER_ADDRESS = account.address;
+
+    logger.info('Checking Proxy Admin info for Producer contracts');
+    logger.info('==================================');
+    logger.info(`Network: ${network}`);
+    logger.info(`Current account: ${FOUNDATION_MANAGER_ADDRESS}`);
+    logger.info('');
 
     // Load governance contract
     const governanceABI = loadContractABI('Governance');
-    const governance = new web3.eth.Contract(governanceABI, CONFIG.GOVERNANCE_ADDRESS);
+    const governance = new web3.eth.Contract(governanceABI, GOVERNANCE);
 
     logger.info('🔍 Fetching Producer contract addresses...');
     logger.info('--------------------------');
@@ -152,8 +139,8 @@ async function checkProxyAdmin() {
           const tempContract = new web3.eth.Contract(producerABI, info.producer);
 
           // Try to call a management function to test permissions
-          const gasEstimate = await tempContract.methods.setMulSigContract(CONFIG.FOUNDATION_MANAGER_ADDRESS)
-            .estimateGas({ from: CONFIG.FOUNDATION_MANAGER_ADDRESS });
+          const gasEstimate = await tempContract.methods.setMulSigContract(FOUNDATION_MANAGER_ADDRESS)
+            .estimateGas({ from: FOUNDATION_MANAGER_ADDRESS });
 
           logger.info(`   ✅ Current account has management permission (gas estimate: ${gasEstimate})`);
         } catch (permError) {

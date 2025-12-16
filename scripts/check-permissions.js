@@ -1,6 +1,6 @@
 #!/usr/bin/env node
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
-
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
@@ -9,12 +9,19 @@ const path = require('path');
  * Check current account permissions
  */
 
-// ===== Configuration Section =====
-const CONFIG = {
-  RPC_URL: 'http://127.0.0.1:8555',
-  ROLES_ADDRESS: '0xa1Bf87580F2bfb1e3FC1ecC6bB773DBA48DF136C',
-  PRIVATE_KEY: '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2',
-};
+const getNetwork = () => process.env.NETWORK || 'dev';
+
+function loadDeployments(network) {
+  const file = path.join(process.cwd(), 'deployments', `${network}.json`);
+  if (!fs.existsSync(file)) {
+    throw new Error(`Deployment file not found: ${file}`);
+  }
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (!data.entries || data.entries.length === 0) {
+    throw new Error(`No entries in deployment file: ${file}`);
+  }
+  return data.entries[0].contracts;
+}
 
 // Load contract ABI
 function loadContractABI(contractName) {
@@ -33,16 +40,25 @@ async function checkPermissions() {
     logger.info('Checking Account Permissions');
     logger.info('===========================');
 
+    const network = getNetwork();
+    const contracts = loadDeployments(network);
+    const rpcUrl = process.env.RPC;
+    const privateKey = process.env.PRIVATE_KEY;
+
+    if (!rpcUrl) throw new Error('RPC env not set');
+    if (!privateKey) throw new Error('PRIVATE_KEY env not set');
+    if (!contracts.ROLES || !contracts.ROLES.address) throw new Error('ROLES address missing in deployments');
+
     // Initialize Web3
-    const web3 = new Web3(CONFIG.RPC_URL);
+    const web3 = new Web3(rpcUrl);
 
     // Current account
-    const account = web3.eth.accounts.privateKeyToAccount(CONFIG.PRIVATE_KEY);
+    const account = web3.eth.accounts.privateKeyToAccount(privateKey);
     logger.info(`Checking account: ${account.address}`);
 
     // Load Roles contract
     const rolesABI = loadContractABI('Roles');
-    const roles = new web3.eth.Contract(rolesABI, CONFIG.ROLES_ADDRESS);
+    const roles = new web3.eth.Contract(rolesABI, contracts.ROLES.address);
 
     // Get all role constants
     const FOUNDATION_MANAGER = await roles.methods.FOUNDATION_MANAGER().call();

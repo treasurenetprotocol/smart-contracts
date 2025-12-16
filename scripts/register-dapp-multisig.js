@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
 
 const MulSig = artifacts.require('MulSig');
@@ -15,9 +16,9 @@ module.exports = async function (deployer, network, accounts) {
 
     // ===== Configuration Section =====
     // Please modify these parameters according to your needs
-    const TREASURE_KIND = 'OIL'; // Treasure type (OIL/GAS/ETH/BTC)
-    const DAPP_NAME = 'OtterStreamTest'; // DApp name
-    const PAYEE_ADDRESS = '0x1234567890123456789012345678901234567891'; // DApp payee address
+    const TREASURE_KIND = process.env.TREASURE_KIND || 'OIL'; // Treasure type (OIL/GAS/ETH/BTC)
+    const DAPP_NAME = process.env.DAPP_NAME || 'OtterStreamTest'; // DApp name
+    const PAYEE_ADDRESS = process.env.PAYEE_ADDRESS || accounts[0]; // DApp payee address
 
     logger.info('Configuration:');
     logger.info(`  Treasure Kind: ${TREASURE_KIND}`);

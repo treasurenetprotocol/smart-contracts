@@ -3,7 +3,6 @@ node_modules/*
 build/*
 .idea
 .env
-.env.*
 *.txt
 artifacts/
 cache/
