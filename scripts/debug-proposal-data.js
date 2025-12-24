@@ -1,64 +1,48 @@
 #!/usr/bin/env node
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
-
 const Web3 = require('web3');
-const fs = require('fs');
-const path = require('path');
+const {
+  getRpcUrl,
+  getNetwork,
+  requireContracts,
+  loadContractABI,
+  getPrivateKey,
+} = require('./common/config');
 
 /**
  * Debug proposal data and treasure configuration
  * Usage: node scripts/debug-proposal-data.js [proposalId]
  */
 
-// ===== Configuration Section =====
-const CONFIG = {
-  PROPOSAL_ID: process.argv[2] ? parseInt(process.argv[2]) : 4,
-
-  // Network configuration
-  RPC_URL: 'http://127.0.0.1:8555',
-
-  // Contract addresses
-  MULSIG_ADDRESS: '0xED54E6944B2a89A13F3CcF0fc08ba7DB54Fd0A8c',
-  GOVERNANCE_ADDRESS: '0xA0e2caF71782DC0e3D03EF1D3cd7CEA036ce9Fb7',
-
-  // Foundation manager address
-  EXECUTOR_ADDRESS: '0x6A79824E6be14b7e5Cb389527A02140935a76cD5',
-  EXECUTOR_PRIVATE_KEY: '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2',
-};
-
-// Load contract ABI
-function loadContractABI(contractName) {
-  try {
-    const buildPath = path.join(__dirname, '..', 'build', 'contracts', `${contractName}.json`);
-    const contractJson = JSON.parse(fs.readFileSync(buildPath, 'utf8'));
-    return contractJson.abi;
-  } catch (error) {
-    logger.error(`Failed to load ABI for ${contractName}:`, error.message);
-    process.exit(1);
-  }
-}
+const PROPOSAL_ID = parseInt(process.env.PROPOSAL_ID || process.argv[2] || '4', 10);
 
 async function debugProposalData() {
   try {
-    logger.info('Debug Proposal Data & Treasure Configuration');
-    logger.info('============================================');
-    logger.info(`Proposal ID: ${CONFIG.PROPOSAL_ID}`);
-    logger.info('');
+    const network = getNetwork();
+    const { MULSIG, GOVERNANCE } = requireContracts(['MULSIG', 'GOVERNANCE'], network);
 
     // Initialize Web3
-    const web3 = new Web3(CONFIG.RPC_URL);
+    const web3 = new Web3(getRpcUrl());
 
     // Add the executor account
-    const account = web3.eth.accounts.privateKeyToAccount(CONFIG.EXECUTOR_PRIVATE_KEY);
+    const account = web3.eth.accounts.privateKeyToAccount(getPrivateKey());
     web3.eth.accounts.wallet.add(account);
+    const EXECUTOR_ADDRESS = account.address;
+
+    logger.info('Debug Proposal Data & Treasure Configuration');
+    logger.info('============================================');
+    logger.info(`Network: ${network}`);
+    logger.info(`Proposal ID: ${PROPOSAL_ID}`);
+    logger.info('');
 
     // Load contract ABIs
     const mulSigABI = loadContractABI('MulSig');
     const governanceABI = loadContractABI('Governance');
 
     // Create contract instances
-    const mulSig = new web3.eth.Contract(mulSigABI, CONFIG.MULSIG_ADDRESS);
-    const governance = new web3.eth.Contract(governanceABI, CONFIG.GOVERNANCE_ADDRESS);
+    const mulSig = new web3.eth.Contract(mulSigABI, MULSIG);
+    const governance = new web3.eth.Contract(governanceABI, GOVERNANCE);
 
     logger.info('🔍 1. Check Governance Contract Treasure Configuration');
     logger.info('------------------------------------------------------');
@@ -90,10 +74,10 @@ async function debugProposalData() {
 
       const proposalEvents = events.filter((event) =>
         event.returnValues &&
-                (event.returnValues.proposalId === CONFIG.PROPOSAL_ID.toString() ||
-                 event.returnValues.id === CONFIG.PROPOSAL_ID.toString()));
+                (event.returnValues.proposalId === PROPOSAL_ID.toString() ||
+                 event.returnValues.id === PROPOSAL_ID.toString()));
 
-      logger.info(`Found ${proposalEvents.length} events for proposal ${CONFIG.PROPOSAL_ID}:`);
+      logger.info(`Found ${proposalEvents.length} events for proposal ${PROPOSAL_ID}:`);
 
       proposalEvents.forEach((event, index) => {
         logger.info(`\n   Event ${index + 1}: ${event.event}`);
@@ -117,7 +101,7 @@ async function debugProposalData() {
       // Calculate storage slot for proposals[_proposalId]
       // proposals is at slot 0 in the contract
       const proposalSlot = web3.utils.soliditySha3(
-        { type: 'uint256', value: CONFIG.PROPOSAL_ID },
+        { type: 'uint256', value: PROPOSAL_ID },
         { type: 'uint256', value: 0 },
       );
 
@@ -129,7 +113,7 @@ async function debugProposalData() {
         const paddedSlot = `0x${slot.padStart(64, '0')}`;
 
         try {
-          const storageValue = await web3.eth.getStorageAt(CONFIG.MULSIG_ADDRESS, paddedSlot);
+          const storageValue = await web3.eth.getStorageAt(MULSIG, paddedSlot);
           if (storageValue !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
             logger.info(`   Slot ${i}: ${storageValue}`);
 
@@ -174,7 +158,7 @@ async function debugProposalData() {
           // Test call (should fail due to onlyMulSig but will show if function exists)
           try {
             await producer.methods.registerDAppConnect('TestDApp', '0x1234567890123456789012345678901234567891').call({
-              from: CONFIG.EXECUTOR_ADDRESS,
+              from: EXECUTOR_ADDRESS,
             });
             logger.info('✅ Function call succeeded (unexpected)');
           } catch (error) {

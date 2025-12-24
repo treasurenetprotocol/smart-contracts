@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
 /**
  * AWS KMS multisig call script
@@ -8,22 +9,21 @@ const Web3 = require('web3');
 const { Signer } = require('@web3-kms-signer/core');
 const { KMSWallets } = require('@web3-kms-signer/kms-wallets');
 const { KMSProviderAWS } = require('@web3-kms-signer/kms-provider-aws');
+const {
+  getRpcUrl,
+  getNetwork,
+  requireContracts,
+  getEnv,
+  getUserAddress,
+} = require('./common/config');
 
 // AWS KMS configuration
 const awsConfig = {
-  // dev
-/*    kms: {
-        keyId: '',
-        accessKeyId: '',
-        secretAccessKey: '',
-        region: 'us-west-1'
-    } */
-  // pro
   kms: {
-    keyId: '',
-    accessKeyId: '',
-    secretAccessKey: '',
-    region: 'us-west-1',
+    keyId: getEnv('AWS_KMS_KEY_ID'),
+    accessKeyId: getEnv('AWS_KMS_ACCESS_KEY_ID'),
+    secretAccessKey: getEnv('AWS_KMS_SECRET_ACCESS_KEY'),
+    region: getEnv('AWS_KMS_REGION', 'us-west-1'),
   },
 };
 
@@ -36,14 +36,25 @@ const awsConfig = {
 //     awsAccount: '0x09EDA46FFCec4656235391dd298875B82aA458A9'
 // };
 
-const CONFIG = {
-  rpcUrl: 'https://rpc.treasurenet.io',
-  chainId: 5570,
-  multisigContract: '0x2c188Cf07c4370F6461066827bd1c6A856ab9B70',
-  // Proposal number; update for each run
-  proposalId: 6,
-  awsAccount: '0x9038e6adaa51239e10c8954fae1fa870ea69f6ea',
+const resolveContracts = () => {
+  try {
+    return requireContracts(['MULSIG'], getNetwork());
+  } catch {
+    return {};
+  }
 };
+
+const CONFIG = {
+  rpcUrl: getRpcUrl(),
+  chainId: Number(getEnv('CHAIN_ID', '6666')),
+  multisigContract: getEnv('CONTRACT_ADDRESS') || resolveContracts().MULSIG,
+  proposalId: Number(getEnv('PROPOSAL_ID', '6')),
+  awsAccount: getEnv('FROM_ADDRESS') || getUserAddress(),
+};
+
+if (!CONFIG.multisigContract) {
+  throw new Error('CONTRACT_ADDRESS is required (or ensure MULSIG exists in deployments)');
+}
 
 // Multisig contract ABI
 const MULTISIG_ABI = [

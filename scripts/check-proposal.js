@@ -1,64 +1,47 @@
 #!/usr/bin/env node
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
-
 const Web3 = require('web3');
-const fs = require('fs');
-const path = require('path');
+const {
+  getRpcUrl,
+  getNetwork,
+  requireContracts,
+  loadContractABI,
+} = require('./common/config');
 
 /**
  * Check multisig proposal status
  * Usage: node scripts/check-proposal.js
  */
 
-// ===== Configuration Section =====
-const CONFIG = {
-  PROPOSAL_ID: 4, // The proposal ID to check
-
-  // Network configuration
-  RPC_URL: 'http://127.0.0.1:8555',
-
-  // Contract addresses
-  MULSIG_ADDRESS: '0xED54E6944B2a89A13F3CcF0fc08ba7DB54Fd0A8c',
-  ROLES_ADDRESS: '0xa1Bf87580F2bfb1e3FC1ecC6bB773DBA48DF136C',
-  GOVERNANCE_ADDRESS: '0xA0e2caF71782DC0e3D03EF1D3cd7CEA036ce9Fb7',
-};
-
-// Load contract ABI
-function loadContractABI(contractName) {
-  try {
-    const buildPath = path.join(__dirname, '..', 'build', 'contracts', `${contractName}.json`);
-    const contractJson = JSON.parse(fs.readFileSync(buildPath, 'utf8'));
-    return contractJson.abi;
-  } catch (error) {
-    logger.error(`Failed to load ABI for ${contractName}:`, error.message);
-    process.exit(1);
-  }
-}
+const PROPOSAL_ID = parseInt(process.env.PROPOSAL_ID || '4', 10);
 
 async function checkProposal() {
   try {
     logger.info('Checking Multisig Proposal Status');
     logger.info('=================================');
-    logger.info(`Proposal ID: ${CONFIG.PROPOSAL_ID}`);
-    logger.info(`RPC URL: ${CONFIG.RPC_URL}`);
+    logger.info(`Proposal ID: ${PROPOSAL_ID}`);
+    logger.info(`RPC URL: ${getRpcUrl()}`);
     logger.info('');
 
     // Initialize Web3
-    const web3 = new Web3(CONFIG.RPC_URL);
+    const web3 = new Web3(getRpcUrl());
 
     // Load contract ABIs
     const mulSigABI = loadContractABI('MulSig');
     const rolesABI = loadContractABI('Roles');
     const governanceABI = loadContractABI('Governance');
 
+    const { MULSIG, ROLES, GOVERNANCE } = requireContracts(['MULSIG', 'ROLES', 'GOVERNANCE'], getNetwork());
+
     // Create contract instances
-    const mulSig = new web3.eth.Contract(mulSigABI, CONFIG.MULSIG_ADDRESS);
-    const roles = new web3.eth.Contract(rolesABI, CONFIG.ROLES_ADDRESS);
-    const governance = new web3.eth.Contract(governanceABI, CONFIG.GOVERNANCE_ADDRESS);
+    const mulSig = new web3.eth.Contract(mulSigABI, MULSIG);
+    const roles = new web3.eth.Contract(rolesABI, ROLES);
+    const governance = new web3.eth.Contract(governanceABI, GOVERNANCE);
 
     // Get proposal details
     try {
-      const proposalDetails = await mulSig.methods.transactionDetails(CONFIG.PROPOSAL_ID).call();
+      const proposalDetails = await mulSig.methods.transactionDetails(PROPOSAL_ID).call();
 
       logger.info('📋 Proposal Details:');
       logger.info(`   Name: ${proposalDetails.name}`);
@@ -69,7 +52,7 @@ async function checkProposal() {
     }
 
     // Get signature information
-    const signatureCount = await mulSig.methods.getSignatureCount(CONFIG.PROPOSAL_ID).call();
+    const signatureCount = await mulSig.methods.getSignatureCount(PROPOSAL_ID).call();
     const fmThreshold = await governance.methods.fmThreshold().call();
 
     logger.info('🖊️  Signature Status:');
@@ -85,7 +68,7 @@ async function checkProposal() {
     logger.info('👥 Foundation Managers:');
     for (let i = 0; i < foundationManagerCount; i++) {
       const manager = await roles.methods.getRoleMember(FOUNDATION_MANAGER, i).call();
-      const hasSigned = await mulSig.methods.hasAlreadySigned(CONFIG.PROPOSAL_ID, manager).call();
+      const hasSigned = await mulSig.methods.hasAlreadySigned(PROPOSAL_ID, manager).call();
       const status = hasSigned ? '✅ Signed' : '⏳ Pending';
       logger.info(`   ${i + 1}. ${manager} - ${status}`);
     }
@@ -96,7 +79,7 @@ async function checkProposal() {
       logger.info('🎉 Status: Proposal has enough signatures!');
 
       try {
-        const proposalDetails = await mulSig.methods.transactionDetails(CONFIG.PROPOSAL_ID).call();
+        const proposalDetails = await mulSig.methods.transactionDetails(PROPOSAL_ID).call();
         const currentTime = Math.floor(Date.now() / 1000);
         const executionTime = parseInt(proposalDetails.excuteTime);
 

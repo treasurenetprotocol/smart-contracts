@@ -1,4 +1,12 @@
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
+const {
+  getRpcUrl,
+  getNetwork,
+  requireContracts,
+  getUserAddress,
+  getEnv,
+} = require('./common/config');
 /**
  * AWS KMS contract call script - built on existing infrastructure
  * Using option 1: direct contract call mode
@@ -11,25 +19,50 @@ const asn1 = require('asn1.js');
 
 // AWS KMS configuration
 const AWS_CONFIG = {
-  KMS_KEY_ID: '',
-  KMS_ACCESS_KEY_ID: '',
-  KMS_SECRET_ACCESS_KEY: '',
-  KMS_REGION: 'us-west-1',
+  KMS_KEY_ID: getEnv('AWS_KMS_KEY_ID'),
+  KMS_ACCESS_KEY_ID: getEnv('AWS_KMS_ACCESS_KEY_ID'),
+  KMS_SECRET_ACCESS_KEY: getEnv('AWS_KMS_SECRET_ACCESS_KEY'),
+  KMS_REGION: getEnv('AWS_KMS_REGION', 'us-west-1'),
 };
 
 // Network configuration
 const NETWORK_CONFIG = {
-  rpcUrl: 'http://127.0.0.1:8555',
-  chainId: 6666,
+  rpcUrl: getRpcUrl(),
+  chainId: Number(getEnv('CHAIN_ID', '6666')),
 };
 
 // Multisig call parameters
-const MULTISIG_PARAMS = {
-  contractAddress: '0xED54E6944B2a89A13F3CcF0fc08ba7DB54Fd0A8c',
-  methodSignature: 'signTransaction(uint256)',
-  params: [4],
-  fromAddress: '0x09EDA46FFCec4656235391dd298875B82aA458A9',
+const resolveContracts = () => {
+  try {
+    return requireContracts(['MULSIG'], getNetwork());
+  } catch {
+    return {};
+  }
 };
+
+const parseParams = () => {
+  const raw = getEnv('METHOD_PARAMS');
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      logger.warn('METHOD_PARAMS parse failed; falling back to PROPOSAL_ID');
+    }
+  }
+  const proposal = Number(getEnv('PROPOSAL_ID', '4'));
+  return [proposal];
+};
+
+const MULTISIG_PARAMS = {
+  contractAddress: getEnv('CONTRACT_ADDRESS') || resolveContracts().MULSIG,
+  methodSignature: getEnv('METHOD_SIGNATURE', 'signTransaction(uint256)'),
+  params: parseParams(),
+  fromAddress: getEnv('FROM_ADDRESS') || getUserAddress(),
+};
+
+if (!MULTISIG_PARAMS.contractAddress) {
+  throw new Error('CONTRACT_ADDRESS is required (or ensure MULSIG exists in deployments)');
+}
 
 // Initialize AWS KMS
 AWS.config.update({

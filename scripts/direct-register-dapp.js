@@ -1,66 +1,54 @@
 #!/usr/bin/env node
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
-
 const Web3 = require('web3');
-const fs = require('fs');
-const path = require('path');
+const {
+  getRpcUrl,
+  getNetwork,
+  requireContracts,
+  loadContractABI,
+  getPrivateKey,
+  getUserAddress,
+} = require('./common/config');
 
 /**
  * Try to register DApp directly without multisig (if possible)
  */
 
-// ===== Configuration Section =====
-const CONFIG = {
-  RPC_URL: 'http://127.0.0.1:8555',
-  PRIVATE_KEY: '0x72949B647AD8DB021F3E346F27CD768F2D900CE7211809AF06A7E94A4CB3EED2',
-
-  // DApp registration parameters
-  TREASURE_KIND: 'OIL',
-  DAPP_NAME: 'OtterStreamTest',
-  PAYEE_ADDRESS: '0x1234567890123456789012345678901234567891',
-
-  // Contract addresses
-  GOVERNANCE_ADDRESS: '0xA0e2caF71782DC0e3D03EF1D3cd7CEA036ce9Fb7',
-};
-
-// Load contract ABI
-function loadContractABI(contractName) {
-  try {
-    const buildPath = path.join(__dirname, '..', 'build', 'contracts', `${contractName}.json`);
-    const contractJson = JSON.parse(fs.readFileSync(buildPath, 'utf8'));
-    return contractJson.abi;
-  } catch (error) {
-    logger.error(`Failed to load ABI for ${contractName}:`, error.message);
-    process.exit(1);
-  }
-}
+const TREASURE_KIND = process.env.TREASURE_KIND || 'OIL';
+const DAPP_NAME = process.env.DAPP_NAME || 'OtterStreamTest';
+const PAYEE_ADDRESS = process.env.PAYEE_ADDRESS || getUserAddress();
 
 async function directRegisterDApp() {
   try {
+    const network = getNetwork();
+    const { GOVERNANCE } = requireContracts(['GOVERNANCE'], network);
+
     logger.info('Direct DApp Registration (Bypass Multisig)');
     logger.info('==========================================');
-    logger.info(`Treasure: ${CONFIG.TREASURE_KIND}`);
-    logger.info(`DApp: ${CONFIG.DAPP_NAME}`);
-    logger.info(`Payee: ${CONFIG.PAYEE_ADDRESS}`);
+    logger.info(`Network: ${network}`);
+    logger.info(`Treasure: ${TREASURE_KIND}`);
+    logger.info(`DApp: ${DAPP_NAME}`);
+    logger.info(`Payee: ${PAYEE_ADDRESS}`);
     logger.info('');
 
     // Initialize Web3
-    const web3 = new Web3(CONFIG.RPC_URL);
+    const web3 = new Web3(getRpcUrl());
 
     // Add account
-    const account = web3.eth.accounts.privateKeyToAccount(CONFIG.PRIVATE_KEY);
+    const account = web3.eth.accounts.privateKeyToAccount(getPrivateKey());
     web3.eth.accounts.wallet.add(account);
     logger.info(`Using account: ${account.address}`);
 
     // Load contracts
     const governanceABI = loadContractABI('Governance');
-    const governance = new web3.eth.Contract(governanceABI, CONFIG.GOVERNANCE_ADDRESS);
+    const governance = new web3.eth.Contract(governanceABI, GOVERNANCE);
 
     // Get producer contract address
-    const treasureInfo = await governance.methods.getTreasureByKind(CONFIG.TREASURE_KIND).call();
+    const treasureInfo = await governance.methods.getTreasureByKind(TREASURE_KIND).call();
     const producerAddress = treasureInfo[0] || treasureInfo.ProducerContract;
     if (!producerAddress || producerAddress === '0x0000000000000000000000000000000000000000') {
-      throw new Error(`Treasure kind "${CONFIG.TREASURE_KIND}" not found`);
+      throw new Error(`Treasure kind "${TREASURE_KIND}" not found`);
     }
 
     logger.info(`Producer contract: ${producerAddress}`);
@@ -86,7 +74,7 @@ async function directRegisterDApp() {
     try {
       // First check if DApp is already registered
       const dappId = web3.utils.keccak256(
-        web3.utils.encodePacked(CONFIG.DAPP_NAME, CONFIG.PAYEE_ADDRESS),
+        web3.utils.encodePacked(DAPP_NAME, PAYEE_ADDRESS),
       );
 
       try {
@@ -100,8 +88,8 @@ async function directRegisterDApp() {
 
       // Try direct call
       const directTx = await producer.methods.registerDAppConnect(
-        CONFIG.DAPP_NAME,
-        CONFIG.PAYEE_ADDRESS,
+        DAPP_NAME,
+        PAYEE_ADDRESS,
       ).send({
         from: account.address,
         gas: 300000,
@@ -129,8 +117,8 @@ async function directRegisterDApp() {
     try {
       // Check if there's an admin-only version
       const adminRegisterTx = await producer.methods.registerDAppConnectAdmin(
-        CONFIG.DAPP_NAME,
-        CONFIG.PAYEE_ADDRESS,
+        DAPP_NAME,
+        PAYEE_ADDRESS,
       ).send({
         from: account.address,
         gas: 300000,
@@ -170,4 +158,3 @@ if (require.main === module) {
 }
 
 module.exports = directRegisterDApp;
-

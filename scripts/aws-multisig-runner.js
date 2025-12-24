@@ -1,4 +1,12 @@
+require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
+const {
+  getEnv,
+  getRpcUrl,
+  getNetwork,
+  requireContracts,
+  getUserAddress,
+} = require('./common/config');
 /**
  * AWS Multisig Runner
  * Standalone Node.js script that signs multisig proposals with AWS KMS
@@ -16,10 +24,10 @@ const asn1 = require('asn1.js');
 
 // AWS KMS Configuration - Hardcoded for convenience
 const AWS_CONFIG = {
-  KMS_KEY_ID: '',
-  KMS_ACCESS_KEY_ID: '',
-  KMS_SECRET_ACCESS_KEY: '',
-  KMS_REGION: 'us-west-1',
+  KMS_KEY_ID: getEnv('AWS_KMS_KEY_ID'),
+  KMS_ACCESS_KEY_ID: getEnv('AWS_KMS_ACCESS_KEY_ID'),
+  KMS_SECRET_ACCESS_KEY: getEnv('AWS_KMS_SECRET_ACCESS_KEY'),
+  KMS_REGION: getEnv('AWS_KMS_REGION', 'us-west-1'),
 };
 
 // Initialize AWS KMS client
@@ -30,12 +38,18 @@ AWS.config.update({
 });
 
 // ===== Configuration - adjust for your environment =====
-const CONFIG = {
-  // Network configuration
-  rpcUrl: 'http://127.0.0.1:8555',
-  chainId: 6666,
+const resolveContracts = () => {
+  try {
+    return requireContracts(['MULSIG'], getNetwork());
+  } catch {
+    return {};
+  }
+};
 
-  // AWS config - using hardcoded values
+const CONFIG = {
+  rpcUrl: getRpcUrl(),
+  chainId: Number(getEnv('CHAIN_ID', '6666')),
+
   aws: {
     accessKeyId: AWS_CONFIG.KMS_ACCESS_KEY_ID,
     secretAccessKey: AWS_CONFIG.KMS_SECRET_ACCESS_KEY,
@@ -43,20 +57,22 @@ const CONFIG = {
     keyId: AWS_CONFIG.KMS_KEY_ID,
   },
 
-  // Multisig configuration
   multisig: {
-    contractAddress: '0xED54E6944B2a89A13F3CcF0fc08ba7DB54Fd0A8c',
-    proposalId: 4,
-    awsAccount: '0x09EDA46FFCec4656235391dd298875B82aA458A9',
+    contractAddress: getEnv('CONTRACT_ADDRESS') || resolveContracts().MULSIG,
+    proposalId: Number(getEnv('PROPOSAL_ID', '4')),
+    awsAccount: getEnv('FROM_ADDRESS') || getUserAddress(),
   },
 
-  // Expected proposal content (safety check)
   expectedProposal: {
-    treasureKind: 'OIL',
-    dapp: 'OtterStreamTest',
-    payee: '0x1234567890123456789012345678901234567891',
+    treasureKind: getEnv('TREASURE_KIND', 'OIL'),
+    dapp: getEnv('DAPP_NAME', 'OtterStreamTest'),
+    payee: getEnv('PAYEE_ADDRESS', '0x1234567890123456789012345678901234567891'),
   },
 };
+
+if (!CONFIG.multisig.contractAddress) {
+  throw new Error('CONTRACT_ADDRESS is required (or ensure MULSIG exists in deployments)');
+}
 
 // ===== Contract ABIs =====
 const MULTISIG_ABI = [
