@@ -2,51 +2,28 @@
 require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
 const Web3 = require('web3');
-const fs = require('fs');
-const path = require('path');
+const {
+  getNetwork,
+  getRpcUrl,
+  getPrivateKey,
+  loadDeployments,
+  loadContractABI,
+} = require('./common/config');
 
 /**
- * Check current account permissions
+ * Check current account permissions (env-driven, no CLI args)
  */
 
-const getNetwork = () => process.env.NETWORK || 'dev';
-
-function loadDeployments(network) {
-  const file = path.join(process.cwd(), 'deployments', `${network}.json`);
-  if (!fs.existsSync(file)) {
-    throw new Error(`Deployment file not found: ${file}`);
-  }
-  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (!data.entries || data.entries.length === 0) {
-    throw new Error(`No entries in deployment file: ${file}`);
-  }
-  return data.entries[0].contracts;
-}
-
-// Load contract ABI
-function loadContractABI(contractName) {
-  try {
-    const buildPath = path.join(__dirname, '..', 'build', 'contracts', `${contractName}.json`);
-    const contractJson = JSON.parse(fs.readFileSync(buildPath, 'utf8'));
-    return contractJson.abi;
-  } catch (error) {
-    logger.error(`Failed to load ABI for ${contractName}:`, error.message);
-    process.exit(1);
-  }
-}
-
-async function checkPermissions() {
+async function rolesPermissionCheck() {
   try {
     logger.info('Checking Account Permissions');
     logger.info('===========================');
 
     const network = getNetwork();
     const contracts = loadDeployments(network);
-    const rpcUrl = process.env.RPC;
-    const privateKey = process.env.PRIVATE_KEY;
+    const rpcUrl = getRpcUrl();
+    const privateKey = getPrivateKey();
 
-    if (!rpcUrl) throw new Error('RPC env not set');
-    if (!privateKey) throw new Error('PRIVATE_KEY env not set');
     if (!contracts.ROLES || !contracts.ROLES.address) throw new Error('ROLES address missing in deployments');
 
     // Initialize Web3
@@ -119,7 +96,7 @@ async function checkPermissions() {
 
 // Run the script
 if (require.main === module) {
-  checkPermissions();
+  rolesPermissionCheck();
 }
 
-module.exports = checkPermissions;
+module.exports = rolesPermissionCheck;
