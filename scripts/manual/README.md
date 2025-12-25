@@ -24,3 +24,15 @@
   1. 设置环境变量（可用 `.env` 或导出）：`RPC`、`NETWORK`、`PROPOSAL_ID`。
   2. 运行脚本：`node scripts/manual/multisig-proposal-status.js`
 - **输出内容**：提案名称与执行时间；当前/所需签名数与进度百分比；每个 FOUNDATION_MANAGER 的签名状态；可执行性判断（含等待时间）；挂起提案 ID 列表；执行/签名的后续指引。
+
+### multisig-proposal-execute.js
+- **作用**：由具备 FOUNDATION_MANAGER 角色的账户执行已满足签名阈值且到达执行时间的多签提案。
+- **必需环境变量**：
+  - `RPC`：链上 RPC 地址。
+  - `NETWORK`：部署文件名对应的网络标识（默认 `dev`）。
+  - `PRIVATE_KEY`：执行交易的 Foundation Manager 私钥。
+  - `PROPOSAL_ID`：要执行的提案编号（默认 `4`）。
+- **执行方式**：
+  1. 设置环境变量（`.env` 或导出）：`RPC`、`NETWORK`、`PRIVATE_KEY`、`PROPOSAL_ID`。
+  2. 运行脚本：`node scripts/manual/multisig-proposal-execute.js`
+- **输出内容**：当前/所需签名数；执行时间检查；执行交易的 gas 估算与哈希；ProposalExecuted 事件；执行后挂起列表的检查提示。
