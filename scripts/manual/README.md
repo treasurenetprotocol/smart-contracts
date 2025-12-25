@@ -81,3 +81,15 @@
 - **作用**：被 run 脚本调用的助手，按传入地址对象创建跨链 Token 提案、收集 FOUNDATION_MANAGER 签名并执行。
 - **入参字段**：`rpcUrl`、`sourceNetworkName`、`targetNetworkName`、`sourceChainId`、`targetChainId`、`sourceChain{unit,bridge,tcash}`、`targetChain{unit,bridge,tcash}`、`mulSig`、`roles`、`crosschainTokens`、`signerKey`。
 - **备注**：直接调用时需自行构造以上参数对象；会对 FOUNDATION_MANAGER 角色做校验并依次创建/签名/执行四个方向的跨链 Token 提案。
+
+### multisig-sign-info.js
+- **作用**：查询指定提案的签名状态，并生成 `signTransaction` 的链上参数，方便外部签名系统（如自建 KMS 流程）使用。
+- **必需环境变量**：
+  - `RPC`：链上 RPC 地址。
+  - `NETWORK`：部署文件名对应的网络标识（默认 `dev`）。
+  - `CHAIN_ID`：链 ID（默认 6666）。
+  - `PROPOSAL_ID`：要查询/构造交易的提案编号（默认 4）。
+- **执行方式**：
+  1. 设置环境变量：`RPC`、`NETWORK`、`CHAIN_ID`、`PROPOSAL_ID`。
+  2. 运行：`node scripts/manual/multisig-sign-info.js`
+- **输出内容**：网络/提案签名状态（含当前签名数、是否已签），并输出完整的交易参数（to/data/gas/gasPrice/nonce/chainId）供外部签名发送。

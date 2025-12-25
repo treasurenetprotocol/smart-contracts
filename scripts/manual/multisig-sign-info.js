@@ -58,7 +58,7 @@ async function main() {
     // Prepare transaction data
     const methodData = contract.methods.signTransaction(proposalId).encodeABI();
     const [nonce, gasPrice, gasEstimate] = await Promise.all([
-      web3.eth.getTransactionCount(awsAccount),
+      web3.eth.getTransactionCount(awsAccount, 'pending'),
       web3.eth.getGasPrice(),
       contract.methods.signTransaction(proposalId).estimateGas({ from: awsAccount }),
     ]);
