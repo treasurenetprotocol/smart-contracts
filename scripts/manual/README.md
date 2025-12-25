@@ -36,3 +36,17 @@
   1. 设置环境变量（`.env` 或导出）：`RPC`、`NETWORK`、`PRIVATE_KEY`、`PROPOSAL_ID`。
   2. 运行脚本：`node scripts/manual/multisig-proposal-execute.js`
 - **输出内容**：当前/所需签名数；执行时间检查；执行交易的 gas 估算与哈希；ProposalExecuted 事件；执行后挂起列表的检查提示。
+
+### register-dapp-propose.js
+- **作用**：使用 Foundation Manager 账户创建“注册 DApp”类型的多签提案（不自动签名/执行）。
+- **必需环境变量**：
+  - `RPC`：链上 RPC 地址。
+  - `NETWORK`：部署文件名对应的网络标识（默认 `dev`）。
+  - `PRIVATE_KEY`：Foundation Manager 私钥（需具备 FOUNDATION_MANAGER 角色）。
+  - `TREASURE_KIND`：资源类型（如 `OIL`/`GAS`/`ETH`/`BTC`）。
+  - `DAPP_NAME`：DApp 名称。
+  - `PAYEE_ADDRESS`：DApp 收款地址。
+- **执行方式**：
+  1. 设置环境变量：`RPC`、`NETWORK`、`PRIVATE_KEY`、`TREASURE_KIND`、`DAPP_NAME`、`PAYEE_ADDRESS`。
+  2. 运行脚本：`node scripts/manual/register-dapp-propose.js`
+- **输出内容**：提案 ID、所需签名阈值、FM 列表；创建后会提示用 `multisig-proposal-status.js` 查看进度，用 `multisig-proposal-execute.js` 执行。
