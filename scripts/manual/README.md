@@ -50,3 +50,18 @@
   1. 设置环境变量：`RPC`、`NETWORK`、`PRIVATE_KEY`、`TREASURE_KIND`、`DAPP_NAME`、`PAYEE_ADDRESS`。
   2. 运行脚本：`node scripts/manual/register-dapp-propose.js`
 - **输出内容**：提案 ID、所需签名阈值、FM 列表；创建后会提示用 `multisig-proposal-status.js` 查看进度，用 `multisig-proposal-execute.js` 执行。
+
+### kms-multisig-sign.js
+- **作用**：使用 AWS KMS（@web3-kms-signer）对指定多签提案执行 `signTransaction` 并发送交易。
+- **必需环境变量**：
+  - `RPC`：链上 RPC 地址。
+  - `NETWORK`：部署文件名对应的网络标识（用于解析 MULSIG，如未提供 `CONTRACT_ADDRESS`）。
+  - `CHAIN_ID`：链 ID（默认 6666）。
+  - `CONTRACT_ADDRESS`：MULSIG 地址（可选，默认读取 deployments）。
+  - `PROPOSAL_ID`：要签名的提案编号（默认 4）。
+  - `FROM_ADDRESS`：KMS 对应的地址（可选，用于校验/发送）。
+  - `AWS_KMS_KEY_ID`、`AWS_KMS_ACCESS_KEY_ID`、`AWS_KMS_SECRET_ACCESS_KEY`、`AWS_KMS_REGION`：KMS 相关配置。
+- **执行方式**：
+  1. 设置以上环境变量（`.env` 或导出）。
+  2. 运行脚本：`node scripts/manual/kms-multisig-sign.js`
+- **输出内容**：网络/提案信息；签名进度（含阈值）；gas 估算；签名并发送交易的哈希、区块高度、gas 使用；签名后的进度校验。
