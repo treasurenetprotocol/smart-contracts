@@ -65,3 +65,19 @@
   1. 设置以上环境变量（`.env` 或导出）。
   2. 运行脚本：`node scripts/manual/kms-multisig-sign.js`
 - **输出内容**：网络/提案信息；签名进度（含阈值）；gas 估算；签名并发送交易的哈希、区块高度、gas 使用；签名后的进度校验。
+
+### crosschain-token-setup-run.js
+- **作用**：使用环境变量 + 部署信息驱动跨链 Token 配置流程，调用 helper 生成多签提案并签名/执行（自动）。
+- **必需环境变量**：
+  - `RPC`、`NETWORK`、`PRIVATE_KEY`（用于签名/执行的 FOUNDATION_MANAGER）。
+  - 目标链：`TARGET_CHAIN_ID`、`TARGET_UNIT`、`TARGET_BRIDGE`、`TARGET_TCASH`。
+  - 可选：`SOURCE_CHAIN_ID`、`SOURCE_UNIT`、`SOURCE_BRIDGE`、`SOURCE_TCASH`、`SOURCE_NETWORK_NAME`、`TARGET_NETWORK_NAME`。
+- **执行方式**：
+  1. 设置环境变量（`.env` 或导出）。
+  2. 运行：`node scripts/manual/crosschain-token-setup-run.js`
+- **输出内容**：源/目标链配置、提案创建/签名/执行日志及结果。
+
+### crosschain-token-setup-helper.js
+- **作用**：被 run 脚本调用的助手，按传入地址对象创建跨链 Token 提案、收集 FOUNDATION_MANAGER 签名并执行。
+- **入参字段**：`rpcUrl`、`sourceNetworkName`、`targetNetworkName`、`sourceChainId`、`targetChainId`、`sourceChain{unit,bridge,tcash}`、`targetChain{unit,bridge,tcash}`、`mulSig`、`roles`、`crosschainTokens`、`signerKey`。
+- **备注**：直接调用时需自行构造以上参数对象；会对 FOUNDATION_MANAGER 角色做校验并依次创建/签名/执行四个方向的跨链 Token 提案。

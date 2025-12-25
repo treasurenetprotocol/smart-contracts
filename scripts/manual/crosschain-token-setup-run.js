@@ -7,7 +7,7 @@ const {
   requireContracts,
   getPrivateKey,
 } = require('./common/config');
-const { setupCrosschainTokens } = require('./setup-crosschain-tokens');
+const { setupCrosschainTokens } = require('./crosschain-token-setup-helper');
 
 /**
  * Drive cross-chain token setup using env + deployments.
