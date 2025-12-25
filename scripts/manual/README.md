@@ -13,3 +13,14 @@
      - `export NETWORK=<network_name>` *(可选，默认 dev)*
   2. 运行脚本：`node scripts/manual/roles-permission-check.js`
 - **输出内容**：当前账户地址；三个关键角色权限状态；Foundation Manager 管理角色与可管理性；现有 FOUNDATION_MANAGER 成员列表；权限不足时的处理建议。
+
+### multisig-proposal-status.js
+- **作用**：查询多签提案状态（签名进度、执行时间、FM 签名明细、待处理提案列表）。
+- **必需环境变量**：
+  - `RPC`：链上 RPC 地址。
+  - `NETWORK`：部署文件名对应的网络标识（默认 `dev`）。
+  - `PROPOSAL_ID`：要查询的提案编号（默认 `4`）。
+- **执行方式**：
+  1. 设置环境变量（可用 `.env` 或导出）：`RPC`、`NETWORK`、`PROPOSAL_ID`。
+  2. 运行脚本：`node scripts/manual/multisig-proposal-status.js`
+- **输出内容**：提案名称与执行时间；当前/所需签名数与进度百分比；每个 FOUNDATION_MANAGER 的签名状态；可执行性判断（含等待时间）；挂起提案 ID 列表；执行/签名的后续指引。

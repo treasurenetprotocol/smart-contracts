@@ -10,17 +10,17 @@ const {
 } = require('./common/config');
 
 /**
- * Check multisig proposal status
- * Usage: node scripts/check-proposal.js
+ * Check multisig proposal status (env-driven, no CLI args)
  */
 
-const PROPOSAL_ID = parseInt(process.env.PROPOSAL_ID || '4', 10);
+const PROPOSAL_ID = Number(process.env.PROPOSAL_ID || 4);
 
-async function checkProposal() {
+async function multisigProposalStatus() {
   try {
     logger.info('Checking Multisig Proposal Status');
     logger.info('=================================');
     logger.info(`Proposal ID: ${PROPOSAL_ID}`);
+    logger.info(`Network: ${getNetwork()}`);
     logger.info(`RPC URL: ${getRpcUrl()}`);
     logger.info('');
 
@@ -44,26 +44,35 @@ async function checkProposal() {
       const proposalDetails = await mulSig.methods.transactionDetails(PROPOSAL_ID).call();
 
       logger.info('📋 Proposal Details:');
-      logger.info(`   Name: ${proposalDetails.name}`);
-      logger.info(`   Execution Time: ${new Date(parseInt(proposalDetails.excuteTime) * 1000).toLocaleString()}`);
+      logger.info(`   Name: ${proposalDetails.name || 'N/A'}`);
+      const execTime = Number(proposalDetails.excuteTime || proposalDetails.executeTime || 0);
+      logger.info(`   Execution Time: ${execTime ? new Date(execTime * 1000).toLocaleString() : 'N/A'}`);
       logger.info('');
     } catch (error) {
       logger.info('⚠️  Could not get proposal details (proposal might not exist or be executed)');
     }
 
     // Get signature information
-    const signatureCount = await mulSig.methods.getSignatureCount(PROPOSAL_ID).call();
-    const fmThreshold = await governance.methods.fmThreshold().call();
+    const [signatureCountRaw, fmThresholdRaw] = await Promise.all([
+      mulSig.methods.getSignatureCount(PROPOSAL_ID).call(),
+      governance.methods.fmThreshold().call(),
+    ]);
+    const signatureCount = Number(signatureCountRaw);
+    const fmThreshold = Number(fmThresholdRaw || 0);
 
     logger.info('🖊️  Signature Status:');
     logger.info(`   Current signatures: ${signatureCount}`);
     logger.info(`   Required signatures: ${fmThreshold}`);
-    logger.info(`   Progress: ${signatureCount}/${fmThreshold} (${(parseInt(signatureCount) / parseInt(fmThreshold) * 100).toFixed(1)}%)`);
+    if (fmThreshold > 0) {
+      logger.info(`   Progress: ${signatureCount}/${fmThreshold} (${((signatureCount / fmThreshold) * 100).toFixed(1)}%)`);
+    }
     logger.info('');
 
     // Get foundation managers and check who has signed
     const FOUNDATION_MANAGER = await roles.methods.FOUNDATION_MANAGER().call();
-    const foundationManagerCount = await roles.methods.getRoleMemberCount(FOUNDATION_MANAGER).call();
+    const foundationManagerCount = Number(
+      await roles.methods.getRoleMemberCount(FOUNDATION_MANAGER).call(),
+    );
 
     logger.info('👥 Foundation Managers:');
     for (let i = 0; i < foundationManagerCount; i++) {
@@ -75,13 +84,13 @@ async function checkProposal() {
     logger.info('');
 
     // Check if proposal can be executed
-    if (parseInt(signatureCount) >= parseInt(fmThreshold)) {
+    if (signatureCount >= fmThreshold && fmThreshold > 0) {
       logger.info('🎉 Status: Proposal has enough signatures!');
 
       try {
         const proposalDetails = await mulSig.methods.transactionDetails(PROPOSAL_ID).call();
         const currentTime = Math.floor(Date.now() / 1000);
-        const executionTime = parseInt(proposalDetails.excuteTime);
+        const executionTime = Number(proposalDetails.excuteTime || proposalDetails.executeTime || 0);
 
         if (executionTime > currentTime) {
           const waitTime = executionTime - currentTime;
@@ -97,11 +106,11 @@ async function checkProposal() {
         logger.info('⚠️  Proposal might already be executed or deleted');
       }
     } else {
-      const needed = parseInt(fmThreshold) - parseInt(signatureCount);
-      logger.info(`⏳ Status: Need ${needed} more signature${needed > 1 ? 's' : ''}`);
+      const needed = Math.max(fmThreshold - signatureCount, 0);
+      logger.info(`⏳ Status: Need ${needed} more signature${needed === 1 ? '' : 's'}`);
       logger.info('');
       logger.info('To sign the proposal, foundation managers can run:');
-      logger.info('node scripts/sign-proposal.js');
+      logger.info('node scripts/kms-multisig-signer.js (或其他签名流程)');
     }
 
     // Check pending proposals
@@ -123,7 +132,7 @@ async function checkProposal() {
 
 // Run the script
 if (require.main === module) {
-  checkProposal();
+  multisigProposalStatus();
 }
 
-module.exports = checkProposal;
+module.exports = multisigProposalStatus;
