@@ -1,54 +1,50 @@
+#!/usr/bin/env node
 const { logger } = require('@treasurenet/logging-middleware');
-
-const Oracle = artifacts.require('Oracle');
-const { upgradeProxy } = require('@openzeppelin/truffle-upgrades');
+const { ethers, upgrades, network } = require('hardhat');
 const fs = require('fs');
+const { getPaths, loadState, currentEntry, resolveContract, primeSecretsManager, shouldUseSecretsManager } = require('../deploy/utils');
 
-/**
- * Upgrade Oracle contract implementation.
- * Note: This script only upgrades the implementation, storage is preserved.
- */
-module.exports = async function (deployer, network, accounts) {
-  try {
-    logger.info('Starting Oracle upgrade...');
-    let oracleAddress;
+function resolveAddress(entry, state, networkName) {
+  const envVarName = `${networkName.toUpperCase()}_ORACLE_ADDRESS`;
+  return (
+    resolveContract(entry, state, 'ORACLE', networkName) ||
+    process.env[envVarName] ||
+    process.env.ORACLE_ADDRESS
+  );
+}
 
-    try {
-      const oracleInstance = await Oracle.deployed();
-      oracleAddress = oracleInstance.address;
-      logger.info(`Oracle address from deployed(): ${oracleAddress}`);
-    } catch (error) {
-      logger.info('Cannot get Oracle address from deployed(), trying env...');
-      const envVarName = `${network.toUpperCase()}_ORACLE_ADDRESS`;
-      oracleAddress = process.env[envVarName] || process.env.ORACLE_ADDRESS;
-      if (oracleAddress) {
-        logger.info(`Oracle address from env: ${oracleAddress}`);
-      }
+async function main() {
+  logger.info('Starting Oracle upgrade...');
+  const networkName = network.name;
+  const paths = getPaths(networkName);
+  const state = loadState(paths, networkName);
+  await primeSecretsManager(networkName);
+  const entry = state.entries && state.entries.length ? currentEntry(state) : null;
+
+  const oracleAddress = resolveAddress(entry, state, networkName);
+  if (!oracleAddress || oracleAddress === '' || oracleAddress.includes('...')) {
+    if (shouldUseSecretsManager()) {
+      throw new Error(`Error: no valid Oracle address from Secrets Manager for network ${networkName}`);
     }
-
-
-    if (!oracleAddress || oracleAddress === '' || oracleAddress.includes('...')) {
-      logger.error(`Error: No valid Oracle address for network ${network}`);
-      logger.error(`Set ${network.toUpperCase()}_ORACLE_ADDRESS or ORACLE_ADDRESS env var.`);
-      return;
-    }
-
-    logger.info(`Network: ${network}, Oracle address: ${oracleAddress}`);
-
-    if (!network) {
-      throw new Error('No network specified, use --network');
-    }
-
-    const upgradedOracle = await upgradeProxy(oracleAddress, Oracle, { deployer });
-    logger.info('Oracle upgraded:', upgradedOracle.address);
-
-    try {
-      fs.appendFileSync('upgraded_contracts.txt', `Oracle=${upgradedOracle.address}\n`);
-      logger.info('Address written to upgraded_contracts.txt');
-    } catch (err) {
-      logger.error('Error writing file:', err);
-    }
-  } catch (error) {
-    logger.error('Error upgrading Oracle:', error);
+    throw new Error(`No valid Oracle address for network ${networkName}; set ${networkName.toUpperCase()}_ORACLE_ADDRESS or ORACLE_ADDRESS`);
   }
-};
+
+  logger.info(`Network: ${networkName}, proxy address: ${oracleAddress}`);
+
+  const Oracle = await ethers.getContractFactory('Oracle');
+  const upgraded = await upgrades.upgradeProxy(oracleAddress, Oracle);
+  const impl = await upgrades.erc1967.getImplementationAddress(oracleAddress).catch(() => null);
+
+  logger.info(`Oracle upgraded. Proxy=${oracleAddress}${impl ? ` impl=${impl}` : ''}`);
+  try {
+    fs.appendFileSync('upgraded_contracts.txt', `Oracle=${oracleAddress}\n`);
+    logger.info('Address written to upgraded_contracts.txt');
+  } catch (err) {
+    logger.error('Error writing file:', err);
+  }
+}
+
+main().catch((error) => {
+  logger.error('Error upgrading Oracle:', error);
+  process.exit(1);
+});

@@ -1,135 +1,89 @@
+#!/usr/bin/env node
 const { logger } = require('@treasurenet/logging-middleware');
-const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
+const { ethers, upgrades, network } = require('hardhat');
+const { getPaths, loadState, currentEntry, resolveContract, primeSecretsManager, shouldUseSecretsManager } = require('../deploy/utils');
 
-// Producer contract name mapping
 const PRODUCER_CONTRACTS = {
-  OilProducer: 'OilProducer',
-  GasProducer: 'GasProducer',
-  EthProducer: 'EthProducer',
-  BtcProducer: 'BtcProducer',
+  OIL: 'OilProducer',
+  GAS: 'GasProducer',
+  ETH: 'EthProducer',
+  BTC: 'BtcProducer',
 };
 
-module.exports = async function (deployer, network, accounts) {
+function resolveGovernanceAddress(entry, state, networkName) {
+  const envVarName = `${networkName.toUpperCase()}_GOVERNANCE_ADDRESS`;
+  return (
+    resolveContract(entry, state, 'GOVERNANCE', networkName) ||
+    process.env[envVarName] ||
+    process.env.GOVERNANCE_ADDRESS ||
+    '0xc69bd55C22664cF319698984211FeD155403C066'
+  );
+}
+
+async function main() {
   logger.info('Starting Producer upgrades...');
-  logger.info(`Network: ${network}`);
-  logger.info(`Deployer: ${accounts[0]}`);
+  const networkName = network.name;
+  const paths = getPaths(networkName);
+  const state = loadState(paths, networkName);
+  await primeSecretsManager(networkName);
+  const entry = state.entries && state.entries.length ? currentEntry(state) : null;
 
-  // Get governance contract
-  const Governance = artifacts.require('Governance');
-  const governanceAddress = process.env.GOVERNANCE_ADDRESS || '0xc69bd55C22664cF319698984211FeD155403C066';
-  const governance = await Governance.at(governanceAddress);
+  const governanceAddress = resolveGovernanceAddress(entry, state, networkName);
+  if (!governanceAddress || governanceAddress === '' || governanceAddress.includes('...')) {
+    if (shouldUseSecretsManager()) {
+      throw new Error(`Error: no valid Governance address from Secrets Manager for network ${networkName}`);
+    }
+    throw new Error(`No valid Governance address for network ${networkName}; set ${networkName.toUpperCase()}_GOVERNANCE_ADDRESS or GOVERNANCE_ADDRESS`);
+  }
 
-  logger.info(`Governance address: ${governanceAddress}`);
+  logger.info(`Network: ${networkName}, Governance: ${governanceAddress}`);
+  const governance = await ethers.getContractAt('Governance', governanceAddress);
 
-  // Fetch Producer addresses for each treasure
-  const treasureKinds = ['OIL', 'GAS', 'ETH', 'BTC'];
   const producerAddresses = {};
-
-  logger.info('Reading Producer addresses from Governance...');
-  for (const kind of treasureKinds) {
+  for (const kind of Object.keys(PRODUCER_CONTRACTS)) {
     try {
       const treasureInfo = await governance.getTreasureByKind(kind);
       producerAddresses[kind] = treasureInfo[0];
       logger.info(`${kind} Producer: ${treasureInfo[0]}`);
     } catch (error) {
-      logger.info(`⚠️  Could not fetch ${kind} Producer address: ${error.message}`);
+      logger.info(`Could not fetch ${kind} Producer address: ${error.message}`);
     }
   }
 
-  // Upgrade each Producer
   const results = [];
-
-  for (const [contractName, artifactName] of Object.entries(PRODUCER_CONTRACTS)) {
+  for (const [kind, contractName] of Object.entries(PRODUCER_CONTRACTS)) {
     try {
-      logger.info(`\n🔧 Upgrading ${contractName}...`);
-
-      // Determine treasure kind
-      const treasureKind = contractName.replace('Producer', '').toUpperCase();
-      const proxyAddress = producerAddresses[treasureKind];
-
+      const proxyAddress = producerAddresses[kind];
       if (!proxyAddress || proxyAddress === '0x0000000000000000000000000000000000000000') {
-        logger.info(`❌ Skipping ${contractName}: proxy address not found`);
-        results.push({
-          contract: contractName,
-          status: 'skipped',
-          reason: 'No proxy address found',
-        });
+        logger.info(`Skipping ${contractName}: proxy address not found`);
+        results.push({ contract: contractName, status: 'skipped', reason: 'No proxy address found' });
         continue;
       }
 
-      logger.info(`   Proxy address: ${proxyAddress}`);
+      logger.info(`Upgrading ${contractName} at ${proxyAddress}...`);
+      const Factory = await ethers.getContractFactory(contractName);
+      await upgrades.upgradeProxy(proxyAddress, Factory);
+      const impl = await upgrades.erc1967.getImplementationAddress(proxyAddress).catch(() => null);
 
-      // Load contract artifact
-      const ContractArtifact = artifacts.require(artifactName);
-
-      logger.info(`   Preparing to upgrade ${contractName}...`);
-
-      // Execute upgrade
-      const upgradedContract = await upgradeProxy(proxyAddress, ContractArtifact, {
-        deployer,
-        force: true, // force upgrade, skip admin check
-      });
-
-      logger.info(`   ✅ ${contractName} upgraded`);
-      logger.info(`   New implementation: ${upgradedContract.address}`);
-
-      results.push({
-        contract: contractName,
-        status: 'success',
-        proxyAddress,
-        newImplementation: upgradedContract.address,
-      });
-
-      // Wait for confirmations
-      logger.info('   Waiting for confirmations...');
-      await new Promise((resolve) => setTimeout(resolve, 10000)); // wait 10s
+      logger.info(`✅ ${contractName} upgraded${impl ? ` (impl ${impl})` : ''}`);
+      results.push({ contract: contractName, status: 'success', proxyAddress, implementation: impl });
     } catch (error) {
-      logger.info(`   ❌ ${contractName} upgrade failed: ${error.message}`);
-      results.push({
-        contract: contractName,
-        status: 'failed',
-        error: error.message,
-      });
+      logger.info(`❌ ${contractName} upgrade failed: ${error.message}`);
+      results.push({ contract: contractName, status: 'failed', error: error.message });
     }
   }
-
-  // Summary
-  logger.info('\n📊 Upgrade summary:');
-  logger.info('================');
 
   const successful = results.filter((r) => r.status === 'success');
   const failed = results.filter((r) => r.status === 'failed');
   const skipped = results.filter((r) => r.status === 'skipped');
 
-  logger.info(`✅ Upgraded: ${successful.length} contracts`);
-  logger.info(`❌ Failed: ${failed.length} contracts`);
-  logger.info(`⏭️  Skipped: ${skipped.length} contracts`);
-
-  if (successful.length > 0) {
-    logger.info('\nUpgraded contracts:');
-    successful.forEach((result) => {
-      logger.info(`- ${result.contract}: ${result.proxyAddress}`);
-    });
-  }
-
+  logger.info(`Upgrade summary -> success: ${successful.length}, failed: ${failed.length}, skipped: ${skipped.length}`);
   if (failed.length > 0) {
-    logger.info('\nFailed upgrades:');
-    failed.forEach((result) => {
-      logger.info(`- ${result.contract}: ${result.error}`);
-    });
+    failed.forEach((r) => logger.info(`Failed ${r.contract}: ${r.error}`));
   }
+}
 
-  if (successful.length > 0) {
-    logger.info('\n🎉 Producer upgrades complete!');
-    logger.info('You can now run the following to fix _mulSig address:');
-    logger.info('npm run fix:mulsig:treasurenet');
-
-    // Output upgrade info
-    logger.info('\n📝 Upgrade info:');
-    successful.forEach((result) => {
-      logger.info(`${result.contract.toUpperCase()}_PROXY_ADDRESS=${result.proxyAddress}`);
-    });
-  } else {
-    logger.info('\n⚠️  No contracts upgraded; please check errors');
-  }
-};
+main().catch((error) => {
+  logger.error('Error upgrading Producers:', error);
+  process.exit(1);
+});

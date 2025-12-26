@@ -1,66 +1,50 @@
+#!/usr/bin/env node
 const { logger } = require('@treasurenet/logging-middleware');
-
-const TCashAuction = artifacts.require('TCashAuction');
-const { upgradeProxy } = require('@openzeppelin/truffle-upgrades');
+const { ethers, upgrades, network } = require('hardhat');
 const fs = require('fs');
+const { getPaths, loadState, currentEntry, resolveContract, primeSecretsManager, shouldUseSecretsManager } = require('../deploy/utils');
 
-/**
- * Upgrade the TCashAuction contract
- * Note: This script only upgrades the implementation and does not modify storage
- */
-module.exports = async function (deployer, network, accounts) {
-  try {
-    logger.info('Starting TCashAuction upgrade...');
+function resolveAddress(entry, state, networkName) {
+  const envVarName = `${networkName.toUpperCase()}_TCASHAUCTION_ADDRESS`;
+  return (
+    resolveContract(entry, state, 'TCASH_AUCTION', networkName) ||
+    process.env[envVarName] ||
+    process.env.TCASHAUCTION_ADDRESS
+  );
+}
 
-    // Get currently deployed TCashAuction address
-    let tcashAuctionAddress;
+async function main() {
+  logger.info('Starting TCashAuction upgrade...');
+  const networkName = network.name;
+  const paths = getPaths(networkName);
+  const state = loadState(paths, networkName);
+  await primeSecretsManager(networkName);
+  const entry = state.entries && state.entries.length ? currentEntry(state) : null;
 
-    try {
-      // Try using deployed() helper
-      const tcashAuctionInstance = await TCashAuction.deployed();
-      tcashAuctionAddress = tcashAuctionInstance.address;
-      logger.info(`Found TCashAuction via deployed(): ${tcashAuctionAddress}`);
-    } catch (error) {
-      logger.info('Could not resolve via deployed(), trying environment variables...');
-
-      // Try reading from environment
-      const envVarName = `${network.toUpperCase()}_TCASHAUCTION_ADDRESS`;
-      tcashAuctionAddress = process.env[envVarName] || process.env.TCASHAUCTION_ADDRESS;
-
-      if (tcashAuctionAddress) {
-        logger.info(`Found TCashAuction via env var: ${tcashAuctionAddress}`);
-      }
+  const tcashAuctionAddress = resolveAddress(entry, state, networkName);
+  if (!tcashAuctionAddress || tcashAuctionAddress === '' || tcashAuctionAddress.includes('...')) {
+    if (shouldUseSecretsManager()) {
+      throw new Error(`Error: no valid TCashAuction address from Secrets Manager for network ${networkName}`);
     }
-
-    // Validate address
-    if (!tcashAuctionAddress || tcashAuctionAddress === '' || tcashAuctionAddress.includes('...')) {
-      logger.error(`Error: no valid TCashAuction address provided for network ${network}`);
-      logger.error(`Deploy first or set ${network.toUpperCase()}_TCASHAUCTION_ADDRESS or TCASHAUCTION_ADDRESS`);
-      return;
-    }
-
-    logger.info(`Network: ${network}, current address: ${tcashAuctionAddress}`);
-
-    // Ensure network flag is present
-    if (!network) {
-      throw new Error('Network not specified; use --network flag');
-    }
-
-    // Execute upgrade
-    const upgradedTCashAuction = await upgradeProxy(tcashAuctionAddress, TCashAuction, {
-      deployer,
-    });
-
-    logger.info('TCashAuction upgraded:', upgradedTCashAuction.address);
-
-    // Write address to file
-    try {
-      fs.appendFileSync('upgraded_contracts.txt', `TCashAuction=${upgradedTCashAuction.address}\n`);
-      logger.info('Address written to upgraded_contracts.txt');
-    } catch (err) {
-      logger.error('Failed to write file:', err);
-    }
-  } catch (error) {
-    logger.error('Error upgrading TCashAuction:', error);
+    throw new Error(`No valid TCashAuction address for network ${networkName}; set ${networkName.toUpperCase()}_TCASHAUCTION_ADDRESS or TCASHAUCTION_ADDRESS`);
   }
-};
+
+  logger.info(`Network: ${networkName}, proxy address: ${tcashAuctionAddress}`);
+
+  const TCashAuction = await ethers.getContractFactory('TCashAuction');
+  const upgraded = await upgrades.upgradeProxy(tcashAuctionAddress, TCashAuction);
+  const impl = await upgrades.erc1967.getImplementationAddress(tcashAuctionAddress).catch(() => null);
+
+  logger.info(`TCashAuction upgraded. Proxy=${tcashAuctionAddress}${impl ? ` impl=${impl}` : ''}`);
+  try {
+    fs.appendFileSync('upgraded_contracts.txt', `TCashAuction=${tcashAuctionAddress}\n`);
+    logger.info('Address written to upgraded_contracts.txt');
+  } catch (err) {
+    logger.error('Failed to write file:', err);
+  }
+}
+
+main().catch((error) => {
+  logger.error('Error upgrading TCashAuction:', error);
+  process.exit(1);
+});
