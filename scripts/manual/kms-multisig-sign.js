@@ -15,6 +15,7 @@ const {
   requireContracts,
   getEnv,
   getUserAddress,
+  loadContractABI,
 } = require('./common/config');
 
 // AWS KMS configuration
@@ -48,12 +49,15 @@ const CONFIG = {
   rpcUrl: getRpcUrl(),
   chainId: Number(getEnv('CHAIN_ID', '6666')),
   multisigContract: getEnv('CONTRACT_ADDRESS') || resolveContracts().MULSIG,
-  proposalId: Number(getEnv('PROPOSAL_ID', '6')),
+  proposalId: Number(getEnv('PROPOSAL_ID', '4')),
   awsAccount: getEnv('FROM_ADDRESS') || getUserAddress(),
 };
 
 if (!CONFIG.multisigContract) {
   throw new Error('CONTRACT_ADDRESS is required (or ensure MULSIG exists in deployments)');
+}
+if (!awsConfig.kms.keyId || !awsConfig.kms.accessKeyId || !awsConfig.kms.secretAccessKey) {
+  throw new Error('AWS KMS configuration missing (AWS_KMS_KEY_ID / AWS_KMS_ACCESS_KEY_ID / AWS_KMS_SECRET_ACCESS_KEY)');
 }
 
 // Multisig contract ABI
@@ -96,6 +100,9 @@ class MultisigSigner {
     });
     this.signer = new Signer(new KMSWallets(this.provider), +CONFIG.chainId);
     this.contract = new this.web3.eth.Contract(MULTISIG_ABI, CONFIG.multisigContract);
+    this.fmThreshold = null;
+    this.fmThresholdLoaded = false;
+    this.governance = null;
   }
 
   /**
@@ -107,7 +114,11 @@ class MultisigSigner {
       const wallet = this.provider;
       const publicKey = await wallet.getPublicKey({ KeyId: awsConfig.kms.keyId });
 
-      // This needs your getEthereumAddress helper; return configured address for now
+      if (!publicKey || !publicKey.PublicKey) {
+        throw new Error('Public key not returned from KMS');
+      }
+
+      // Currently @web3-kms-signer does not give direct checksum address here; use configured address
       return CONFIG.awsAccount;
     } catch (error) {
       throw new Error(`Failed to get Ethereum address: ${error.message}`);
@@ -215,8 +226,24 @@ class MultisigSigner {
       this.contract.methods.hasAlreadySigned(CONFIG.proposalId, CONFIG.awsAccount).call(),
     ]);
 
+    if (!this.fmThresholdLoaded) {
+      try {
+        const { GOVERNANCE } = requireContracts(['GOVERNANCE'], getNetwork());
+        const governanceABI = loadContractABI('Governance');
+        this.governance = new this.web3.eth.Contract(governanceABI, GOVERNANCE);
+        this.fmThreshold = Number(await this.governance.methods.fmThreshold().call());
+      } catch (e) {
+        logger.info('⚠️  Could not load fmThreshold (GOVERNANCE not resolved or RPC issue)');
+        this.fmThreshold = null;
+      }
+      this.fmThresholdLoaded = true;
+    }
+
     logger.info(`   Proposal ID: ${CONFIG.proposalId}`);
     logger.info(`   Current signatures: ${Number(signatureCount)}/2`);
+    if (this.fmThreshold) {
+      logger.info(`   Threshold: ${this.fmThreshold}`);
+    }
     logger.info(`   AWS account signed: ${alreadySigned ? 'Yes' : 'No'}`);
 
     return {
@@ -249,7 +276,7 @@ class MultisigSigner {
         return;
       }
 
-      if (status.signatureCount >= 2) {
+      if (this.fmThreshold && status.signatureCount >= this.fmThreshold) {
         logger.info('\n✅ Proposal already has enough signatures!');
         return;
       }

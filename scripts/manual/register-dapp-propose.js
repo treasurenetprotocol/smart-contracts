@@ -12,8 +12,7 @@ const {
 } = require('./common/config');
 
 /**
- * Pure Node.js script for registering DApp through multisig
- * Usage: node scripts/register-dapp-node.js
+ * Register DApp through multisig (env-driven, no CLI args)
  */
 
 const TREASURE_KIND = process.env.TREASURE_KIND || 'OIL';
@@ -23,8 +22,9 @@ const PAYEE_ADDRESS = process.env.PAYEE_ADDRESS || getUserAddress();
 async function registerDApp() {
   try {
     const network = getNetwork();
+    const rpcUrl = getRpcUrl();
     const { MULSIG, ROLES, GOVERNANCE } = requireContracts(['MULSIG', 'ROLES', 'GOVERNANCE'], network);
-    const web3 = new Web3(getRpcUrl());
+    const web3 = new Web3(rpcUrl);
 
     // Validate payee address
     if (!web3.utils.isAddress(PAYEE_ADDRESS)) {
@@ -43,7 +43,7 @@ async function registerDApp() {
     logger.info(`  Treasure Kind: ${TREASURE_KIND}`);
     logger.info(`  DApp Name: ${DAPP_NAME}`);
     logger.info(`  Payee Address: ${PAYEE_ADDRESS}`);
-    logger.info(`  RPC URL: ${getRpcUrl()}`);
+    logger.info(`  RPC URL: ${rpcUrl}`);
     logger.info(`  Signer: ${account.address}`);
     logger.info('');
 
@@ -77,7 +77,9 @@ async function registerDApp() {
 
     // Get foundation managers
     const FOUNDATION_MANAGER = await roles.methods.FOUNDATION_MANAGER().call();
-    const foundationManagerCount = await roles.methods.getRoleMemberCount(FOUNDATION_MANAGER).call();
+    const foundationManagerCount = Number(
+      await roles.methods.getRoleMemberCount(FOUNDATION_MANAGER).call(),
+    );
 
     if (foundationManagerCount === 0) {
       throw new Error('No foundation managers found');
@@ -107,6 +109,7 @@ async function registerDApp() {
     // Create proposal
     logger.info(`Creating proposal to register DApp "${DAPP_NAME}" for treasure "${TREASURE_KIND}"...`);
 
+    const gasPrice = await web3.eth.getGasPrice();
     const proposalTx = await mulSig.methods.proposeToRegisterDApp(
       TREASURE_KIND,
       DAPP_NAME,
@@ -114,6 +117,7 @@ async function registerDApp() {
     ).send({
       from: account.address,
       gas: 500000,
+      gasPrice,
     });
 
     // Get proposal ID from event
@@ -131,11 +135,11 @@ async function registerDApp() {
 
     logger.info('');
     logger.info('To check proposal status:');
-    logger.info('  node scripts/check-proposal.js');
+    logger.info('  node scripts/manual/multisig-proposal-status.js');
 
     logger.info('');
     logger.info('To execute the proposal (after enough signatures):');
-    logger.info('  node scripts/execute-proposal.js');
+    logger.info('  node scripts/manual/multisig-proposal-execute.js');
   } catch (error) {
     logger.error('❌ Error:', error.message);
     process.exit(1);

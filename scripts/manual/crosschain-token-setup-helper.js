@@ -2,10 +2,7 @@
 require('dotenv').config();
 const { logger } = require('@treasurenet/logging-middleware');
 const Web3 = require('web3');
-
-const MulSig = require('../build/contracts/MulSig.json');
-const Roles = require('../build/contracts/Roles.json');
-const CrosschainTokens = require('../build/contracts/CrosschainTokens.json');
+const { loadContractABI } = require('./common/config');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -144,7 +141,7 @@ async function proposeCrosschainToken(
   }
 }
 
-async function setupCrosschainTokens(addresses) {
+async function crosschainTokenSetupHelper(addresses) {
   try {
     const web3 = new Web3(addresses.rpcUrl);
     const account = web3.eth.accounts.privateKeyToAccount(addresses.signerKey);
@@ -152,10 +149,10 @@ async function setupCrosschainTokens(addresses) {
 
     const chainId = addresses.sourceChainId || await web3.eth.getChainId();
 
-    const mulSigInstance = new web3.eth.Contract(MulSig.abi, addresses.mulSig);
-    const rolesInstance = new web3.eth.Contract(Roles.abi, addresses.roles);
+    const mulSigInstance = new web3.eth.Contract(loadContractABI('MulSig'), addresses.mulSig);
+    const rolesInstance = new web3.eth.Contract(loadContractABI('Roles'), addresses.roles);
     const crosschainTokensInstance = new web3.eth.Contract(
-      CrosschainTokens.abi,
+      loadContractABI('CrosschainTokens'),
       addresses.crosschainTokens,
     );
 
@@ -252,5 +249,5 @@ async function setupCrosschainTokens(addresses) {
 }
 
 module.exports = {
-  setupCrosschainTokens,
+  setupCrosschainTokens: crosschainTokenSetupHelper,
 };

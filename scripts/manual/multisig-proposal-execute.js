@@ -11,17 +11,16 @@ const {
 } = require('./common/config');
 
 /**
- * Execute multisig proposal
- * Usage: node scripts/execute-proposal.js [proposalId]
+ * Execute multisig proposal (env-driven, no CLI args)
  */
 
-const PROPOSAL_ID = parseInt(process.env.PROPOSAL_ID || process.argv[2] || '6', 10);
+const PROPOSAL_ID = Number(process.env.PROPOSAL_ID || 4);
 
-async function executeProposal() {
+async function multisigProposalExecute() {
   try {
     const network = getNetwork();
     const rpcUrl = getRpcUrl();
-    const { MULSIG, ROLES } = requireContracts(['MULSIG', 'ROLES'], network);
+    const { MULSIG, ROLES, GOVERNANCE } = requireContracts(['MULSIG', 'ROLES', 'GOVERNANCE'], network);
 
     // Initialize Web3
     const web3 = new Web3(rpcUrl);
@@ -41,10 +40,12 @@ async function executeProposal() {
     // Load contract ABIs
     const mulSigABI = loadContractABI('MulSig');
     const rolesABI = loadContractABI('Roles');
+    const governanceABI = loadContractABI('Governance');
 
     // Create contract instances
     const mulSig = new web3.eth.Contract(mulSigABI, MULSIG);
     const roles = new web3.eth.Contract(rolesABI, ROLES);
+    const governance = new web3.eth.Contract(governanceABI, GOVERNANCE);
 
     // Verify executor has foundation manager role
     const FOUNDATION_MANAGER = await roles.methods.FOUNDATION_MANAGER().call();
@@ -58,11 +59,18 @@ async function executeProposal() {
     // Check proposal status before execution
     logger.info('🔍 Checking proposal status...');
 
-    const signatureCount = await mulSig.methods.getSignatureCount(PROPOSAL_ID).call();
-    logger.info(`   Current signatures: ${signatureCount}`);
+    const [signatureCountRaw, fmThresholdRaw] = await Promise.all([
+      mulSig.methods.getSignatureCount(PROPOSAL_ID).call(),
+      governance.methods.fmThreshold().call(),
+    ]);
+    const signatureCount = Number(signatureCountRaw);
+    const fmThreshold = Number(fmThresholdRaw || 0);
 
-    if (parseInt(signatureCount, 10) < 2) {
-      throw new Error(`Proposal ${PROPOSAL_ID} doesn't have enough signatures (${signatureCount}/2)`);
+    logger.info(`   Current signatures: ${signatureCount}`);
+    logger.info(`   Required signatures: ${fmThreshold}`);
+
+    if (signatureCount < fmThreshold || fmThreshold === 0) {
+      throw new Error(`Proposal ${PROPOSAL_ID} doesn't have enough signatures (${signatureCount}/${fmThreshold})`);
     }
     logger.info('✅ Proposal has enough signatures');
 
@@ -70,7 +78,7 @@ async function executeProposal() {
     try {
       const proposalDetails = await mulSig.methods.transactionDetails(PROPOSAL_ID).call();
       const currentTime = Math.floor(Date.now() / 1000);
-      const executionTime = parseInt(proposalDetails.excuteTime || 0, 10);
+      const executionTime = Number(proposalDetails.excuteTime || proposalDetails.executeTime || 0);
 
       if (executionTime > 0 && executionTime > currentTime) {
         const waitTime = executionTime - currentTime;
@@ -115,17 +123,12 @@ async function executeProposal() {
       logger.info(`   Event: ProposalExecuted(${receipt.events.ProposalExecuted.returnValues.proposalId})`);
     }
 
-    logger.info('');
-    logger.info('✅ DApp registration completed!');
-    logger.info('   DApp \"OtterStreamTest\" has been registered to OIL resource');
-    logger.info('   Payee address: 0x1234567890123456789012345678901234567891');
-
     // Verify the proposal is no longer pending
     logger.info('');
     logger.info('🔍 Verifying execution...');
 
     const newSignatureCount = await mulSig.methods.getSignatureCount(PROPOSAL_ID).call();
-    if (parseInt(newSignatureCount, 10) === 0) {
+    if (Number(newSignatureCount) === 0) {
       logger.info('✅ Proposal has been removed from pending list');
     } else {
       logger.info('⚠️  Proposal might still be in system (this could be normal)');
@@ -138,7 +141,7 @@ async function executeProposal() {
 
 // Run the script
 if (require.main === module) {
-  executeProposal();
+  multisigProposalExecute();
 }
 
-module.exports = executeProposal;
+module.exports = multisigProposalExecute;
