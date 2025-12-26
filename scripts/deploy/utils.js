@@ -75,6 +75,9 @@ function resolveContract(entry, state, key) {
     if (state.addresses[key]) return state.addresses[key];
     if (state.addresses[`${key}_ADDRESS`]) return state.addresses[`${key}_ADDRESS`];
   }
+  // environment fallback for manual runs without JSON state
+  const envKey = `${key.toUpperCase()}_ADDRESS`;
+  if (process.env[envKey]) return process.env[envKey];
   return undefined;
 }
 

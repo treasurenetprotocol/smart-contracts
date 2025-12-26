@@ -2,15 +2,10 @@
 const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const fs = require('fs');
-const { getPaths, loadState, currentEntry, resolveContract, primeSecretsManager, shouldUseSecretsManager } = require('../deploy/utils');
+const { getPaths, loadState, currentEntry, resolveContract } = require('../deploy/utils');
 
-function resolveAddress(entry, state, networkName) {
-  const envVarName = `${networkName.toUpperCase()}_WTCASH_ADDRESS`;
-  return (
-    resolveContract(entry, state, 'WTCASH', networkName) ||
-    process.env[envVarName] ||
-    process.env.WTCASH_ADDRESS
-  );
+function resolveAddress(entry, state) {
+  return resolveContract(entry, state, 'WTCASH');
 }
 
 async function main() {
@@ -18,15 +13,15 @@ async function main() {
   const networkName = network.name;
   const paths = getPaths(networkName);
   const state = loadState(paths, networkName);
-  await primeSecretsManager(networkName);
   const entry = state.entries && state.entries.length ? currentEntry(state) : null;
 
-  const wtcashAddress = resolveAddress(entry, state, networkName);
+  if (!entry) {
+    throw new Error(`No deployment entry found in deployments/${networkName}.json; seed it before upgrading.`);
+  }
+
+  const wtcashAddress = resolveAddress(entry, state);
   if (!wtcashAddress || wtcashAddress === '' || wtcashAddress.includes('...')) {
-    if (shouldUseSecretsManager()) {
-      throw new Error(`Error: no valid WTCASH address from Secrets Manager for network ${networkName}`);
-    }
-    throw new Error(`No valid WTCASH address for network ${networkName}; set ${networkName.toUpperCase()}_WTCASH_ADDRESS or WTCASH_ADDRESS`);
+    throw new Error(`No valid WTCASH address in deployments/${networkName}.json; seed it before upgrading.`);
   }
 
   logger.info(`Network: ${networkName}, proxy address: ${wtcashAddress}`);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
-const { getPaths, loadState, currentEntry, resolveContract, primeSecretsManager, shouldUseSecretsManager } = require('../deploy/utils');
+const { getPaths, loadState, currentEntry, resolveContract } = require('../deploy/utils');
 
 const PRODUCER_CONTRACTS = {
   OIL: 'OilProducer',
@@ -10,14 +10,8 @@ const PRODUCER_CONTRACTS = {
   BTC: 'BtcProducer',
 };
 
-function resolveGovernanceAddress(entry, state, networkName) {
-  const envVarName = `${networkName.toUpperCase()}_GOVERNANCE_ADDRESS`;
-  return (
-    resolveContract(entry, state, 'GOVERNANCE', networkName) ||
-    process.env[envVarName] ||
-    process.env.GOVERNANCE_ADDRESS ||
-    '0xc69bd55C22664cF319698984211FeD155403C066'
-  );
+function resolveGovernanceAddress(entry, state) {
+  return resolveContract(entry, state, 'GOVERNANCE');
 }
 
 async function main() {
@@ -25,15 +19,15 @@ async function main() {
   const networkName = network.name;
   const paths = getPaths(networkName);
   const state = loadState(paths, networkName);
-  await primeSecretsManager(networkName);
   const entry = state.entries && state.entries.length ? currentEntry(state) : null;
 
-  const governanceAddress = resolveGovernanceAddress(entry, state, networkName);
+  if (!entry) {
+    throw new Error(`No deployment entry found in deployments/${networkName}.json; seed it before upgrading.`);
+  }
+
+  const governanceAddress = resolveGovernanceAddress(entry, state);
   if (!governanceAddress || governanceAddress === '' || governanceAddress.includes('...')) {
-    if (shouldUseSecretsManager()) {
-      throw new Error(`Error: no valid Governance address from Secrets Manager for network ${networkName}`);
-    }
-    throw new Error(`No valid Governance address for network ${networkName}; set ${networkName.toUpperCase()}_GOVERNANCE_ADDRESS or GOVERNANCE_ADDRESS`);
+    throw new Error(`No valid Governance address in deployments/${networkName}.json; seed it before upgrading.`);
   }
 
   logger.info(`Network: ${networkName}, Governance: ${governanceAddress}`);

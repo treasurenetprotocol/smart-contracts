@@ -2,15 +2,10 @@
 const { logger } = require('@treasurenet/logging-middleware');
 const { ethers, upgrades, network } = require('hardhat');
 const fs = require('fs');
-const { getPaths, loadState, currentEntry, resolveContract, primeSecretsManager, shouldUseSecretsManager } = require('../deploy/utils');
+const { getPaths, loadState, currentEntry, resolveContract } = require('../deploy/utils');
 
-function resolveAddress(entry, state, networkName) {
-  const envVarName = `${networkName.toUpperCase()}_TCASHAUCTION_ADDRESS`;
-  return (
-    resolveContract(entry, state, 'TCASH_AUCTION', networkName) ||
-    process.env[envVarName] ||
-    process.env.TCASHAUCTION_ADDRESS
-  );
+function resolveAddress(entry, state) {
+  return resolveContract(entry, state, 'TCASH_AUCTION');
 }
 
 async function main() {
@@ -18,15 +13,15 @@ async function main() {
   const networkName = network.name;
   const paths = getPaths(networkName);
   const state = loadState(paths, networkName);
-  await primeSecretsManager(networkName);
   const entry = state.entries && state.entries.length ? currentEntry(state) : null;
 
-  const tcashAuctionAddress = resolveAddress(entry, state, networkName);
+  if (!entry) {
+    throw new Error(`No deployment entry found in deployments/${networkName}.json; seed it before upgrading.`);
+  }
+
+  const tcashAuctionAddress = resolveAddress(entry, state);
   if (!tcashAuctionAddress || tcashAuctionAddress === '' || tcashAuctionAddress.includes('...')) {
-    if (shouldUseSecretsManager()) {
-      throw new Error(`Error: no valid TCashAuction address from Secrets Manager for network ${networkName}`);
-    }
-    throw new Error(`No valid TCashAuction address for network ${networkName}; set ${networkName.toUpperCase()}_TCASHAUCTION_ADDRESS or TCASHAUCTION_ADDRESS`);
+    throw new Error(`No valid TCashAuction address in deployments/${networkName}.json; seed it before upgrading.`);
   }
 
   logger.info(`Network: ${networkName}, proxy address: ${tcashAuctionAddress}`);
